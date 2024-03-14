@@ -4,7 +4,7 @@ import getpass
 
 connection = oracledb.connect(user="IBS", password= "IBS140", host="10.0.0.107",port=1521, service_name="ISOTEST")
 cursor = connection.cursor()
-for row in cursor.execute("select m.musteri_id,m.unvan from MUSTERI m WHERE m.unvan like 'BAHÇIV%' "):
+for row in cursor.execute("select m.musteri_id,m.unvan from MUSTERI m WHERE m.unvan like 'BAHk ÇIV%' "):
     print(row)
 # Create a table
 

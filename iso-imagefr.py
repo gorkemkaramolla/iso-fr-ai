@@ -1,3 +1,4 @@
+import time
 import cv2
 import argparse
 from ultralytics import YOLO
@@ -20,10 +21,17 @@ def main():
     # Load YOLO model
     model = YOLO("yolov8n-face.pt", verbose=False)
     
-    # Load known face encoding and name
-    known_image = face_recognition.load_image_file("./face-images/GörkemKaramolla.jpg")
-    known_image_encoding = face_recognition.face_encodings(known_image)[0]
-    known_name = "Görkem Karamolla"  # Name of the known person
+ # Load known face encodings and names
+    known_images = []
+    known_encodings = []
+    known_names = []
+    known_images_folder = "./face-images/"
+    for filename in os.listdir(known_images_folder):
+        if filename.endswith(".jpg") or filename.endswith(".jpeg"):
+            image_path = os.path.join(known_images_folder, filename)
+            known_images.append(face_recognition.load_image_file(image_path))
+            known_encodings.append(face_recognition.face_encodings(known_images[-1])[0])
+            known_names.append(os.path.splitext(filename)[0])
 
     box_annotator = sv.BoxAnnotator(
         thickness=2,
@@ -59,18 +67,22 @@ def main():
                 # Compute face encoding
                 unknown_face_encoding = face_recognition.face_encodings(resized_face)
                 
-                # Compare with known encoding
+                # Compare with known encodings
                 if unknown_face_encoding:
                     unknown_face_encoding = np.array(unknown_face_encoding[0])
-                    results = face_recognition.compare_faces([known_image_encoding], unknown_face_encoding)
-                    if results[0]:
-                        # If known person is recognized, display known name in green color
-                        cv2.putText(frame, known_name, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                    else:
+                    recognized = False
+                    for i, known_encoding in enumerate(known_encodings):
+                        results = face_recognition.compare_faces([known_encoding], unknown_face_encoding)
+                        if results[0]:
+                            # If known person is recognized, display known name in green color
+                            cv2.putText(frame, known_names[i], (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+                            recognized = True
+                            break
+                    if not recognized:
                         # If unknown person, display "Unknown" in red color
-                        cv2.putText(frame, "Unknown", (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                        cv2.putText(frame, "Unknown", (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
                 else:
-                    print("No face detected in the given image.")
+                    print("No face detected in the given image." + time.strftime("%Y-%m-%d %H:%M:%S:%f", time.localtime()))
         
         # Annotate boxes on the frame
         frame = box_annotator.annotate(scene=frame, detections=detections, labels=labels)

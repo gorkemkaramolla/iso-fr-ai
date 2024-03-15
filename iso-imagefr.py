@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 import os
 import face_recognition
-
+from datetime import datetime
 def parse_arguments()-> argparse.Namespace:
     parser = argparse.ArgumentParser(description="YOLOv8")
     parser.add_argument("--webcam-resolution",nargs=2,default=[1280,720],type=int)
@@ -75,14 +75,28 @@ def main():
                         results = face_recognition.compare_faces([known_encoding], unknown_face_encoding)
                         if results[0]:
                             # If known person is recognized, display known name in green color
-                            cv2.putText(frame, known_names[i], (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+                            # Define background color
+                            bg_color = (20, 20, 20)
+
+                            # Compute the size of the text
+                            text_size = cv2.getTextSize(known_names[i], cv2.FONT_HERSHEY_SIMPLEX, 1.5, 2)[0]
+
+                            # Draw filled rectangle as background
+                            cv2.rectangle(frame, (x1, y2 + 20 - text_size[1]), (x1 + text_size[0], y2 + 20), bg_color, -1)
+
+                            # Draw text on top of the background
+                            cv2.putText(frame, known_names[i], (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
                             recognized = True
                             break
-                    if not recognized:
+                    # if not recognized:
                         # If unknown person, display "Unknown" in red color
-                        cv2.putText(frame, "Unknown", (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                        
                 else:
-                    print("No face detected in the given image." + time.strftime("%Y-%m-%d %H:%M:%S:%f", time.localtime()))
+                    cv2.putText(frame, "Unknown", (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 255), 2)
+                    # curr_time = datetime.now()
+                    # formatted_time = curr_time.strftime('%H:%M:%S.%f')
+                    # print(formatted_time)
+                    # print("Face detected in the given image.")
         
         # Annotate boxes on the frame
         frame = box_annotator.annotate(scene=frame, detections=detections, labels=labels)

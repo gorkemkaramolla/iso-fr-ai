@@ -21,7 +21,7 @@ for image_file, name in image_files.items():
 face_locations = []
 face_encodings = []
 face_names = []
-
+#dlib
 # Load the Haar cascade xml file for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 

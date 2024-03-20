@@ -17,7 +17,8 @@ def main():
     args = parse_arguments()
     frame_width, frame_height = args.webcam_resolution
     cap = cv2.VideoCapture(0)
-    # cap = cv2.VideoCapture('./videos/youtuber.mp4')
+    # cap = cv2.VideoCapture('./videos/chris.mp4')
+    
 
     
     # Load YOLO model

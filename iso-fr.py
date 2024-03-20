@@ -1,6 +1,6 @@
 import cv2
 import face_recognition
-
+import numpy as np
 # Dictionary of image files and names
 image_files = {"GörkemKaramolla.jpg": "Görkem Karamolla", "FatihYavuz.jpg": "Fatih Yavuz", "FuatAltun.jpg": "Fuat Altun"}
 
@@ -54,10 +54,22 @@ while True:
         if len(face_encoding) > 0:  # If a face is detected in the region of interest
             face_encodings.append(face_encoding[0])
             matches = face_recognition.compare_faces(known_face_encodings, face_encoding[0])
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding[0])
+
             name = "Unknown"
+            confidence = 0  # Default confidence when no match is found
             if True in matches:
-                first_match_index = matches.index(True)
-                name = known_face_names[first_match_index]
+                # Find the closest match index
+                best_match_index = np.argmin(face_distances)
+                if matches[best_match_index]:
+                    name = known_face_names[best_match_index]
+                    
+                    # Convert distance to confidence score
+                    # This example simply inverts the distance. You may need to adjust this calculation.
+                    confidence = 1 - face_distances[best_match_index]
+                    
+                    # Append '(confidence%)' to the name to display it
+                    name += f' ({confidence:.2%})'
             face_names.append(name)
 
     # Display the results

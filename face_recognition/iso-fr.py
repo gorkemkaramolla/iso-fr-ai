@@ -2,7 +2,7 @@ import cv2
 import face_recognition
 import numpy as np
 # Dictionary of image files and names
-image_files = {"GörkemKaramolla.jpg": "Görkem Karamolla", "FatihYavuz.jpg": "Fatih Yavuz", "FuatAltun.jpg": "Fuat Altun"}
+image_files = {"GorkemKaramolla.jpg": "Görkem Karamolla", "FatihYavuz.jpg": "Fatih Yavuz", "FuatAltun.jpg": "Fuat Altun"}
 
 # Lists to store the known face encodings and names
 known_face_encodings = []

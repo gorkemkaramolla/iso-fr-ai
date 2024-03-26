@@ -100,3 +100,5 @@ def main(image_folder):
 
 if __name__ == '__main__':
     main('../face-images/')
+    
+

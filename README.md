@@ -52,6 +52,29 @@ Install the required Python dependencies:
 pip install -r requirements.txt
 ```
 
+## Downloading the Model
+
+For detailed instructions on how to download models from Insightface, please [follow this link](https://github.com/deepinsight/insightface/tree/master/python-package).
+
+You can automatically download the `buffalo_l` model (which is the default model) by executing the provided script.
+
+```
+import cv2
+import numpy as np
+import insightface
+from insightface.app import FaceAnalysis
+from insightface.data import get_image as ins_get_image
+
+app = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+```
+
+### To use the buffalo_l model, replace the model names in the code with the following:
+
+```
+detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
+model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
+```
+
 ## **Running the Local Version**
 
 To run the facial recognition locally using **`insightface`**:
@@ -102,3 +125,11 @@ npm install
 npm run dev
 ```
 
+## Running the Application
+
+The application can be accessed in two ways:
+
+1. Through your web browser at `http://localhost:3000`
+2. Inside the Electron application
+
+The Python stream feed is available at `http://localhost:5002/video_feed`.

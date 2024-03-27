@@ -1,13 +1,18 @@
 import cv2
 import os
-import os.path as osp
+import torch
 import numpy as np
 import onnxruntime
+from PIL import Image
+import os.path as osp
 from scrfd import SCRFD
 from arcface_onnx import ArcFaceONNX
+from transformers import AutoModelForImageClassification, AutoImageProcessor
 
+id_to_label = {0: 'sad', 1: 'disgust', 2: 'angry', 3: 'neutral', 4: 'fear', 5: 'surprise', 6: 'happy'}
 
-# Assume SCRFD and ArcFaceONNX class definitions are included here
+processor = AutoImageProcessor.from_pretrained("dima806/facial_emotions_image_detection")
+model = AutoModelForImageClassification.from_pretrained("dima806/facial_emotions_image_detection")
 
 onnxruntime.set_default_logger_severity(3)
 
@@ -18,10 +23,12 @@ model_path = os.path.join(assets_dir, 'w600k_mbf.onnx')
 rec = ArcFaceONNX(model_path)
 rec.prepare(0)
 
+SIMILARITY_THRESHOLD = 0.4  # Set this to your preferred threshold
+
 def create_face_database(model, face_detector, image_folder):
     database = {}
     for filename in os.listdir(image_folder):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
+        if filename.endswith((".jpg", ".png")):
             name = osp.splitext(filename)[0]
             image_path = osp.join(image_folder, filename)
             image = cv2.imread(image_path)
@@ -32,64 +39,55 @@ def create_face_database(model, face_detector, image_folder):
                 database[name] = embedding
     return database
 
-def find_best_match(database, embedding):
-    min_dist = float('inf')
-    best_match = None
-    for name, db_embedding in database.items():
-        dist = np.linalg.norm(db_embedding - embedding)
-        if dist < min_dist:
-            min_dist = dist
-            best_match = name
-    return best_match
-
-SIMILARITY_THRESHOLD = 0.4  # Set this to your preferred threshold
-
 def func(image, database):
-    bboxes, kpss = detector.autodetect(image, max_num=0)  # Detect all faces in the image
+    bboxes, kpss = detector.autodetect(image, max_num=0)
     labels = []
-    sims = []  # To store similarity scores for each detected face
+    sims = []
+    embeddings = []
     for kps in kpss:
-        embedding = rec.get(image, kps)  # Get embedding for the detected face
+        embedding = rec.get(image, kps)
+        embeddings.append(embedding)
+    for embedding in embeddings:
+        min_dist = float('inf')
         best_match = None
-        max_sim = -1  # Initialize with a value lower than possible similarity
         for name, db_embedding in database.items():
-            sim = rec.compute_sim(embedding, db_embedding)  # Compute similarity
-            if sim > max_sim:
-                max_sim = sim
-                best_match = name if sim >= SIMILARITY_THRESHOLD else "Unknown"  # Check threshold
-        labels.append(best_match if best_match else "Unknown")
-        sims.append(max_sim)  # Store the highest similarity score for this face
-    return bboxes, labels, sims  # Return bounding boxes, labels, and similarity scores
+            dist = np.linalg.norm(db_embedding - embedding)
+            if dist < min_dist:
+                min_dist = dist
+                best_match = name
+        sim = rec.compute_sim(embedding, database[best_match])
+        labels.append(best_match if sim >= SIMILARITY_THRESHOLD else "Unknown")
+        sims.append(sim)
+    return bboxes, labels, sims
 
-def draw_bounding_boxes(image, bboxes, labels):
-    for bbox, label in zip(bboxes, labels):
-        x1, y1, x2, y2 = map(int, bbox[:4])
-        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-    return image
 def main(image_folder):
     database = create_face_database(rec, detector, image_folder)
     cap = cv2.VideoCapture(0)
 
-    SIMILARITY_THRESHOLD = 0.4  # Adjust this threshold as needed
-
     while True:
         ret, frame = cap.read()
-        bboxes, labels, sims = func(frame, database)  # Detect faces and get labels and similarity scores
+        bboxes, labels, sims = func(frame, database)
         for bbox, label, sim in zip(bboxes, labels, sims):
             x1, y1, x2, y2 = map(int, bbox[:4])
-            # Draw bounding box for every face
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            
-            # Label the bounding box
+            face = frame[y1:y2, x1:x2]
+            if face.size == 0:
+                continue
+            color_converted = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(color_converted)
+            inputs = processor(images=pil_image, return_tensors="pt")
+            outputs = model(**inputs)
+            probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
+            top_prob, top_class_id = probabilities.topk(1, dim=-1)
+            predicted_label = id_to_label[top_class_id.item()]
+            predicted_probability = top_prob.item()
             if sim < SIMILARITY_THRESHOLD or label == "Unknown":
-                # Label as "Unknown" if below threshold or already labeled as "Unknown"
-                cv2.putText(frame, "Unknown", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+                label_with_sim = f"Unknown ({predicted_label}: {predicted_probability:.2%})"
+                cv2.putText(frame, label_with_sim, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             else:
-                # Otherwise, label with the best match name and similarity score
-                label_with_sim = f"{label} ({sim:.2f})"
-                cv2.putText(frame, label_with_sim, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-        
+                label_with_sim = f"{label} ({sim:.2f}, {predicted_label}: {predicted_probability:.2%})"
+                cv2.putText(frame, label_with_sim, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+
         cv2.imshow('frame', frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -100,5 +98,3 @@ def main(image_folder):
 
 if __name__ == '__main__':
     main('../face-images/')
-    
-

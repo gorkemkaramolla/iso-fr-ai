@@ -11,7 +11,6 @@ Before you begin, ensure you have Git, Python, and Node.js installed on your mac
 Clone the repository to your local machine:
 
 ```
-shCopy code
 git clone https://github.com/gorkemkaramolla/iso-fr-ai.git
 
 ```
@@ -19,7 +18,6 @@ git clone https://github.com/gorkemkaramolla/iso-fr-ai.git
 Navigate into the cloned directory:
 
 ```
-shCopy code
 cd iso-fr-ai
 
 ```
@@ -27,7 +25,6 @@ cd iso-fr-ai
 Create a Python virtual environment in the directory:
 
 ```
-shCopy code
 python -m venv .
 
 ```
@@ -39,7 +36,6 @@ python -m venv .
 Activate the virtual environment:
 
 ```
-shCopy code
 source bin/activate
 
 ```
@@ -59,7 +55,6 @@ cmdCopy code
 Install the required Python dependencies:
 
 ```
-shCopy code
 pip install -r requirements.txt
 
 ```
@@ -71,7 +66,6 @@ To run the facial recognition locally using **`insightface`**:
 1. Navigate to the **`insightface`** directory:
 
 ```
-shCopy code
 cd insightface
 
 ```
@@ -79,7 +73,6 @@ cd insightface
 1. Execute the main script:
 
 ```
-shCopy code
 python main.py
 
 ```
@@ -91,7 +84,6 @@ To run the facial recognition with an Electron front end:
 1. Open a separate terminal and navigate to the **`insightface`** directory:
 
 ```
-shCopy code
 cd iso-fr-ai/insightface
 
 ```
@@ -99,7 +91,6 @@ cd iso-fr-ai/insightface
 1. Start the stream server:
 
 ```
-shCopy code
 python stream.py
 
 ```
@@ -107,7 +98,6 @@ python stream.py
 1. Open another terminal, navigate to the **`iso-electron`** directory:
 
 ```
-shCopy code
 cd iso-fr-ai/iso-electron
 
 ```
@@ -115,7 +105,6 @@ cd iso-fr-ai/iso-electron
 1. Install the Electron dependencies:
 
 ```
-shCopy code
 npm install
 
 ```
@@ -123,7 +112,6 @@ npm install
 1. Run the Electron application:
 
 ```
-shCopy code
 npm run dev
 
 ```

@@ -17,9 +17,7 @@ export default function RootLayout({
   return (
     <html lang='en'>
       <body className={inter.className + ' flex items-center justify-center'}>
-        <div className='md:block hidden md:w-3/12 bg-slate-900'></div>
         <div className='w-full md:w-6/12'>{children}</div>
-        <div className='md:block hidden  md:w-3/12 bg-slate-900'></div>
       </body>
     </html>
   );

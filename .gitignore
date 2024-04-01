@@ -13,7 +13,4 @@ pip-selfcheck.json
 /iso-data
 
 /insightface/__pycache__
-cert
-cert2
-/insightface/certificates
-/insightface/cert
+

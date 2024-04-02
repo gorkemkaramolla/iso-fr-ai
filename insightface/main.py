@@ -8,18 +8,19 @@ import os.path as osp
 from scrfd import SCRFD
 from arcface_onnx import ArcFaceONNX
 from transformers import AutoModelForImageClassification, AutoImageProcessor
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 id_to_label = {0: 'sad', 1: 'disgust', 2: 'angry', 3: 'neutral', 4: 'fear', 5: 'surprise', 6: 'happy'}
 
 processor = AutoImageProcessor.from_pretrained("dima806/facial_emotions_image_detection")
-model = AutoModelForImageClassification.from_pretrained("dima806/facial_emotions_image_detection")
+model = AutoModelForImageClassification.from_pretrained("dima806/facial_emotions_image_detection").to(device)
 
 onnxruntime.set_default_logger_severity(3)
 
-assets_dir = osp.expanduser('~/.insightface/models/buffalo_sc')
-detector = SCRFD(os.path.join(assets_dir, 'det_500m.onnx'))
+assets_dir = osp.expanduser('~/.insightface/models/buffalo_l')
+detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
 detector.prepare(0)
-model_path = os.path.join(assets_dir, 'w600k_mbf.onnx')
+model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
 rec = ArcFaceONNX(model_path)
 rec.prepare(0)
 

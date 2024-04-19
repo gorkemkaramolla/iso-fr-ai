@@ -11,8 +11,9 @@ from transformers import AutoModelForImageClassification, AutoImageProcessor
 
 id_to_label = {0: 'sad', 1: 'disgust', 2: 'angry', 3: 'neutral', 4: 'fear', 5: 'surprise', 6: 'happy'}
 
-processor = AutoImageProcessor.from_pretrained("dima806/facial_emotions_image_detection")
-model = AutoModelForImageClassification.from_pretrained("dima806/facial_emotions_image_detection")
+processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
+model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
+
 
 onnxruntime.set_default_logger_severity(3)
 

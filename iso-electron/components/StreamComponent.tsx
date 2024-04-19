@@ -7,7 +7,7 @@ import { Column } from 'primereact/column';
 // If your server's URL is different, change it here
 
 // Change the URL to your server's URL and specify CORS options
-const socket = io('https://10.15.95.233:5000', {
+const socket = io('https://10.15.95.232:5003', {
   // withCredentials: true, // If your server requires credentials
   extraHeaders: {
     'my-custom-header': 'abcd', // If you need to pass custom headers
@@ -58,15 +58,32 @@ const WebcamStreamCapture: React.FC = () => {
 
           const sendFrame = () => {
             if (videoRef.current) {
+              // send frame every 200ms
               const frame = captureVideoFrame({
                 video: videoRef.current,
                 width: videoRef.current.videoWidth,
                 height: videoRef.current.videoHeight,
               });
-              socket.emit('frame', frame);
+
+              // Create a new image from the frame data URL
+              const image = new Image();
+              image.onload = () => {
+                // Create a canvas and draw the frame onto it at a smaller size
+                const canvas = document.createElement('canvas');
+                canvas.width = videoRef?.current?.videoWidth!;
+                canvas.height = videoRef?.current?.videoHeight!;
+                const context = canvas.getContext('2d');
+                if (context) {
+                  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                }
+
+                // Capture the frame from the canvas
+                const smallFrame = canvas.toDataURL('image/jpeg');
+                socket.emit('frame', smallFrame);
+              };
+              image.src = frame;
             }
           };
-
           // Send frames every 100 ms (adjust interval as needed)
           const intervalId = setInterval(sendFrame, 100);
 
@@ -84,6 +101,7 @@ const WebcamStreamCapture: React.FC = () => {
     socket.on('webrtc', (data: FaceData[]) => {
       // Update the state with the received processed data
       setFaceData(data);
+      console.log(data);
     });
 
     // Clean up the event listener when the component unmounts

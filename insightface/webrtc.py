@@ -26,10 +26,8 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
-CORS(app,  origins=["ws://localhost:3000", "wss://localhost:3000",
-                    "http://localhost:3000", "https://localhost:3000", 
-                    "https://10.15.95.233:3000", "https://10.15.95.232:3000", 
-                    "wss://10.15.95.233:3000", "wss://10.15.95.232:3000"])
+CORS(app,  origins=["*"])
+                    
 
 onnxruntime.set_default_logger_severity(3)
 
@@ -100,6 +98,7 @@ def detect_emotion(image):
 
 
 # Move image decoding outside the frame handler function
+
 def decode_image(encoded_image):
     header, encoded = encoded_image.split(",", 1)
     image_data = base64.b64decode(encoded)
@@ -115,8 +114,8 @@ def home():
 
 @socketio.on('frame')
 def handle_frame(data):
+    print(len(data),"kb")
     global frame_counter
-    
     # Increment the frame counter
     frame_counter += 1
     
@@ -155,17 +154,17 @@ def handle_frame(data):
             'similarity': float(sim),
             'emotion': emotion_label,
             'emotion_probability': float(emotion_probability),
-            'bounding_box': bbox
-        } for label, sim, emotion_label, emotion_probability, bbox in zip(labels, sims, emotion_labels, emotion_probabilities, bounding_boxes)])
+            'bboxes' :[bbox.tolist() for bbox in bboxes]
+        } for label, sim in zip(labels, sims)])
 
 if __name__ == '__main__':
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-    key_path = os.path.expanduser('./cert/localhost/localhost.decrypted.key')  # Adjust if your certificate is in a different location
-    cert_path = os.path.expanduser('./cert/localhost/localhost.crt')   # Adjust if your key is in a different location
+    key_path = os.path.expanduser('../cert/localhost/localhost.decrypted.key')  
+    cert_path = os.path.expanduser('../cert/localhost/localhost.crt')  
 
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(cert_path, key_path)
-    eventlet.wsgi.server(eventlet.wrap_ssl(eventlet.listen(('10.15.95.233', 5000)),
+    eventlet.wsgi.server(eventlet.wrap_ssl(eventlet.listen(('10.15.95.232', 5003)),
                        certfile=cert_path,
                        keyfile=key_path,
                        server_side=True), app)

@@ -52,18 +52,8 @@ def create_face_database(model, face_detector, image_folder):
                 database[name] = embedding
     return database
 
-id_to_label = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
-
 database = create_face_database(rec, detector, '../face-images/')
-
-
-# processor = AutoImageProcessor.from_pretrained("dima806/facial_emotions_image_detection")
-# emotion_model = AutoModelForImageClassification.from_pretrained("dima806/facial_emotions_image_detection")
-processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
-
 SIMILARITY_THRESHOLD = 0.4  # Set this to your preferred threshold
-
 def func(image, database):
     bboxes, kpss = detector.autodetect(image, max_num=0)
     labels = []
@@ -85,16 +75,6 @@ def func(image, database):
         sims.append(sim)
     return bboxes, labels, sims
 
-def detect_emotion(image):
-    color_converted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    pil_image = Image.fromarray(color_converted)
-    inputs = processor(images=pil_image, return_tensors="pt")
-    outputs = emotion_model(**inputs)
-    probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
-    top_prob, top_class_id = probabilities.topk(1, dim=-1)
-    predicted_label = id_to_label[top_class_id.item()]
-    predicted_probability = top_prob.item()
-    return predicted_label, predicted_probability
 
 
 # Move image decoding outside the frame handler function
@@ -114,7 +94,6 @@ def home():
 
 @socketio.on('frame')
 def handle_frame(data):
-    print(len(data),"kb")
     global frame_counter
     # Increment the frame counter
     frame_counter += 1
@@ -130,9 +109,6 @@ def handle_frame(data):
         # Process the frame
         bboxes, labels, sims = func(image, database)
 
-        # Extract emotions and bounding boxes
-        emotion_labels = []
-        emotion_probabilities = []
         bounding_boxes = []
 
         # Emit processed data
@@ -141,19 +117,12 @@ def handle_frame(data):
             face = image[y1:y2, x1:x2]
             if face.size == 0:
                 continue
-            emotion_label, emotion_probability = detect_emotion(face)  # Your emotion detection function
-            
             # Append data to lists
             bounding_boxes.append([x1, y1, x2, y2])
-            emotion_labels.append(emotion_label)
-            emotion_probabilities.append(float(emotion_probability))
-
         # Example: Emitting back processed data. Adapt according to your needs.
         socketio.emit('webrtc', [{
             'label': label,
             'similarity': float(sim),
-            'emotion': emotion_label,
-            'emotion_probability': float(emotion_probability),
             'bboxes' :[bbox.tolist() for bbox in bboxes]
         } for label, sim in zip(labels, sims)])
 

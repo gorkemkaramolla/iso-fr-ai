@@ -1,54 +1,37 @@
-const { app, BrowserWindow } = require('electron');
-const serve = require('electron-serve');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process'); // Import the spawn function
 
-const appServe = app.isPackaged
-  ? serve({
-      directory: path.join(__dirname, '../out'),
-    })
-  : null;
-
-const createWindow = () => {
-  const win = new BrowserWindow({
+app.on('ready', () => {
+  let mainWindow = new BrowserWindow({
     fullscreen: true,
+    icon: path.join(__dirname, 'iso_logo_yazisiz.jpg'), // Add this line
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.js'), // Pointing to the preload script
+      contextIsolation: true, // Security feature
+      nodeIntegration: false, // Security feature
     },
   });
 
-  if (app.isPackaged) {
-    appServe(win).then(() => {
-      win.loadURL('app://-');
-    });
-  } else {
-    win.loadURL('http://localhost:3000');
-    win.webContents.openDevTools();
-    win.webContents.on('did-fail-load', (e, code, desc) => {
-      win.webContents.reloadIgnoringCache();
-    });
-  }
+  mainWindow.loadURL('http://localhost:3000');
 
-  // Start the Python script when the window is created
-  const pythonProcess = spawn('python', [
-    path.join(__dirname, 'python/camera.py'),
-  ]);
+  const { shell, ipcMain } = require('electron');
+  const { exec } = require('child_process');
 
-  pythonProcess.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`); // Log Python script output
+  ipcMain.on('open-url', (event, url) => {
+    let command;
+    switch (process.platform) {
+      case 'darwin':
+        command = `open -a "Google Chrome" ${url}`;
+        break;
+      case 'win32':
+        command = `"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe" --app=${url}`;
+        break;
+      default:
+        command = `google-chrome ${url}`;
+        break;
+    }
+    exec(command);
   });
-
-  pythonProcess.stderr.on('data', (data) => {
-    console.error(`stderr: ${data}`); // Log Python script errors
-  });
-
-  pythonProcess.on('close', (code) => {
-    console.log(`child process exited with code ${code}`); // Log Python script exit code
-  });
-};
-
-app.on('ready', () => {
-  createWindow();
 });
 
 app.on('window-all-closed', () => {

@@ -26,10 +26,8 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
-CORS(app,  origins=["ws://localhost:3000", "wss://localhost:3000",
-                    "http://localhost:3000", "https://localhost:3000", 
-                    "https://10.15.95.233:3000", "https://10.15.95.232:3000", 
-                    "wss://10.15.95.233:3000", "wss://10.15.95.232:3000"])
+CORS(app,  origins=["*"])
+                    
 
 onnxruntime.set_default_logger_severity(3)
 
@@ -54,18 +52,8 @@ def create_face_database(model, face_detector, image_folder):
                 database[name] = embedding
     return database
 
-id_to_label = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
-
 database = create_face_database(rec, detector, '../face-images/')
-
-
-# processor = AutoImageProcessor.from_pretrained("dima806/facial_emotions_image_detection")
-# emotion_model = AutoModelForImageClassification.from_pretrained("dima806/facial_emotions_image_detection")
-processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
-
 SIMILARITY_THRESHOLD = 0.4  # Set this to your preferred threshold
-
 def func(image, database):
     bboxes, kpss = detector.autodetect(image, max_num=0)
     labels = []
@@ -87,19 +75,10 @@ def func(image, database):
         sims.append(sim)
     return bboxes, labels, sims
 
-def detect_emotion(image):
-    color_converted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    pil_image = Image.fromarray(color_converted)
-    inputs = processor(images=pil_image, return_tensors="pt")
-    outputs = emotion_model(**inputs)
-    probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
-    top_prob, top_class_id = probabilities.topk(1, dim=-1)
-    predicted_label = id_to_label[top_class_id.item()]
-    predicted_probability = top_prob.item()
-    return predicted_label, predicted_probability
 
 
 # Move image decoding outside the frame handler function
+
 def decode_image(encoded_image):
     header, encoded = encoded_image.split(",", 1)
     image_data = base64.b64decode(encoded)
@@ -116,7 +95,6 @@ def home():
 @socketio.on('frame')
 def handle_frame(data):
     global frame_counter
-    
     # Increment the frame counter
     frame_counter += 1
     
@@ -131,9 +109,6 @@ def handle_frame(data):
         # Process the frame
         bboxes, labels, sims = func(image, database)
 
-        # Extract emotions and bounding boxes
-        emotion_labels = []
-        emotion_probabilities = []
         bounding_boxes = []
 
         # Emit processed data
@@ -142,30 +117,23 @@ def handle_frame(data):
             face = image[y1:y2, x1:x2]
             if face.size == 0:
                 continue
-            emotion_label, emotion_probability = detect_emotion(face)  # Your emotion detection function
-            
             # Append data to lists
             bounding_boxes.append([x1, y1, x2, y2])
-            emotion_labels.append(emotion_label)
-            emotion_probabilities.append(float(emotion_probability))
-
         # Example: Emitting back processed data. Adapt according to your needs.
         socketio.emit('webrtc', [{
             'label': label,
             'similarity': float(sim),
-            'emotion': emotion_label,
-            'emotion_probability': float(emotion_probability),
-            'bounding_box': bbox
-        } for label, sim, emotion_label, emotion_probability, bbox in zip(labels, sims, emotion_labels, emotion_probabilities, bounding_boxes)])
+            'bboxes' :[bbox.tolist() for bbox in bboxes]
+        } for label, sim in zip(labels, sims)])
 
 if __name__ == '__main__':
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-    key_path = os.path.expanduser('./cert/localhost/localhost.decrypted.key')  # Adjust if your certificate is in a different location
-    cert_path = os.path.expanduser('./cert/localhost/localhost.crt')   # Adjust if your key is in a different location
+    key_path = os.path.expanduser('../cert/localhost/localhost.decrypted.key')  
+    cert_path = os.path.expanduser('../cert/localhost/localhost.crt')  
 
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(cert_path, key_path)
-    eventlet.wsgi.server(eventlet.wrap_ssl(eventlet.listen(('10.15.95.233', 5000)),
+    eventlet.wsgi.server(eventlet.wrap_ssl(eventlet.listen(('10.15.95.232', 5003)),
                        certfile=cert_path,
                        keyfile=key_path,
                        server_side=True), app)

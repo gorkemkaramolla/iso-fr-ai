@@ -15,3 +15,6 @@ pip-selfcheck.json
 /insightface/__pycache__
 
 cert
+cert2
+.DS_Store
+share

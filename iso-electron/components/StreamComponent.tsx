@@ -7,20 +7,33 @@ import { Column } from 'primereact/column';
 // If your server's URL is different, change it here
 
 // Change the URL to your server's URL and specify CORS options
-const socket = io('https://10.15.95.233:5000', {
+const socket = io('https://10.15.95.232:5003', {
   // withCredentials: true, // If your server requires credentials
   extraHeaders: {
     'my-custom-header': 'abcd', // If you need to pass custom headers
   },
   transports: ['websocket'], // To avoid CORS issues related to HTTP long-polling
 });
-
+const emotionSocket = io('https://10.15.95.232:5001', {
+  // withCredentials: true, // If your server requires credentials
+  extraHeaders: {
+    'my-custom-header': 'abcd', // If you need to pass custom headers
+  },
+  transports: ['websocket'], // To avoid CORS issues related to HTTP long-polling
+});
 interface VideoFrameCaptureProps {
   video: HTMLVideoElement;
   width: number;
   height: number;
 }
 interface FaceData {
+  label: string;
+  similarity: number;
+  emotion: string;
+  emotion_probability: number;
+  bounding_box: number[];
+}
+interface EmotionData {
   label: string;
   similarity: number;
   emotion: string;
@@ -58,15 +71,33 @@ const WebcamStreamCapture: React.FC = () => {
 
           const sendFrame = () => {
             if (videoRef.current) {
+              // send frame every 200ms
               const frame = captureVideoFrame({
                 video: videoRef.current,
                 width: videoRef.current.videoWidth,
                 height: videoRef.current.videoHeight,
               });
-              socket.emit('frame', frame);
+
+              // Create a new image from the frame data URL
+              const image = new Image();
+              image.onload = () => {
+                // Create a canvas and draw the frame onto it at a smaller size
+                const canvas = document.createElement('canvas');
+                canvas.width = videoRef?.current?.videoWidth!;
+                canvas.height = videoRef?.current?.videoHeight!;
+                const context = canvas.getContext('2d');
+                if (context) {
+                  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                }
+
+                // Capture the frame from the canvas
+                const smallFrame = canvas.toDataURL('image/jpeg');
+                socket.emit('frame', smallFrame);
+                emotionSocket.emit('frame', smallFrame);
+              };
+              image.src = frame;
             }
           };
-
           // Send frames every 100 ms (adjust interval as needed)
           const intervalId = setInterval(sendFrame, 100);
 
@@ -78,6 +109,7 @@ const WebcamStreamCapture: React.FC = () => {
 
   // State to store the processed data
   const [faceData, setFaceData] = useState<FaceData[] | null>(null);
+  const [emotionData, setEmotionData] = useState<EmotionData[] | null>(null);
 
   useEffect(() => {
     // Listen for 'webrtc' events from the server
@@ -85,10 +117,13 @@ const WebcamStreamCapture: React.FC = () => {
       // Update the state with the received processed data
       setFaceData(data);
     });
+    emotionSocket.on('emotion', (data: any) => {
+      setEmotionData(data);
+    });
 
-    // Clean up the event listener when the component unmounts
     return () => {
       socket.off('webrtc');
+      emotionSocket.off('emotion');
     };
   }, []);
   const [isClient, setIsClient] = useState(false);
@@ -115,11 +150,9 @@ const WebcamStreamCapture: React.FC = () => {
           <DataTable value={faceData}>
             <Column field='label' header='Label' />
             <Column field='similarity' header='Similarity' />
-            <Column field='emotion' header='Emotion' />
-            <Column field='emotion_probability' header='Emotion Probability' />
-            <Column field='bounding_box' header='Bounding Box' />
           </DataTable>
         )}
+      <div>{JSON.stringify(emotionData)}</div>
     </div>
   );
 };

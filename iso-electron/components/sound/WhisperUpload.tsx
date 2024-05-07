@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, ChangeEvent } from 'react';
 import axios from 'axios';
+import { timeout } from 'd3';
 
 interface Segment {
   id: number;
@@ -42,7 +43,8 @@ function WhisperUpload() {
       const res = await axios.post<Transcript[]>(
         'http://127.0.0.1:5001/process-audio/',
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+
+        { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 0 }
       );
       setResponses(res.data);
     } catch (error: any) {

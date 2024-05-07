@@ -1,5 +1,5 @@
 'use client';
-import { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import axios from 'axios';
 
 interface Segment {
@@ -10,7 +10,7 @@ interface Segment {
   speaker: string;
 }
 
-interface TranscriptResponse {
+interface Transcript {
   text: string;
   segments: Segment[];
   language: string;
@@ -18,7 +18,7 @@ interface TranscriptResponse {
 
 function WhisperUpload() {
   const [file, setFile] = useState<File | null>(null);
-  const [response, setResponse] = useState<TranscriptResponse | null>(null);
+  const [responses, setResponses] = useState<Transcript[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
@@ -39,12 +39,12 @@ function WhisperUpload() {
     formData.append('file', file, file.name);
 
     try {
-      const res = await axios.post<TranscriptResponse>(
-        'http://127.0.0.1:8000/process-audio/',
+      const res = await axios.post<Transcript[]>(
+        'http://127.0.0.1:5001/process-audio/',
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
-      setResponse(res.data);
+      setResponses(res.data);
     } catch (error: any) {
       console.error('Error uploading file:', error);
       setError(
@@ -57,25 +57,32 @@ function WhisperUpload() {
   };
 
   return (
-    <div>
+    <div className='overflow-auto max-h-[80vh]'>
       <h1>Audio File Upload</h1>
       <input type='file' onChange={onFileChange} />
       <button onClick={onFileUpload} disabled={loading}>
         {loading ? 'Uploading...' : 'Upload!'}
       </button>
       {error && <div style={{ color: 'red' }}>{error}</div>}
-      {response && (
+      {responses.length > 0 ? (
         <div>
           <h2>Transcription Segments</h2>
-          <ul>
-            {response.segments.map((segment) => (
-              <li key={segment.id}>
-                {segment.speaker.toUpperCase()}: {segment.start.toFixed(2)}-
-                {segment.end.toFixed(2)} = {segment.text}
-              </li>
-            ))}
-          </ul>
+          {responses.map((response, index) => (
+            <div key={index}>
+              <h3>Language: {response.language}</h3>
+              <ul>
+                {response.segments.map((segment) => (
+                  <li key={segment.id}>
+                    {segment.speaker.toUpperCase()}: {segment.start.toFixed(2)}-
+                    {segment.end.toFixed(2)} = {segment.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
+      ) : (
+        <p>No segments to display.</p>
       )}
     </div>
   );

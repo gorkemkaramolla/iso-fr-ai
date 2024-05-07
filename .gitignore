@@ -13,7 +13,7 @@ pip-selfcheck.json
 /iso-data
 
 /insightface/__pycache__
-
+ignored-media
 cert
 cert2
 .DS_Store

@@ -9,7 +9,7 @@
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev \" \"electron .\"",
     "build": "next build && electron-builder",
     "start": "next start",
-    "test": "next dev --experimental-https --hostname 10.15.95.232",
+    "test": "next dev --experimental-https --hostname 10.15.95.233",
     "lint": "next lint"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "fs": "^0.0.1-security",
     "lucide-react": "^0.377.0",
     "next": "^14.1.4",
+    "openai": "^4.38.3",
     "primereact": "^10.5.3",
     "react": "^18",
     "react-dom": "^18",

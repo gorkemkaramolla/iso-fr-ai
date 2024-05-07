@@ -1,0 +1,102 @@
+{
+    "text": " Do\u011fru s\u00f6zler etsin, Kavdor Bey oldum i\u015fte. \u0130yi olsa ne diye k\u00f6t\u00fcl\u00fck soksun i\u00e7ime. \u00d6yle korkun\u00e7 \u015feyler geliyor ki akl\u0131ma t\u00fcylerimi r\u00fcperiyor. Y\u00fcre\u011fim yerinden f\u0131rlay\u0131p kaburga kemiklerine \u00e7arpacak neredeyse. Dostumuza bak\u0131n, dalm\u0131\u015f derinlere. Baht\u0131mda kral olmak arsa ben bile oynatmasam da korlar tac\u0131 ba\u015f\u0131ma. Yeni \u015ferefler, yeni urbalar gibi geldi. Bek be. Bu ne abi? Mahved. Bak \u00fcst\u00fcne oturmad\u0131lar hen\u00fcz. Girdiler otururlar.",
+    "segments": [
+        {
+            "id": 0,
+            "seek": 0,
+            "start": 0.0,
+            "end": 2.82,
+            "text": " Do\u011fru s\u00f6zler etsin, Kavdor Bey oldum i\u015fte.",
+            "speaker": "SPEAKER_02"
+        },
+        {
+            "id": 1,
+            "seek": 0,
+            "start": 2.82,
+            "end": 5.0,
+            "text": " \u0130yi olsa ne diye k\u00f6t\u00fcl\u00fck soksun i\u00e7ime.",
+            "speaker": "SPEAKER_02"
+        },
+        {
+            "id": 2,
+            "seek": 0,
+            "start": 5.0,
+            "end": 7.84,
+            "text": " \u00d6yle korkun\u00e7 \u015feyler geliyor ki akl\u0131ma t\u00fcylerimi r\u00fcperiyor.",
+            "speaker": "SPEAKER_02"
+        },
+        {
+            "id": 3,
+            "seek": 0,
+            "start": 7.84,
+            "end": 11.200000000000001,
+            "text": " Y\u00fcre\u011fim yerinden f\u0131rlay\u0131p kaburga kemiklerine \u00e7arpacak neredeyse.",
+            "speaker": "SPEAKER_02"
+        },
+        {
+            "id": 4,
+            "seek": 0,
+            "start": 12.0,
+            "end": 14.44,
+            "text": " Dostumuza bak\u0131n, dalm\u0131\u015f derinlere.",
+            "speaker": "SPEAKER_01"
+        },
+        {
+            "id": 5,
+            "seek": 0,
+            "start": 14.44,
+            "end": 19.400000000000002,
+            "text": " Baht\u0131mda kral olmak arsa ben bile oynatmasam da korlar tac\u0131 ba\u015f\u0131ma.",
+            "speaker": "SPEAKER_02"
+        },
+        {
+            "id": 6,
+            "seek": 0,
+            "start": 19.92,
+            "end": 25.36,
+            "text": " Yeni \u015ferefler, yeni urbalar gibi geldi.",
+            "speaker": "SPEAKER_01"
+        },
+        {
+            "id": 7,
+            "seek": 0,
+            "start": 25.36,
+            "end": 26.36,
+            "text": " Bek be.",
+            "speaker": "SPEAKER_01"
+        },
+        {
+            "id": 8,
+            "seek": 0,
+            "start": 26.36,
+            "end": 27.36,
+            "text": " Bu ne abi?",
+            "speaker": "SPEAKER_01"
+        },
+        {
+            "id": 9,
+            "seek": 0,
+            "start": 27.36,
+            "end": 28.36,
+            "text": " Mahved.",
+            "speaker": "SPEAKER_01"
+        },
+        {
+            "id": 10,
+            "seek": 2836,
+            "start": 28.36,
+            "end": 31.4,
+            "text": " Bak \u00fcst\u00fcne oturmad\u0131lar hen\u00fcz.",
+            "speaker": "SPEAKER_01"
+        },
+        {
+            "id": 11,
+            "seek": 2836,
+            "start": 31.4,
+            "end": 33.18,
+            "text": " Girdiler otururlar.",
+            "speaker": "SPEAKER_01"
+        }
+    ],
+    "language": "tr"
+}

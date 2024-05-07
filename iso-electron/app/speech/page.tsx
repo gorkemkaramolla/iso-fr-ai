@@ -6,7 +6,7 @@ interface Props {}
 
 const Speech: React.FC<Props> = () => {
   return (
-    <div>
+    <div className='w-screen '>
       <GoogleLive />
       <WhisperUpload />
     </div>

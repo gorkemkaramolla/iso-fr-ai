@@ -8,6 +8,7 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      colors: {},
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':
@@ -15,6 +16,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('daisyui')],
+  plugins: [require('@tailwindcss/typography'), require('daisyui')],
 };
 export default config;

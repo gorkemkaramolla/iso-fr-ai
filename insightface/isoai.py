@@ -19,7 +19,7 @@ onnxruntime.set_default_logger_severity(3)
 # ZeroMQ Context
 context = zmq.Context()
 footage_socket = context.socket(zmq.SUB)
-footage_socket.connect('tcp://10.15.95.233:5555')
+footage_socket.connect('rtsp://root:N143g144@192.168.100.152:554/axis-media/media.amp')
 footage_socket.setsockopt_string(zmq.SUBSCRIBE, str(''))
 
 # Initialize face and emotion recognition models
@@ -134,4 +134,4 @@ def index():
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    app.run( port=5000, threaded=True)
+    app.run( port=5002, threaded=True)

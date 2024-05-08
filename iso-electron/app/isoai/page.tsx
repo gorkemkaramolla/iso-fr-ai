@@ -20,7 +20,7 @@ interface VideoFrameCaptureProps {
   width: number;
   height: number;
 }
-const socket = io('https://10.15.95.233:5000', {
+const socket = io('https://10.15.95.233:5002', {
   extraHeaders: {
     'my-custom-header': 'abcd',
   },

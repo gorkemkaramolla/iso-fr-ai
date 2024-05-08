@@ -78,7 +78,6 @@ const GoogleLive: FC = () => {
   }, [isListening, recognition]);
   return (
     <div className='w-full h-full'>
-      {window.navigator.userAgent}
       {window.navigator.userAgent.includes('Electron') && (
         <a
           href='#'

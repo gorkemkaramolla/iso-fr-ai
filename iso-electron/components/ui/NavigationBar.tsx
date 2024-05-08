@@ -5,8 +5,8 @@ interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
   return (
-    <div className='navbar w-full justify-between  bg-base-100 flex '>
-      <div className='text-white navbar-start '>
+    <div className='navbar w-full border justify-between  bg-base-100 flex '>
+      <div className=' navbar-start '>
         <div className='dropdown'>
           <div tabIndex={0} role='button' className='btn btn-ghost btn-circle'>
             <svg
@@ -41,7 +41,7 @@ const NavigationBar: React.FC<Props> = () => {
         </div>
       </div>
       <div className='navbar-center'>
-        <Link href={'/'} className='btn btn-ghost text-xl'>
+        <Link href={'/'} className=' btn-md   text-xl'>
           <img src='iso_logo.jpg' alt='' className='w-full  h-full' />
         </Link>
       </div>

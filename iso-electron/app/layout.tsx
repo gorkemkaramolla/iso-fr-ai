@@ -17,7 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' className='w-screen overflow-x-hidden overflow-y-hidden'>
-      <body className={inter.className + ' flex justify-center'}>
+      <body
+        data-theme='light'
+        className={inter.className + 'light flex justify-center'}
+      >
         <div className='w-full h-screen'>
           <NavigationBar />
           {children}

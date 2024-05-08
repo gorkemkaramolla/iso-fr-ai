@@ -13,6 +13,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.13",
     "@techstark/opencv-js": "^4.9.0-release.3",
     "axios": "^1.6.8",
     "d3": "^7.9.0",
@@ -26,6 +27,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-hls-player": "^3.0.7",
+    "react-resizable": "^3.0.5",
     "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
@@ -33,6 +35,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/react-resizable": "^3.0.7",
     "autoprefixer": "^10.0.1",
     "concurrently": "^8.2.2",
     "daisyui": "^4.10.3",

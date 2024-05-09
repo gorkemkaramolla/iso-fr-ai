@@ -8,7 +8,7 @@ interface Props {}
 const Speech: React.FC<Props> = () => {
   return (
     <div className='w-screen '>
-      <Heading level={'h1'} text='Speech AI' />
+      <Heading level={'h1'} text='Speech' />
       <GoogleLive />
       <WhisperUpload />
     </div>

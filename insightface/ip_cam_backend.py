@@ -15,14 +15,22 @@ app = Flask(__name__)
 onnxruntime.set_default_logger_severity(3)
 
 # Initialize face recognition models
-assets_dir = os.path.expanduser('~/.insightface/models/buffalo_sc')
-detector = SCRFD(os.path.join(assets_dir, 'det_500m.onnx'))
+# assets_dir = os.path.expanduser('~/.insightface/models/buffalo_sc')
+# detector = SCRFD(os.path.join(assets_dir, 'det_500m.onnx'))
+# detector.prepare(-1)
+# model_path = os.path.join(assets_dir, 'w600k_mbf.onnx')
+# rec = ArcFaceONNX(model_path)
+# rec.prepare(-1)
+
+#Large model görkem
+assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
+detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
 detector.prepare(-1)
-model_path = os.path.join(assets_dir, 'w600k_mbf.onnx')
+model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
 rec = ArcFaceONNX(model_path)
 rec.prepare(-1)
-processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
+# processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
+# emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
 
 def create_face_database(model, face_detector, image_folder):
     database = {}
@@ -66,9 +74,10 @@ def recog_face(image, database):
 @app.route('/')
 def index():
     # Access the 'quality' parameter within the request context
-    quality = request.args.get('quality', 'Quality')
-    base_rtsp_url = 'rtsp://root:N143g144@192.168.100.152/axis-media/media.amp?'
-    rtsp_url = f"{base_rtsp_url}videocodec=h264&streamprofile={quality}"
+    # quality = request.args.get('quality', 'Quality')
+    # base_rtsp_url = 'rtsp://root:N143g144@192.168.100.152/axis-media/media.amp?'
+    # rtsp_url = f"{base_rtsp_url}videocodec=h264&streamprofile={quality}"
+    rtsp_url = f"http://root:N143g144@192.168.100.152/mjpg/video.mjpg?streamprofile=Quality"
 
     def generate():
         cap = cv2.VideoCapture(rtsp_url)
@@ -78,6 +87,7 @@ def index():
         while True:
             ret, frame = cap.read()
             if not ret:
+                
                 break
             bboxes, labels, sims = recog_face(frame, database)
             for bbox, label, sim in zip(bboxes, labels, sims):

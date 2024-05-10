@@ -24,6 +24,10 @@ const VideoStream = () => {
         <option value='High'>High</option>
         <option value={'Medium'}>Medium</option>
         <option value={'Low'}>Low</option>
+        <option value={'Quality'}>Quality</option>
+        <option value={'Balanced'}>Balanced</option>
+        <option value={'Bandwith'}>Bandwith</option>
+        <option value={'Mobile'}>Mobile</option>
       </select>
       <img className='w-full h-full' src={videoStreamUrl} alt='Video Stream' />
     </div>

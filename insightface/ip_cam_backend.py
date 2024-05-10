@@ -63,15 +63,42 @@ def recog_face(image, database):
         sims.append(sim)
     return bboxes, labels, sims
 
-@app.route('/')
-def index():
-    # Access the 'quality' parameter within the request context
-    quality = request.args.get('quality', 'Quality')
-    base_rtsp_url = 'rtsp://root:N143g144@192.168.100.152/axis-media/media.amp?'
-    rtsp_url = f"{base_rtsp_url}videocodec=h264&streamprofile={quality}"
+# @app.route('/')
+# def index():
+#     # Access the 'quality' parameter within the request context
+#     quality = request.args.get('quality', 'Quality')
+#     base_rtsp_url = 'rtsp://root:N143g144@192.168.100.152/axis-media/media.amp?'
+#     rtsp_url = f"{base_rtsp_url}videocodec=h264&streamprofile={quality}"
 
+    # def generate():
+    #     cap = cv2.VideoCapture(rtsp_url)
+    #     if not cap.isOpened():
+    #         print("Error opening RTSP stream")
+    #         return
+    #     while True:
+    #         ret, frame = cap.read()
+    #         if not ret:
+    #             break
+    #         bboxes, labels, sims = recog_face(frame, database)
+    #         for bbox, label, sim in zip(bboxes, labels, sims):
+    #             x1, y1, x2, y2 = map(int, bbox[:4])
+    #             face = frame[y1:y2, x1:x2]
+    #             if face.size == 0:
+    #                 continue
+    #             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+    #             text_label = f"{label} ({sim * 100:.2f}%)"
+    #             cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 1)
+    #         _, buffer = cv2.imencode('.jpg', frame)
+    #         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+    #     cap.release()
+#     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/stream1')
+def stream1():
+    camera = request.args.get('camera', "http://root:N143g144@192.168.100.152/mjpg/video.mjpg?streamprofile=Quality")
+   
     def generate():
-        cap = cv2.VideoCapture(rtsp_url)
+        cap = cv2.VideoCapture(camera)
         if not cap.isOpened():
             print("Error opening RTSP stream")
             return
@@ -85,12 +112,41 @@ def index():
                 face = frame[y1:y2, x1:x2]
                 if face.size == 0:
                     continue
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)
                 text_label = f"{label} ({sim * 100:.2f}%)"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 1)
+                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 4)
             _, buffer = cv2.imencode('.jpg', frame)
             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         cap.release()
+
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/stream2')
+def stream2():
+    camera = request.args.get('camera', "http://localhost:5555")
+
+    def generate():
+        cap = cv2.VideoCapture(camera)
+        if not cap.isOpened():
+            print("Error opening RTSP stream")
+            return
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            bboxes, labels, sims = recog_face(frame, database)
+            for bbox, label, sim in zip(bboxes, labels, sims):
+                x1, y1, x2, y2 = map(int, bbox[:4])
+                face = frame[y1:y2, x1:x2]
+                if face.size == 0:
+                    continue
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)
+                text_label = f"{label} ({sim * 100:.2f}%)"
+                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 4)
+            _, buffer = cv2.imencode('.jpg', frame)
+            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+        cap.release()
+
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':

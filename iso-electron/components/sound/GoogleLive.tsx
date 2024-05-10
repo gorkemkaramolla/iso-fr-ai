@@ -24,11 +24,49 @@ declare global {
 }
 
 const GoogleLive: FC = () => {
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
+  const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [recognition, setRecognition] = useState<ISpeechRecognition | null>(
     null
   );
+  const startRecording = () => {
+    if (!navigator.mediaDevices) {
+      alert('Media device not supported in this browser.');
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      const newMediaRecorder = new MediaRecorder(stream);
+      newMediaRecorder.ondataavailable = (event) => {
+        setRecordedAudio(event.data);
+      };
+      newMediaRecorder.start();
+      setMediaRecorder(newMediaRecorder);
+    });
+  };
 
+  const stopRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.onstop = () => {
+        const blob = new Blob([recordedAudio!], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'test.webm';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 100);
+      };
+      mediaRecorder.stop();
+      setMediaRecorder(null);
+    }
+  };
   const [transcripts, setTranscripts] = useState<
     { transcript: string; timestamp: string }[]
   >([]);
@@ -77,7 +115,7 @@ const GoogleLive: FC = () => {
     }
   }, [isListening, recognition]);
   return (
-    <div className='w-full h-full'>
+    <div className='h-auto w-1/2'>
       {window.navigator.userAgent.includes('Electron') && (
         <a
           href='#'
@@ -95,10 +133,7 @@ const GoogleLive: FC = () => {
           </span>
         </a>
       )}
-      <div className='max-h-[80vh] p-8  overflow-y-scroll container mx-auto bg-base-100 my-8'>
-        <button onClick={startListening}>
-          {isListening ? <MicOff /> : <Mic />}
-        </button>
+      <div className=' p-8  overflow-y-auto container mx-auto bg-base-100 my-8'>
         {/* <h2 className='text-2xl text-center'>
           <span className='relative flex h-full w-full'>
             <span className='animate-ping absolute inline-flex  h-24 w-1/4 rounded-full bg-gray-500 opacity-25'></span>
@@ -113,7 +148,34 @@ const GoogleLive: FC = () => {
             </button>
           )}
         </h2> */}
-        <ul>
+        <ul className=' overflow-y-auto bg-base-300 rounded py-2 min-h-64 max-h-[50vh] flex flex-col gap-2 px-2 transition-all'>
+          <div className='w-full flex justify-between items-center'>
+            {!transcripts.length && (
+              <div className='opacity-50'>
+                Mikrofona bas ve konuşmayı kaydet
+              </div>
+            )}
+            <button onClick={mediaRecorder ? stopRecording : startRecording}>
+              {mediaRecorder ? 'Stop Recording' : 'Start Recording'}
+            </button>
+            <button
+              className=' p-3  rounded-full outline-1 outline outline-black'
+              onClick={startListening}
+            >
+              {isListening ? (
+                <div className='flex gap-2'>
+                  <MicOff />
+                  Dinleniyor...
+                </div>
+              ) : (
+                <div className='flex gap-2 '>
+                  Dinlemeyi Başlat
+                  <Mic />
+                </div>
+              )}
+            </button>
+          </div>
+
           {transcripts
             .map((entry, index) => (
               <li key={index} className='flex gap-2'>

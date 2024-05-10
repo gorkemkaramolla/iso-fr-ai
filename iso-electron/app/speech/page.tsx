@@ -7,10 +7,12 @@ interface Props {}
 
 const Speech: React.FC<Props> = () => {
   return (
-    <div className='w-screen '>
-      <Heading level={'h1'} text='Speech' />
-      <GoogleLive />
-      <WhisperUpload />
+    <div className='w-screen flex flex-col justify-center   '>
+      <Heading level={'h1'} text='Ses Tanıma' />
+      <div className='flex h-auto  '>
+        <GoogleLive />
+        <WhisperUpload />
+      </div>
     </div>
   );
 };

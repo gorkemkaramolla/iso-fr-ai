@@ -59,9 +59,9 @@ function WhisperUpload() {
   };
 
   return (
-    <div className='overflow-auto max-h-[80vh] justify-end flex w-full'>
+    <div className=''>
       <div className='  p-8 rounded-xl'>
-        <h1>Audio File Upload</h1>
+        <h1 className='my-1 '>Dosya Yükle</h1>
         <input
           type='file'
           onChange={onFileChange}
@@ -69,30 +69,25 @@ function WhisperUpload() {
         />
 
         <button className='btn h-24 ' onClick={onFileUpload} disabled={loading}>
-          {loading ? 'Uploading...' : 'Upload!'}
+          {loading ? 'Dosya Yükleniyor...' : 'Dosya Yükle'}
         </button>
       </div>
       {error && <div style={{ color: 'red' }}>{error}</div>}
-      {responses.length > 0 ? (
-        <div>
-          <h2>Transcription Segments</h2>
-          {responses.map((response, index) => (
-            <div key={index}>
-              <h3>Language: {response.language}</h3>
-              <ul>
-                {response.segments.map((segment) => (
-                  <li key={segment.id}>
-                    {segment.speaker.toUpperCase()}: {segment.start.toFixed(2)}-
-                    {segment.end.toFixed(2)} = {segment.text}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No segments to display.</p>
-      )}
+      <div>
+        {responses.map((response, index) => (
+          <div key={index}>
+            <h3>Language: {response.language}</h3>
+            <ul>
+              {response.segments.map((segment) => (
+                <li key={segment.id}>
+                  {segment.speaker.toUpperCase()}: {segment.start.toFixed(2)}-
+                  {segment.end.toFixed(2)} = {segment.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

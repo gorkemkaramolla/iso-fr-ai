@@ -9,9 +9,7 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 /face-images
-
 /iso-data
-
 /insightface/__pycache__
 ignored-media
 cert
@@ -20,3 +18,7 @@ cert2
 share
 googleSP2T/temp
 output.wav
+temp
+.env
+googleSP2T/temp
+googleSP2T/results

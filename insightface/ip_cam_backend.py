@@ -15,14 +15,22 @@ app = Flask(__name__)
 onnxruntime.set_default_logger_severity(3)
 
 # Initialize face recognition models
-assets_dir = os.path.expanduser('~/.insightface/models/buffalo_sc')
-detector = SCRFD(os.path.join(assets_dir, 'det_500m.onnx'))
+# assets_dir = os.path.expanduser('~/.insightface/models/buffalo_sc')
+# detector = SCRFD(os.path.join(assets_dir, 'det_500m.onnx'))
+# detector.prepare(-1)
+# model_path = os.path.join(assets_dir, 'w600k_mbf.onnx')
+# rec = ArcFaceONNX(model_path)
+# rec.prepare(-1)
+
+#Large model görkem
+assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
+detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
 detector.prepare(-1)
-model_path = os.path.join(assets_dir, 'w600k_mbf.onnx')
+model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
 rec = ArcFaceONNX(model_path)
 rec.prepare(-1)
-processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
+# processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
+# emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
 
 def create_face_database(model, face_detector, image_folder):
     database = {}
@@ -105,6 +113,7 @@ def stream1():
         while True:
             ret, frame = cap.read()
             if not ret:
+                
                 break
             bboxes, labels, sims = recog_face(frame, database)
             for bbox, label, sim in zip(bboxes, labels, sims):

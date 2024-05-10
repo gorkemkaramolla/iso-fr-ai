@@ -59,12 +59,19 @@ function WhisperUpload() {
   };
 
   return (
-    <div className='overflow-auto max-h-[80vh]'>
-      <h1>Audio File Upload</h1>
-      <input type='file' onChange={onFileChange} />
-      <button onClick={onFileUpload} disabled={loading}>
-        {loading ? 'Uploading...' : 'Upload!'}
-      </button>
+    <div className='overflow-auto max-h-[80vh] justify-end flex w-full'>
+      <div className='  p-8 rounded-xl'>
+        <h1>Audio File Upload</h1>
+        <input
+          type='file'
+          onChange={onFileChange}
+          className='file-input h-24 file-input-bordered w-full max-w-xs'
+        />
+
+        <button className='btn h-24 ' onClick={onFileUpload} disabled={loading}>
+          {loading ? 'Uploading...' : 'Upload!'}
+        </button>
+      </div>
       {error && <div style={{ color: 'red' }}>{error}</div>}
       {responses.length > 0 ? (
         <div>

@@ -55,11 +55,11 @@ def process_audio():
             segment.pop('avg_logprob', None)
             segment.pop('compression_ratio', None)
             segment.pop('no_speech_prob', None)
-        with open('transcription.txt', 'w') as f:
+        with open('/results/transcription.txt', 'w') as f:
             f.write(json.dumps(transcription))
         return jsonify(transcription), 200
     except Exception as e:
-        with open('transcriptionErr.txt', 'w') as f:
+        with open('/results/transcriptionErr.txt', 'w') as f:
             f.write(json.dumps(transcription))
         return jsonify({'error': str(e)}), 500
 

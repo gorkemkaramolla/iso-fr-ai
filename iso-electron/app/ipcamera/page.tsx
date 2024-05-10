@@ -251,10 +251,6 @@ const VideoStream = () => {
                   {key}
                 </option>
               ))}
-              <option value={'Quality'}>Quality</option>
-              <option value={'Balanced'}>Balanced</option>
-              <option value={'Bandwith'}>Bandwith</option>
-              <option value={'Mobile'}>Mobile</option>
             </select>
             <button onClick={index === 1 ? togglePlay1 : togglePlay2}>
               {index === 1

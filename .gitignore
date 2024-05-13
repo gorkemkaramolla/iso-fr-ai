@@ -22,3 +22,5 @@ temp
 .env
 googleSP2T/temp
 googleSP2T/results
+poetry.lock
+__pycache__

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "iso-ai"
+name = "isoai"
 version = "0.1.0"
 description = "AI PROJECT FOR ISTANBUL CHAMBER OF INDUSTRY"
 authors = ["gorkemkaramolla <gorkem_karamolla@hotmail.com>"]
@@ -25,3 +25,6 @@ openai-whisper = {git = "https://github.com/openai/whisper.git"}
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+isoai = "isoai:main"

@@ -1,7 +1,7 @@
 'use client';
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import axios from 'axios';
-import { timeout } from 'd3';
+import io from 'socket.io-client';
 
 interface Segment {
   id: number;
@@ -17,16 +17,33 @@ interface Transcript {
   language: string;
 }
 
+interface ApiResponse {
+  id: string;
+  created_at: string;
+  transcription: Transcript;
+}
+
 function WhisperUpload() {
   const [file, setFile] = useState<File | null>(null);
-  const [responses, setResponses] = useState<Transcript[]>([]);
+  const [response, setResponse] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [progress, setProgress] = useState<number>(0);
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     setFile(event.target.files ? event.target.files[0] : null);
     setError('');
   };
+
+  useEffect(() => {
+    const socket = io('http://localhost:5001');
+    socket.on('progress', (data) => {
+      setProgress(data.progress);
+    });
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   const onFileUpload = async () => {
     if (!file) {
@@ -35,58 +52,69 @@ function WhisperUpload() {
     }
 
     setLoading(true);
+    setProgress(0);
     setError('');
     const formData = new FormData();
     formData.append('file', file, file.name);
 
     try {
-      const res = await axios.post<Transcript[]>(
-        'http://127.0.0.1:5001/process-audio/',
+      const res = await axios.post<ApiResponse>(
+        `http://localhost:5001/process-audio/`,
         formData,
-
-        { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 0 }
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       );
-      setResponses(res.data);
+      setResponse(res.data);
+      setLoading(false);
+      setProgress(100); // This ensures the progress bar completes if the server misses the last increment
+
+      // Store the response for future sessions or other component use
+      let responses = JSON.parse(localStorage.getItem('responses') || '[]');
+      responses.push(res.data);
+      localStorage.setItem('responses', JSON.stringify(responses));
     } catch (error: any) {
       console.error('Error uploading file:', error);
       setError(
         'Failed to upload file: ' +
           (error.response?.data?.message || error.message)
       );
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className=''>
-      <div className='  p-8 rounded-xl'>
-        <h1 className='my-1 '>Dosya Yükle</h1>
+    <div>
+      <div className='w-full my-0 absolute bottom-0 bg-gray-300 rounded-full'>
+        <div
+          className='h-2 bg-blue-500 transition-all duration-500 rounded-full'
+          style={{ width: `${progress}%` }}
+        ></div>
+      </div>
+      <div className='p-8 rounded-xl'>
+        <h1 className='my-1'>Upload File</h1>
         <input
           type='file'
           onChange={onFileChange}
           className='file-input h-24 file-input-bordered w-full max-w-xs'
+          accept='audio/*'
         />
-
-        <button className='btn h-24 ' onClick={onFileUpload} disabled={loading}>
-          {loading ? 'Dosya Yükleniyor...' : 'Dosya Yükle'}
+        <button className='btn h-24' onClick={onFileUpload} disabled={loading}>
+          {loading ? 'Uploading...' : 'Upload'}
         </button>
-      </div>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      <div>
-        {responses.map((response, index) => (
-          <div key={index}>
-            <h3>Language: {response.language}</h3>
+        {error && <div className='text-red-500'>{error}</div>}
+        {response && (
+          <div>
+            <h3>Processed at: {response.created_at}</h3>
+            <h3>Language: {response.transcription.language}</h3>
             <ul>
-              {response.segments.map((segment) => (
-                <li key={segment.id}>
-                  {segment.speaker.toUpperCase()}: {segment.start.toFixed(2)}-
-                  {segment.end.toFixed(2)} = {segment.text}
+              {response.transcription.segments.map((segment, index) => (
+                <li key={index}>
+                  {segment?.speaker?.toUpperCase()}: {segment.start.toFixed(2)}{' '}
+                  -{segment.end.toFixed(2)} = {segment.text}
                 </li>
               ))}
             </ul>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

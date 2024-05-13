@@ -1,20 +1,27 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 import whisper
 from werkzeug.utils import secure_filename
 from pyannote.audio import Pipeline
-from pyannote.core import Segment
-from pydub import AudioSegment
-from pyannote.audio.pipelines.utils.hook import ProgressHook
 import json
+import os
+from datetime import datetime
+import uuid  # Import UUID library
+from pyannote.audio.pipelines.utils.hook import ProgressHook
 app = Flask(__name__)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")  # Adjust CORS as needed
 
 pipeline = Pipeline.from_pretrained(
     "pyannote/speaker-diarization-3.1",
     use_auth_token="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")
 
 whisper_model = whisper.load_model("large", device="cpu")
+
+# Create directories if they do not exist
+os.makedirs("temp", exist_ok=True)
+os.makedirs("logs", exist_ok=True)
 
 @app.route("/process-audio/", methods=["POST"])
 def process_audio():
@@ -26,45 +33,65 @@ def process_audio():
         return jsonify({'error': 'No selected file'}), 400
     
     filename = secure_filename(file.filename)
-    file_path = f"temp/{filename}"  # Ensure this directory exists or handle file saving appropriately
+    file_path = f"temp/{filename}"
     file.save(file_path)
     
     try:
+        total_steps = 5
+        current_step = 0
+
+        # Emit initial progress update
+        socketio.emit('progress', {'progress': int((current_step / total_steps) * 100)})
+        current_step += 1
+
+        # Load audio
+        audio_data = whisper.load_audio(file_path)
+        socketio.emit('progress', {'progress': int((current_step / total_steps) * 100)})
+        current_step += 1
+
+        # diarization = pipeline(file_path,hook=ProgressHook())
         with ProgressHook() as hook:
             diarization = pipeline(file_path, hook=hook)
+        socketio.emit('progress', {'progress': int((current_step / total_steps) * 100)})
+        current_step += 1
+
+        # Processing segments
         segments = [{
             'start': round(turn.start, 2),
             'end': round(turn.end, 2),
             'speaker': speaker
         } for turn, _, speaker in sorted(diarization.itertracks(yield_label=True), key=lambda x: x[0].start)]
+        socketio.emit('progress', {'progress': int((current_step / total_steps) * 100)})
+        current_step += 1
 
-        print("whisper_started")
-        audio_data = whisper.load_audio(file_path)
+        # Transcription
         transcription = whisper.transcribe(whisper_model, audio_data, language="tr")
-        print("whisper ended")
-        for segment in transcription['segments']:
-            print("Segments part working")
-            for speaker_segment in segments:
-                if segment['start'] < speaker_segment['end'] and segment['end'] > speaker_segment['start']:
-                    segment['speaker'] = speaker_segment['speaker']
-                    break
+        socketio.emit('progress', {'progress': int((current_step / total_steps) * 100)})
+        current_step += 1
 
-        for segment in transcription['segments']:
-            segment.pop('tokens', None)
-            segment.pop('temperature', None)
-            segment.pop('avg_logprob', None)
-            segment.pop('compression_ratio', None)
-            segment.pop('no_speech_prob', None)
-        with open('/results/transcription.txt', 'w') as f:
+        # Save results and emit final progress
+        transcription_file = f"{filename}_transcription.txt"
+        with open(f"temp/{transcription_file}", 'w') as f:
             f.write(json.dumps(transcription))
-        return jsonify(transcription), 200
+        socketio.emit('progress', {'progress': 100})
+
+        # Create response data
+        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        unique_id = str(uuid.uuid4())
+        response_data = {
+            'id': unique_id,
+            'transcription': transcription,
+            'created_at': created_at
+        }
+        
+        return jsonify(response_data), 200
     except Exception as e:
-        with open('/results/transcriptionErr.txt', 'w') as f:
-            f.write(json.dumps(transcription))
+        socketio.emit('progress', {'progress': 0})
         return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    socketio.run(app, debug=True, port=5001)
+
 
 # from flask import Flask, request, jsonify
 # from flask_cors import CORS

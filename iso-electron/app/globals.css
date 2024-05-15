@@ -48,3 +48,19 @@ body {
 .listening {
   animation: listening 1s infinite;
 }
+/* styles.module.css */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.slow-animation {
+  animation: spin 2s linear infinite;
+}

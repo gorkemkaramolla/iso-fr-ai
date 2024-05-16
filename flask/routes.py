@@ -1,48 +1,48 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from flask_socketio import SocketIO, emit
-import whisper
+from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 from pyannote.audio import Pipeline
-import json
+import whisper
+from pydub import AudioSegment
 import os
 from datetime import datetime
-import uuid
-from pydub import AudioSegment
+import json
 import logging
-from dotenv import load_dotenv
-import oracledb
+from db import cursor, connection,LOB,ERROR
+from socketio_instance import socketio
+from logger import configure_logging
+from pyannote.audio.pipelines.utils.hook import ProgressHook
+hf_auth_token = os.getenv("HF_AUTH_TOKEN")
+# Determine which logging mode to use
+aggressive_mode = os.getenv("AGGRESSIVE_LOGGING", "False").lower() in ['true', '1', 't']
+logger = configure_logging(logging.DEBUG if aggressive_mode else logging.INFO, aggressive=aggressive_mode)
 
-load_dotenv()
-DB_USER = os.environ.get("DB_USER")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-DB_PORT = os.environ.get("DB_PORT")
-DB_SERVICE_NAME = os.environ.get("DB_SERVICE_NAME")
-DB_HOST = os.environ.get("DB_HOST")
 
-connection = oracledb.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT, service_name=DB_SERVICE_NAME)
-cursor = connection.cursor()
-
-app = Flask(__name__)
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+audio_bp = Blueprint('audio_bp', __name__)
 
 pipeline = Pipeline.from_pretrained(
     "pyannote/speaker-diarization-3.1",
-    use_auth_token=os.environ.get("HF_AUTH_TOKEN"))
-
+    use_auth_token=hf_auth_token
+)
 whisper_model = whisper.load_model("large", device="cpu")
 
-os.makedirs("temp", exist_ok=True)
-os.makedirs("logs", exist_ok=True)
+def emit_progress(progress):
+    socketio.emit('progress', {'progress': progress})
+    
+    
+@audio_bp.route("/process-audio/", methods=["GET"])
+def hello ():
+    return "Hello World"
 
-@app.route("/process-audio/", methods=["POST"])
+@audio_bp.route("/process-audio/", methods=["POST"])
 def process_audio():
+    logger.info("New transcription request received","aggresive")
     if 'file' not in request.files:
+        logger.error("No file part in request")
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
     if file.filename == '':
+        logger.error("No file selected")
         return jsonify({'error': 'No selected file'}), 400
     
     filename = secure_filename(file.filename)
@@ -57,15 +57,20 @@ def process_audio():
             original.export(wav_path, format='wav')
             file_path = wav_path
 
-        socketio.emit('progress', {'progress': 10})
+        emit_progress(10)
 
         # Load audio for transcription
         audio_data = whisper.load_audio(file_path)
-        socketio.emit('progress', {'progress': 30})
+        emit_progress(30)
 
         # Speaker Diarization
-        diarization = pipeline(file_path)
-        socketio.emit('progress', {'progress': 50})
+        # diarization = pipeline(file_path)
+        
+        
+        with ProgressHook() as hook:
+            diarization = pipeline(file_path, hook=hook)
+            
+        emit_progress(50)
 
         # Process segments with diarization data
         diarization_segments = [{
@@ -74,7 +79,7 @@ def process_audio():
             'speaker': speaker
         } for turn, _, speaker in sorted(diarization.itertracks(yield_label=True), key=lambda x: x[0].start)]
 
-        socketio.emit('progress', {'progress': 70})
+        emit_progress(70)
 
         # Transcription
         transcription = whisper.transcribe(whisper_model, audio_data, language="tr")
@@ -99,13 +104,13 @@ def process_audio():
             del segment['avg_logprob']
             del segment['no_speech_prob']
             del segment['compression_ratio']
-        socketio.emit('progress', {'progress': 90})
+        emit_progress(90)
 
         # Save results and emit final progress
         transcription_file = f"{filename}_transcription.json"
         with open(f"temp/{transcription_file}", 'w') as f:
             f.write(json.dumps(transcription))
-        socketio.emit('progress', {'progress': 100})
+        emit_progress(100)
 
         created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -137,8 +142,63 @@ def process_audio():
         return jsonify(response_data), 200
     except Exception as e:
         logging.exception("Failed during processing")
-        socketio.emit('progress', {'progress': 0})
+        emit_progress(0)
         return jsonify({'error': str(e)}), 500
+    
 
-if __name__ == "__main__":
-    socketio.run(app, debug=False, port=5001)
+
+@audio_bp.route("/transcriptions/<id>", methods=["GET"])
+def get_transcription(id):
+    try:
+        # Fetch transcription from database
+        cursor.execute(
+            """
+            SELECT TRANSCRIPT_ID, CREATED_AT
+            FROM ze_iso_ai_transcripts
+            WHERE TRANSCRIPT_ID = :1
+            """,
+            (str(id),)
+        )
+        transcription = cursor.fetchone()
+        if not transcription:
+            return jsonify(error="No transcription found for this ID"), 404
+
+        # Fetch segments from database
+        cursor.execute(
+            """
+            SELECT SEGMENT_ID, START_TIME, END_TIME, SPEAKER, TRANSCRIPT_ID, TRANSCRIBED_TEXT 
+            FROM ze_iso_ai_segments 
+            WHERE TRANSCRIPT_ID = :1
+            """,
+            (str(id),)
+        )
+        rows = cursor.fetchall()
+        if not rows:
+            return jsonify(error="No transcription found for this ID"), 404
+        else:
+            segments = []
+            for row in rows:
+                segment = {}
+                for column, value in zip([column[0] for column in cursor.description], row):
+                    if isinstance(value, LOB):
+                        value = value.read()  
+                    segment[column] = value
+                segments.append(segment)
+
+            return jsonify({
+                'transcription_id': transcription[0],
+                'created_at': transcription[1],
+                'segments': segments
+            })
+    except ERROR as e:  
+        return jsonify(error=str(e)), 500
+    
+@audio_bp.route("/rename_segments/<transcription_id>/<old_name>/<new_name>", methods=["POST"])
+def renameSegments(transcription_id, old_name, new_name):
+    cursor.execute("""
+                   UPDATE ze_iso_ai_segments 
+                   SET SPEAKER = :1 
+                   WHERE SPEAKER = :2 AND TRANSCRIPT_ID = :3
+                   """, (new_name, old_name, transcription_id))
+    connection.commit()
+    return {"status": "success"}, 200

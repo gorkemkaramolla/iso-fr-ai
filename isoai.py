@@ -7,7 +7,7 @@ def main():
     current_dir = os.getcwd()
 
     # Change directory to the backend directory
-    backend_dir = os.path.join(current_dir, 'insightface')
+    backend_dir = os.path.join(current_dir, 'googleSP2T')
     os.chdir(backend_dir)
 
     # If arguments are provided, execute the specified command
@@ -15,7 +15,7 @@ def main():
         subprocess.Popen(['poetry', 'run', 'python3'] + sys.argv[1:])
     else:
         # Run poetry run python3 ip_cam_backend.py in the foreground
-        subprocess.Popen(['poetry', 'run', 'python3', 'ip_cam_backend.py'])
+        subprocess.Popen(['poetry', 'run', 'python3', 'speaker-diarization.py'])
 
         # Change directory to the client directory
         client_dir = os.path.join(current_dir, 'iso-electron')

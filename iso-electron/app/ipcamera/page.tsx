@@ -176,8 +176,8 @@ const VideoStream = () => {
   const [isPlaying2, setIsPlaying2] = useState(true);
   const [cameraStreams, setCameraStreams] = useState([1]);
 
-  const response1 = `http://localhost:5002/stream1?camera=${selectedCamera1}`;
-  const response2 = `http://localhost:5002/stream2?camera=${selectedCamera2}`;
+  const response1 = `${process.env.NEXT_PUBLIC_FLASK_URL}/stream1?camera=${selectedCamera1}`;
+  const response2 = `${process.env.NEXT_PUBLIC_FLASK_URL}/stream2?camera=${selectedCamera2}`;
 
   const handleCameraChange1 = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCamera1(event.target.value as Cameras);

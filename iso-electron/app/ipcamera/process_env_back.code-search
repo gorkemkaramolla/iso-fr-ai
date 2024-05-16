@@ -1,0 +1,24 @@
+# Query: process.env.back
+# ContextLines: 1
+
+5 results - 3 files
+
+iso-electron/app/ipcamera/page.tsx:
+  178  
+  179:   const response1 = `${process.env.FLASK_URL}/stream1?camera=${selectedCamera1}`;
+  180:   const response2 = `${process.env.FLASK_URL}/stream2?camera=${selectedCamera2}`;
+  181  
+
+iso-electron/app/transcription/[id]/page.tsx:
+   82          const response = await axios.get(
+   83:           `${process.env.FLASK_URL}/transcriptions/${id}`
+   84          );
+
+  109      await axios.post(
+  110:       `${process.env.FLASK_URL}/rename_segments/${oldName}/${newName}`
+  111      );
+
+iso-electron/components/sound/WhisperUpload.tsx:
+  38    useEffect(() => {
+  39:     const socket = io(`${process.env.FLASK_URL}`);
+  40      socket.on('progress', (data) => {

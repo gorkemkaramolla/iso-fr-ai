@@ -36,7 +36,7 @@ function WhisperUpload() {
   };
 
   useEffect(() => {
-    const socket = io('http://localhost:5001');
+    const socket = io(`${process.env.NEXT_PUBLIC_FLASK_URL}`);
     socket.on('progress', (data) => {
       setProgress(data.progress);
     });
@@ -59,7 +59,7 @@ function WhisperUpload() {
 
     try {
       const res = await axios.post<ApiResponse>(
-        `http://localhost:5001/process-audio/`,
+        `http://127.0.0.1:5002/process-audio/`,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -82,34 +82,37 @@ function WhisperUpload() {
   };
 
   return (
-    <div>
+    <div className='w-full'>
       <div className='w-full my-0 absolute bottom-0 bg-gray-300 rounded-full'>
         <div
-          className='h-2 bg-blue-500 transition-all duration-500 rounded-full'
+          className='h-2 bg-blue-500   rounded-full'
           style={{ width: `${progress}%` }}
         ></div>
       </div>
       <div className='p-8 rounded-xl'>
-        <h1 className='my-1'>Upload File</h1>
+        <h1 className='my-1'>Dosya Yükleme</h1>
         <input
           type='file'
           onChange={onFileChange}
-          className='file-input h-24 file-input-bordered w-full max-w-xs'
+          className='file-input file-input-bordered w-full max-w-xs'
           accept='audio/*'
         />
-        <button className='btn h-24' onClick={onFileUpload} disabled={loading}>
-          {loading ? 'Uploading...' : 'Upload'}
+        <button className='btn ' onClick={onFileUpload} disabled={loading}>
+          {loading ? 'Yükleniyor...' : 'Yükle'}
         </button>
         {error && <div className='text-red-500'>{error}</div>}
         {response && (
-          <div>
+          <div className='bg-gray-50 rounded-xl p-4 w-full '>
             <h3>Processed at: {response.created_at}</h3>
             <h3>Language: {response.transcription.language}</h3>
             <ul>
               {response.transcription.segments.map((segment, index) => (
-                <li key={index}>
-                  {segment?.speaker?.toUpperCase()}: {segment.start.toFixed(2)}{' '}
-                  -{segment.end.toFixed(2)} = {segment.text}
+                <li key={index} className=''>
+                  <span className='badge-primary'>
+                    {segment?.speaker?.toUpperCase()}
+                  </span>
+                  : {segment.start.toFixed(2)} -{segment.end.toFixed(2)} ={' '}
+                  {segment.text}
                 </li>
               ))}
             </ul>

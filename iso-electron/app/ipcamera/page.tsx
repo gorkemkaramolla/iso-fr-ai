@@ -21,7 +21,19 @@ const VideoStream: React.FC = () => {
 
   const addCameraStream = () => {
     if (cameraStreams.length < 6) {
-      const newCameraId = cameraStreams.length + 1;
+      // Create an array of size 6 filled with false
+      const ids = new Array(6).fill(false);
+
+      // Mark the ids that are already in use
+      cameraStreams.forEach((stream) => {
+        if (stream.id <= 6) {
+          ids[stream.id - 1] = true;
+        }
+      });
+
+      // Find the smallest missing number
+      const newCameraId = ids.indexOf(false) + 1;
+
       setCameraStreams([
         ...cameraStreams,
         {
@@ -95,7 +107,7 @@ const VideoStream: React.FC = () => {
           {cameraStreams.map((camera) => (
             <div
               key={camera.id}
-              className='rounded-lg border border-black min-h-[300px] shadow-lg '
+              className='rounded-lg border border-black min-h-[400px] max-h-fit w-1/3 shadow-lg '
             >
               <div className='text-sm text-center text-white bg-black border-none rounded-md py-1 m-0 border border-black'>
                 Yayın {camera.id}
@@ -197,7 +209,7 @@ const VideoStream: React.FC = () => {
 
               {camera.isPlaying && (
                 <img
-                  className='w-fit h-fit'
+                  className='h-fit'
                   src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
                   alt={`Video Stream ${camera.id}`}
                 />

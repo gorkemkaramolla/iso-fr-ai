@@ -17,3 +17,11 @@ interface ApiResponse {
   transcription: Transcript;
   id: String;
 }
+
+interface CameraStream {
+  id: number;
+  selectedCamera: Cameras;
+  selectedQuality: string | null;
+  isPlaying: boolean;
+  isLoading?: boolean;
+}

@@ -16,6 +16,7 @@ const VideoStream: React.FC = () => {
       selectedCamera: Camera.CAM1,
       selectedQuality: null,
       isPlaying: true,
+      isLoading: true,
     },
   ]);
 
@@ -44,14 +45,6 @@ const VideoStream: React.FC = () => {
           isLoading: true,
         },
       ]);
-
-      setTimeout(() => {
-        setCameraStreams((prevStreams) =>
-          prevStreams.map((stream) =>
-            stream.id === newCameraId ? { ...stream, isLoading: false } : stream
-          )
-        );
-      }, 5000);
     }
   };
 
@@ -117,6 +110,8 @@ const VideoStream: React.FC = () => {
                   <div tabIndex={0} role='button' className='btn '>
                     {camera.isLoading ? (
                       <span className='loading loading-spinner'></span>
+                    ) : camera.isPlaying ? (
+                      <CircleIcon className='w-6 h-6 text-green-500 rounded-full bg-green-500' />
                     ) : (
                       <CircleIcon className='w-6 h-6 text-red-500 rounded-full bg-red-500' />
                     )}
@@ -206,14 +201,24 @@ const VideoStream: React.FC = () => {
                   </select>
                 </div>
               </div>
-
-              {camera.isPlaying && (
-                <img
-                  className='h-fit'
-                  src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
-                  alt={`Video Stream ${camera.id}`}
-                />
-              )}
+              <div>
+                {camera.isPlaying && (
+                  <img
+                    className='h-fit'
+                    src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
+                    alt={`Video Stream ${camera.id}`}
+                    onLoad={() => {
+                      setCameraStreams((prevStreams) =>
+                        prevStreams.map((stream) =>
+                          stream.id === camera.id
+                            ? { ...stream, isLoading: false }
+                            : stream
+                        )
+                      );
+                    }}
+                  />
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -223,135 +228,3 @@ const VideoStream: React.FC = () => {
 };
 
 export default VideoStream;
-
-// import React, { useState } from 'react';
-// import { Dropdown } from 'primereact/dropdown';
-// import { Button } from 'primereact/button';
-
-// enum Cameras {
-//   CAM1 = 'http://root:N143g144@192.168.100.152/mjpg/video.mjpg?streamprofile=Quality',
-//   CAM2 = 'http://localhost:5555',
-// }
-// const cameraOptions = Object.entries(Cameras).map(([label, value]) => ({
-//   label,
-//   value,
-// }));
-// const imageQualities = [
-//   { name: 'Motion JPEG', code: 'MJPEG' },
-//   { name: 'H.264', code: 'H264' },
-//   { name: 'Quality', code: 'Quality' },
-//   { name: 'Balanced', code: 'Balanced' },
-//   { name: 'Bandwidth', code: 'Bandwidth' },
-//   { name: 'Mobile', code: 'Mobile' },
-//   { name: 'Max', code: 'Max' },
-//   { name: 'High', code: 'High' },
-//   { name: 'Low', code: 'Low' },
-//   { name: 'Medium', code: 'Medium' },
-// ];
-// const VideoStream = () => {
-//   const [selectedQuality1, setSelectedQuality1] = useState(null);
-//   const [quality2, setQuality2] = useState('Quality');
-//   const [selectedCamera1, setSelectedCamera1] = useState(Cameras.CAM1);
-//   const [selectedCamera2, setSelectedCamera2] = useState(Cameras.CAM2);
-//   const [isPlaying1, setIsPlaying1] = useState(true);
-//   const [isPlaying2, setIsPlaying2] = useState(true);
-//   const [cameraStreams, setCameraStreams] = useState([1]);
-
-//   const response1 = `http://localhost:5002/stream1?camera=${selectedCamera1}`;
-//   const response2 = `http://localhost:5002/stream2?camera=${selectedCamera2}`;
-
-//   const handleCameraChange1 = (event: React.ChangeEvent<HTMLSelectElement>) => {
-//     setSelectedCamera1(event.target.value as Cameras);
-//   };
-
-//   const handleCameraChange2 = (event: React.ChangeEvent<HTMLSelectElement>) => {
-//     setSelectedCamera2(event.target.value as Cameras);
-//   };
-
-//   const togglePlay1 = () => {
-//     setIsPlaying1(!isPlaying1);
-//   };
-
-//   const togglePlay2 = () => {
-//     setIsPlaying2(!isPlaying2);
-//   };
-
-//   const handleAddCamera = () => {
-//     const newCameraStreams = [...cameraStreams, cameraStreams.length + 1];
-//     setCameraStreams(newCameraStreams);
-//   };
-
-//   return (
-//     <div className='container mx-auto'>
-//       <button
-//         className='btn btn-info rounded-3xl text-white text-semibold my-4'
-//         onClick={handleAddCamera}
-//       >
-//         + Kamera Ekle
-//       </button>
-
-//       <div
-//         className='grid grid-cols-3 justify-center items-start gap-4 mx-auto
-//       overflow-y-scroll max-h-[80vh]'
-//       >
-//         {cameraStreams.map((index) => (
-//           <div
-//             key={index}
-//             className='rounded-lg border border-black min-h-[300px] shadow-lg'
-//           >
-//             <div className='flex gap-4 items-center justify-center'>
-//               <div>
-//                 <Dropdown
-//                   value={selectedCamera1}
-//                   options={cameraOptions}
-//                   showClear
-//                   checkmark
-//                   onChange={(e) => setSelectedCamera1(e.value)}
-//                   placeholder='Kamera'
-//                   className='w-full m-4'
-//                 />
-//               </div>
-//               <div>
-//                 <Dropdown
-//                   value={selectedQuality1}
-//                   onChange={(e) => setSelectedQuality1(e.target.value)}
-//                   options={imageQualities}
-//                   optionLabel='name'
-//                   showClear
-//                   checkmark
-//                   placeholder='Çözünürlük'
-//                   className='w-full m-4'
-//                 />
-//               </div>
-//             </div>
-//             <button onClick={index === 1 ? togglePlay1 : togglePlay2}>
-//               {index === 1
-//                 ? isPlaying1
-//                   ? 'Stop'
-//                   : 'Start'
-//                 : isPlaying2
-//                 ? 'Stop'
-//                 : 'Start'}
-//             </button>
-//             {index === 1 && isPlaying1 && (
-//               <img
-//                 className='w-full h-full'
-//                 src={response1}
-//                 alt='Video Stream 1'
-//               />
-//             )}
-//             {index !== 1 && isPlaying2 && (
-//               <img
-//                 className='w-full h-full'
-//                 src={response2}
-//                 alt='Video Stream 2'
-//               />
-//             )}
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default VideoStream;

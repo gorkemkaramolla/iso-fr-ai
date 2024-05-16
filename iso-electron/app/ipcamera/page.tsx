@@ -1,35 +1,19 @@
 'use client';
 import React, { useState } from 'react';
-
-enum Cameras {
-  CAM1 = 'http://root:N143g144@192.168.100.152/mjpg/video.mjpg?streamprofile=Quality',
-  CAM2 = 'http://localhost:5555',
-}
-enum Quality {
-  MotionJPEG = 'Motion JPEG',
-  H264 = 'H.264',
-  Quality = 'Quality',
-  Balanced = 'Balanced',
-  Bandwidth = 'Bandwidth',
-  Mobile = 'Mobile',
-  Max = 'Max',
-  High = 'High',
-  Low = 'Low',
-  Medium = 'Medium',
-}
-interface CameraStream {
-  id: number;
-  selectedCamera: Cameras;
-  selectedQuality: string | null;
-  isPlaying: boolean;
-  isLoading?: boolean;
-}
-
+import {
+  RefreshCwIcon,
+  PlusIcon,
+  PlayCircleIcon,
+  StopCircleIcon,
+  XIcon,
+  CircleIcon,
+} from 'lucide-react';
+import { Camera, Quality } from '@/utils/enums';
 const VideoStream: React.FC = () => {
   const [cameraStreams, setCameraStreams] = useState<CameraStream[]>([
     {
       id: 1,
-      selectedCamera: Cameras.CAM1,
+      selectedCamera: Camera.CAM1,
       selectedQuality: null,
       isPlaying: true,
     },
@@ -42,7 +26,7 @@ const VideoStream: React.FC = () => {
         ...cameraStreams,
         {
           id: newCameraId,
-          selectedCamera: Cameras.CAM1,
+          selectedCamera: Camera.CAM1,
           selectedQuality: null,
           isPlaying: true,
           isLoading: true,
@@ -63,7 +47,7 @@ const VideoStream: React.FC = () => {
     setCameraStreams(cameraStreams.filter((camera) => camera.id !== id));
   };
 
-  const handleCameraChange = (id: number, selectedCamera: Cameras) => {
+  const handleCameraChange = (id: number, selectedCamera: Camera) => {
     setCameraStreams(
       cameraStreams.map((camera) =>
         camera.id === id ? { ...camera, selectedCamera } : camera
@@ -88,126 +72,139 @@ const VideoStream: React.FC = () => {
   };
 
   return (
-    <div className='container mx-auto'>
-      <button
-        className='btn btn-info rounded-3xl text-white text-semibold my-4'
-        onClick={addCameraStream}
-      >
-        + Kamera Ekle
-      </button>
-
-      <div
-        className='grid grid-cols-3 justify-center items-start gap-4 mx-auto 
-      overflow-y-scroll max-h-[80vh]'
-      >
-        {cameraStreams.map((camera) => (
-          <div
-            key={camera.id}
-            className='rounded-lg border border-black min-h-[300px] shadow-lg'
+    <div className=' h-screen overflow-y-scroll pb-20'>
+      <div className='container mx-auto mb-10'>
+        <div
+          className='tooltip tooltip-bottom'
+          data-tip={
+            cameraStreams.length < 6
+              ? 'Yeni kamera ekle'
+              : 'Maximum 6 kamera eklenebilir'
+          }
+        >
+          <button
+            className='btn btn-default btn-outline rounded-3xl text-semibold my-4'
+            onClick={addCameraStream}
+            disabled={cameraStreams.length >= 6}
           >
-            <div className='flex flex-row space-x-4 gap-4 items-center justify-center'>
-              <div>
-                {camera.isLoading ? (
-                  <span className='loading loading-spinner'></span>
-                ) : (
-                  <span style={{ color: 'red' }}>🔴</span>
-                )}
+            <PlusIcon className='w-5 h-5' /> Kamera Ekle
+          </button>
+        </div>
+
+        <div className='flex flex-wrap justify-center items-start mx-auto gap-4'>
+          {cameraStreams.map((camera) => (
+            <div
+              key={camera.id}
+              className='rounded-lg border border-black min-h-[300px] shadow-lg '
+            >
+              <div className='text-sm text-center text-white bg-black border-none rounded-md py-1 m-0 border border-black'>
+                Yayın {camera.id}
+              </div>
+              <div className='flex flex-row space-x-4 gap-4 items-center justify-center p-4'>
+                <div className='dropdown dropdown-hover'>
+                  <div tabIndex={0} role='button' className='btn '>
+                    {camera.isLoading ? (
+                      <span className='loading loading-spinner'></span>
+                    ) : (
+                      <CircleIcon className='w-6 h-6 text-red-500 rounded-full bg-red-500' />
+                    )}
+                  </div>
+                  <ul
+                    tabIndex={0}
+                    className='dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52'
+                  >
+                    <li>
+                      <a
+                        onClick={() => togglePlay(camera.id)}
+                        className='transition-all duration-1000'
+                      >
+                        {camera.isPlaying ? (
+                          <>
+                            <StopCircleIcon className='w-6 h-6' />
+                            Stop
+                          </>
+                        ) : (
+                          <>
+                            <PlayCircleIcon className='w-6 h-6' />
+                            Start
+                          </>
+                        )}
+                      </a>
+                    </li>
+                    <li>
+                      <a onClick={() => togglePlay(camera.id)}>
+                        <RefreshCwIcon className='w-6 h-6' />
+                        Yenile
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        onClick={() => removeCameraStream(camera.id)}
+                        className='text-red-500'
+                      >
+                        <XIcon className='w-6 h-6' />
+                        Kapat
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <select
+                    value={camera.selectedCamera}
+                    onChange={(e) =>
+                      handleCameraChange(camera.id, e.target.value as Camera)
+                    }
+                    className='select select-bordered select-primary w-full max-w-xs'
+                  >
+                    <option disabled value='' className='select-option'>
+                      Kamera
+                    </option>
+                    {Object.keys(Camera).map((key) => (
+                      <option
+                        key={key}
+                        value={Camera[key as keyof typeof Camera]}
+                        className='select-option'
+                      >
+                        {key}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <select
+                    value={String(camera.selectedQuality)}
+                    onChange={(e) =>
+                      handleQualityChange(camera.id, e.target.value as Quality)
+                    }
+                    className='select select-bordered w-full max-w-xs'
+                  >
+                    <option disabled value='' className='select-option'>
+                      Çözünürlük
+                    </option>
+                    {Object.keys(Quality).map((quality) => (
+                      <option
+                        className='select-option'
+                        key={quality}
+                        value={quality}
+                      >
+                        {Quality[quality as keyof typeof Quality]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <select
-                  value={camera.selectedCamera}
-                  onChange={(e) =>
-                    handleCameraChange(camera.id, e.target.value as Cameras)
-                  }
-                  className='select select-bordered select-primary w-full max-w-xs m-4'
-                >
-                  <option disabled value='' className='select-option'>
-                    Kamera
-                  </option>
-                  {Object.keys(Cameras).map((key) => (
-                    <option
-                      key={key}
-                      value={Cameras[key as keyof typeof Cameras]}
-                      className='select-option'
-                    >
-                      {key}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <select
-                  value={String(camera.selectedQuality)}
-                  onChange={(e) =>
-                    handleQualityChange(camera.id, e.target.value as Quality)
-                  }
-                  className='select select-bordered w-full max-w-xs'
-                >
-                  <option disabled value='' className='select-option'>
-                    Çözünürlük
-                  </option>
-                  {Object.keys(Quality).map((quality) => (
-                    <option
-                      className='select-option'
-                      key={quality}
-                      value={quality}
-                    >
-                      {Quality[quality as keyof typeof Quality]}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {camera.isPlaying && (
+                <img
+                  className='w-fit h-fit'
+                  src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
+                  alt={`Video Stream ${camera.id}`}
+                />
+              )}
             </div>
-            <button
-              className='btn btn-default btn-outline m-4'
-              onClick={() => togglePlay(camera.id)}
-            >
-              {camera.isPlaying ? 'Stop' : 'Start'}
-            </button>
-            <button
-              className='btn btn-default btn-outline m-4'
-              onClick={() => togglePlay(camera.id)}
-            >
-              Yenile
-            </button>
-            {camera.isPlaying && (
-              <img
-                className='w-full h-full'
-                src={
-                  camera.selectedCamera === Cameras.CAM1
-                    ? Cameras.CAM1
-                    : Cameras.CAM2
-                }
-                alt={`Video Stream ${camera.id}`}
-              />
-            )}
-
-            <button
-              className='btn btn-circle btn-outline inline-flex items-center'
-              onClick={() => removeCameraStream(camera.id)}
-            >
-              <span>
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='h-6 w-6'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    d='M6 18L18 6M6 6l12 12'
-                  />
-                </svg>
-              </span>
-              <span>Kapat</span>
-            </button>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

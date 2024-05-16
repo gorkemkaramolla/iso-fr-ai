@@ -9,6 +9,7 @@ from transformers import AutoModelForImageClassification, AutoImageProcessor
 import torch
 from PIL import Image
 import onnxruntime
+from enums import Camera
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -100,6 +101,36 @@ def recog_face(image, database):
     #         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
     #     cap.release()
 #     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/stream/<int:stream_id>')
+def stream(stream_id):
+    camera_label = request.args.get('camera')
+    camera = Camera[camera_label].value
+    quality = request.args.get('quality', 'Quality')
+   
+    def generate():
+        cap = cv2.VideoCapture(camera)
+        if not cap.isOpened():
+            print("Error opening HTTP stream")
+            return
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            bboxes, labels, sims = recog_face(frame, database)
+            for bbox, label, sim in zip(bboxes, labels, sims):
+                x1, y1, x2, y2 = map(int, bbox[:4])
+                face = frame[y1:y2, x1:x2]
+                if face.size == 0:
+                    continue
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)
+                text_label = f"{label} ({sim * 100:.2f}%)"
+                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 4)
+            _, buffer = cv2.imencode('.jpg', frame)
+            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+        cap.release()
+
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/stream1')
 def stream1():

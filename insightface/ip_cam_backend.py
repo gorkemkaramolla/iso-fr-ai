@@ -14,7 +14,7 @@ from enums import Camera
 # Initialize Flask app
 app = Flask(__name__)
 onnxruntime.set_default_logger_severity(3)
-
+print(onnxruntime.get_device())
 # Initialize face recognition models
 # assets_dir = os.path.expanduser('~/.insightface/models/buffalo_sc')
 # detector = SCRFD(os.path.join(assets_dir, 'det_500m.onnx'))
@@ -24,12 +24,23 @@ onnxruntime.set_default_logger_severity(3)
 # rec.prepare(-1)
 
 #Large model görkem
+# Set the directory path for the assets
 assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
+
+# Initialize the SCRFD detector with the model file
 detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
-detector.prepare(-1)
+
+# Prepare the detector for use on the GPU (0 indicates the first GPU, -1 for CPU)
+detector.prepare(0)
+
+# Set the path for the ArcFace model
 model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
+
+# Initialize the ArcFace recognizer with the model file
 rec = ArcFaceONNX(model_path)
-rec.prepare(-1)
+
+# Prepare the recognizer for use on the GPU (0 indicates the first GPU, -1 for CPU)
+rec.prepare(0)
 # processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
 # emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
 

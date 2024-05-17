@@ -19,7 +19,6 @@ const VideoStream: React.FC = () => {
       isLoading: true,
     },
   ]);
-
   const addCameraStream = () => {
     if (cameraStreams.length < Object.keys(Camera).length) {
       // Create an array of all possible cameras
@@ -34,10 +33,21 @@ const VideoStream: React.FC = () => {
       // Select the first available camera
       const newSelectedCamera = availableCameras[0];
 
+      // Create an array of all possible IDs
+      const allIds = [1, 2, 3, 4, 5, 6];
+
+      // Filter out the IDs that are already in use
+      const availableIds = allIds.filter(
+        (id) => !cameraStreams.some((stream) => stream.id === id)
+      );
+
+      // Select the lowest available ID
+      const newId = Math.min(...availableIds);
+
       setCameraStreams([
         ...cameraStreams,
         {
-          id: cameraStreams.length + 1,
+          id: newId,
           selectedCamera: newSelectedCamera,
           selectedQuality: null,
           isPlaying: true,
@@ -46,6 +56,32 @@ const VideoStream: React.FC = () => {
       ]);
     }
   };
+  // const addCameraStream = () => {
+  //   if (cameraStreams.length < Object.keys(Camera).length) {
+  //     // Create an array of all possible cameras
+  //     const allCameras = Object.values(Camera);
+
+  //     // Filter out the cameras that are already in use
+  //     const availableCameras = allCameras.filter(
+  //       (camera) =>
+  //         !cameraStreams.some((stream) => stream.selectedCamera === camera)
+  //     );
+
+  //     // Select the first available camera
+  //     const newSelectedCamera = availableCameras[0];
+
+  //     setCameraStreams([
+  //       ...cameraStreams,
+  //       {
+  //         id: cameraStreams.length + 1,
+  //         selectedCamera: newSelectedCamera,
+  //         selectedQuality: null,
+  //         isPlaying: true,
+  //         isLoading: true,
+  //       },
+  //     ]);
+  //   }
+  // };
 
   // const addCameraStream = () => {
   //   if (cameraStreams.length < 6) {
@@ -129,7 +165,8 @@ const VideoStream: React.FC = () => {
             .map((camera) => (
               <div
                 key={camera.id}
-                className='rounded-lg border border-black min-h-[400px] max-h-fit w-1/3 shadow-lg '
+                className='rounded-lg border border-black min-h-[400px] max-h-[80%] 
+                          min-w-1/3 max-w-[80%] shadow-lg '
               >
                 <div className='text-sm text-center font-bold text-white bg-black border-none rounded-md py-1 m-0 border border-black'>
                   Yayın {camera.id}
@@ -216,26 +253,6 @@ const VideoStream: React.FC = () => {
                           </option>
                         ))}
                     </select>
-                    {/* <select
-                      value={camera.selectedCamera}
-                      onChange={(e) =>
-                        handleCameraChange(camera.id, e.target.value as Camera)
-                      }
-                      className='select select-bordered select-primary w-full max-w-xs'
-                    >
-                      <option disabled value='' className='select-option'>
-                        Kamera
-                      </option>
-                      {Object.keys(Camera).map((key) => (
-                        <option
-                          key={key}
-                          value={Camera[key as keyof typeof Camera]}
-                          className='select-option'
-                        >
-                          {key}
-                        </option>
-                      ))}
-                    </select> */}
                   </div>
 
                   <div>
@@ -268,7 +285,8 @@ const VideoStream: React.FC = () => {
                   {camera.isPlaying && (
                     <img
                       className='h-fit'
-                      src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
+                      src='/FatihYavuz.jpg'
+                      // src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
                       alt={`Video Stream ${camera.id}`}
                       onLoad={() => {
                         setCameraStreams((prevStreams) =>

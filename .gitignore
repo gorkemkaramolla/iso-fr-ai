@@ -11,6 +11,7 @@ pip-selfcheck.json
 /face-images
 /iso-data
 /insightface/__pycache__
+/insightface/data
 ignored-media
 cert
 cert2

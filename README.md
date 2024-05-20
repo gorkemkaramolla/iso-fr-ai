@@ -9,15 +9,12 @@ Questions? Here’s how to reach us:
 
 ## About the team
 
----
 
 [@Fatih Yavuz](https://github.com/yvzfth/)
 
 [@Gorkem Karamolla](https://github.com/gorkemkaramolla/)
 
 ## Resources
-
----
 
 https://github.com/gorkemkaramolla/iso-fr-ai
 
@@ -262,16 +259,20 @@ Environment Variables:
 
 `C:\Python312\`
 
+After setting all the above environment variables, run the `refreshenv` command.
+
+## Quick start
+
+**Clone the Project**
 ```bash
-# Clone the Project
 mkdir isoai
 cd isoai
 git clone https://github.com/gorkemkaramolla/iso-fr-ai.git .
 code .
 ```
 
+**Run Backend Code**
 ```bash
-# Run Backend Code
 python -m venv .
 .\Scripts\activate
 pip install -r requirements
@@ -279,16 +280,22 @@ cd insightface
 python ip_cam_backend.py
 ```
 
+**Open Local Camera**
 ```bash
-# Open Local Camera
-python -m venv .
 .\Scripts\activate
 cd insightface
 python client_camera.py
 ```
 
+**Run whole application futures**
 ```bash
-# Run Frontend Code
+.\Scripts\activate
+cd flask
+python app.py
+```
+
+**Run Frontend Code**
+```bash
 cd iso-electron
 npm i
 npm run dev

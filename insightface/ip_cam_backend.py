@@ -26,10 +26,10 @@ onnxruntime.set_default_logger_severity(3)
 #Large model görkem
 assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
 detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
-detector.prepare(-1)
+detector.prepare(0)
 model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
 rec = ArcFaceONNX(model_path)
-rec.prepare(-1)
+rec.prepare(0)
 # processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
 # emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
 

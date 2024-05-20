@@ -1,0 +1,12 @@
+flask==3.0.3
+opencv-python==4.9.0.80
+onnxruntime-gpu==1.17.1
+onnx==1.16.0
+scikit-image==0.23.2
+transformers==4.40.2
+torch==2.3.0
+flask-cors==4.0.1
+pyannote-audio==3.2.0
+pydub==0.25.1
+torchvision==0.18.0
+insightface==0.7.3

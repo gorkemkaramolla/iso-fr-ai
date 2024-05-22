@@ -285,8 +285,8 @@ const VideoStream: React.FC = () => {
                   {camera.isPlaying && (
                     <img
                       className='h-fit'
-                      src='/FatihYavuz.jpg'
-                      // src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
+                   
+                      src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
                       alt={`Video Stream ${camera.id}`}
                       onLoad={() => {
                         setCameraStreams((prevStreams) =>

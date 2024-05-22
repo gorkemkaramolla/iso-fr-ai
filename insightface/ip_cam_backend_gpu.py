@@ -36,7 +36,7 @@ model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
 # Initialize the ArcFace recognizer with the model file
 rec = ArcFaceONNX(model_path)
 rec.prepare(0)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" )
 print(f"Using device: {device}")
 id_to_label = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
 processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")

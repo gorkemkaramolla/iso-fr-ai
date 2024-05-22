@@ -14,11 +14,12 @@ const VideoStream: React.FC = () => {
     {
       id: 1,
       selectedCamera: Camera.CAM1,
-      selectedQuality: null,
+      selectedQuality: Quality.Quality,
       isPlaying: true,
       isLoading: true,
     },
   ]);
+
   const addCameraStream = () => {
     if (cameraStreams.length < Object.keys(Camera).length) {
       // Create an array of all possible cameras
@@ -33,83 +34,18 @@ const VideoStream: React.FC = () => {
       // Select the first available camera
       const newSelectedCamera = availableCameras[0];
 
-      // Create an array of all possible IDs
-      const allIds = [1, 2, 3, 4, 5, 6];
-
-      // Filter out the IDs that are already in use
-      const availableIds = allIds.filter(
-        (id) => !cameraStreams.some((stream) => stream.id === id)
-      );
-
-      // Select the lowest available ID
-      const newId = Math.min(...availableIds);
-
       setCameraStreams([
         ...cameraStreams,
         {
-          id: newId,
+          id: cameraStreams.length + 1,
           selectedCamera: newSelectedCamera,
-          selectedQuality: null,
+          selectedQuality: Quality.Quality,
           isPlaying: true,
           isLoading: true,
         },
       ]);
     }
   };
-  // const addCameraStream = () => {
-  //   if (cameraStreams.length < Object.keys(Camera).length) {
-  //     // Create an array of all possible cameras
-  //     const allCameras = Object.values(Camera);
-
-  //     // Filter out the cameras that are already in use
-  //     const availableCameras = allCameras.filter(
-  //       (camera) =>
-  //         !cameraStreams.some((stream) => stream.selectedCamera === camera)
-  //     );
-
-  //     // Select the first available camera
-  //     const newSelectedCamera = availableCameras[0];
-
-  //     setCameraStreams([
-  //       ...cameraStreams,
-  //       {
-  //         id: cameraStreams.length + 1,
-  //         selectedCamera: newSelectedCamera,
-  //         selectedQuality: null,
-  //         isPlaying: true,
-  //         isLoading: true,
-  //       },
-  //     ]);
-  //   }
-  // };
-
-  // const addCameraStream = () => {
-  //   if (cameraStreams.length < 6) {
-  //     // Create an array of size 6 filled with false
-  //     const ids = new Array(6).fill(false);
-
-  //     // Mark the ids that are already in use
-  //     cameraStreams.forEach((stream) => {
-  //       if (stream.id <= 6) {
-  //         ids[stream.id - 1] = true;
-  //       }
-  //     });
-
-  //     // Find the smallest missing number
-  //     const newCameraId = ids.indexOf(false) + 1;
-
-  //     setCameraStreams([
-  //       ...cameraStreams,
-  //       {
-  //         id: newCameraId,
-  //         selectedCamera: Camera.CAM1,
-  //         selectedQuality: null,
-  //         isPlaying: true,
-  //         isLoading: true,
-  //       },
-  //     ]);
-  //   }
-  // };
 
   const removeCameraStream = (id: number) => {
     setCameraStreams(cameraStreams.filter((camera) => camera.id !== id));
@@ -159,14 +95,13 @@ const VideoStream: React.FC = () => {
           </button>
         </div>
 
-        <div className='flex flex-wrap justify-center items-start mx-auto gap-4'>
+        <div className='flex flex-wrap  justify-center items-start mx-auto gap-4'>
           {cameraStreams
             .sort((a, b) => a.id - b.id)
             .map((camera) => (
               <div
                 key={camera.id}
-                className='rounded-lg border border-black min-h-[400px] max-h-[80%] 
-                          min-w-1/3 max-w-[80%] shadow-lg '
+                className='rounded-lg border border-black min-h-[400px] max-h-fit w-1/3 shadow-lg '
               >
                 <div className='text-sm text-center font-bold text-white bg-black border-none rounded-md py-1 m-0 border border-black'>
                   Yayın {camera.id}
@@ -285,8 +220,7 @@ const VideoStream: React.FC = () => {
                   {camera.isPlaying && (
                     <img
                       className='h-fit'
-                      src='/FatihYavuz.jpg'
-                      // src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}`}
+                      src={`http://localhost:5000/stream/${camera.id}?camera=${camera.selectedCamera}&quality=${camera.selectedQuality}`}
                       alt={`Video Stream ${camera.id}`}
                       onLoad={() => {
                         setCameraStreams((prevStreams) =>

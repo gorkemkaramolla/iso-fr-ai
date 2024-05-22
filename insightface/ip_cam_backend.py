@@ -10,11 +10,27 @@ import torch
 from PIL import Image
 import onnxruntime
 from enums import Camera
+from flask_cors import CORS
+import threading
+import queue
+import onnx
+from onnxruntime.quantization import quantize_dynamic, QuantType
+
 
 # Initialize Flask app
 app = Flask(__name__)
-onnxruntime.set_default_logger_severity(3)
-print(onnxruntime.get_device())
+CORS(app)
+
+onnxruntime.set_default_logger_severity(2)
+
+device = onnxruntime.get_device()
+is_cuda_available = torch.cuda.is_available()
+providers = ['CUDAExecutionProvider'] if device == 'GPU' and is_cuda_available else ['CPUExecutionProvider']
+print(f"Device: {device}")
+print(f"Is CUDA avaliable: {is_cuda_available}")
+def set_session(model_path, providers):
+    session = onnxruntime.InferenceSession(model_path, providers=providers)
+    return session
 # Initialize face recognition models
 # assets_dir = os.path.expanduser('~/.insightface/models/buffalo_sc')
 # detector = SCRFD(os.path.join(assets_dir, 'det_500m.onnx'))
@@ -24,17 +40,17 @@ print(onnxruntime.get_device())
 # rec.prepare(-1)
 
 #Large model görkem
-# Set the directory path for the assets
 assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
 
 # Initialize the SCRFD detector with the model file
-detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
-detector.prepare(0)
-model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
+det_10g_model_path =os.path.join(assets_dir, 'det_10g.onnx')
+detector = SCRFD(model_file=det_10g_model_path, session=set_session(det_10g_model_path, providers))
+detector.prepare(-1)
 
 # Initialize the ArcFace recognizer with the model file
-rec = ArcFaceONNX(model_path)
-rec.prepare(0)
+w600k_r50_model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
+rec = ArcFaceONNX(model_file=w600k_r50_model_path, session=set_session(w600k_r50_model_path, providers))
+rec.prepare(-1)
 # processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
 # emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression")
 
@@ -77,122 +93,66 @@ def recog_face(image, database):
         sims.append(sim)
     return bboxes, labels, sims
 
-# @app.route('/')
-# def index():
-#     # Access the 'quality' parameter within the request context
-#     quality = request.args.get('quality', 'Quality')
-#     base_rtsp_url = 'rtsp://root:N143g144@192.168.100.152/axis-media/media.amp?'
-#     rtsp_url = f"{base_rtsp_url}videocodec=h264&streamprofile={quality}"
+def _generate_response_frame(camera: Camera):
+    cap = cv2.VideoCapture(camera)
+    if not cap.isOpened():
+        print("Error opening HTTP stream")
+        return
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        bboxes, labels, sims = recog_face(frame, database)
+        for bbox, label, sim in zip(bboxes, labels, sims):
+            x1, y1, x2, y2 = map(int, bbox[:4])
+            face = frame[y1:y2, x1:x2]
+            if face.size == 0:
+                continue
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)
+            text_label = f"{label} ({sim * 100:.2f}%)"
+            cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 4)
+        _, buffer = cv2.imencode('.jpg', frame)
+        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+    cap.release()
 
-    # def generate():
-    #     cap = cv2.VideoCapture(rtsp_url)
-    #     if not cap.isOpened():
-    #         print("Error opening RTSP stream")
-    #         return
-    #     while True:
-    #         ret, frame = cap.read()
-    #         if not ret:
-    #             break
-    #         bboxes, labels, sims = recog_face(frame, database)
-    #         for bbox, label, sim in zip(bboxes, labels, sims):
-    #             x1, y1, x2, y2 = map(int, bbox[:4])
-    #             face = frame[y1:y2, x1:x2]
-    #             if face.size == 0:
-    #                 continue
-    #             cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-    #             text_label = f"{label} ({sim * 100:.2f}%)"
-    #             cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 1)
-    #         _, buffer = cv2.imencode('.jpg', frame)
-    #         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-    #     cap.release()
-#     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
+# Camera Response Stream
 @app.route('/stream/<int:stream_id>')
-def stream(stream_id):
+def ip_camera_stream(stream_id):
     camera_label = request.args.get('camera')
-    camera = Camera[camera_label].value
     quality = request.args.get('quality', 'Quality')
-   
-    def generate():
-        cap = cv2.VideoCapture(camera)
-        if not cap.isOpened():
-            print("Error opening HTTP stream")
-            return
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            bboxes, labels, sims = recog_face(frame, database)
-            for bbox, label, sim in zip(bboxes, labels, sims):
-                x1, y1, x2, y2 = map(int, bbox[:4])
-                face = frame[y1:y2, x1:x2]
-                if face.size == 0:
-                    continue
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)
-                text_label = f"{label} ({sim * 100:.2f}%)"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 4)
-            _, buffer = cv2.imencode('.jpg', frame)
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        cap.release()
+    camera = Camera[camera_label].value + quality
 
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(_generate_response_frame(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/stream1')
-def stream1():
-    camera = request.args.get('camera', "http://root:N143g144@192.168.100.152/mjpg/video.mjpg?streamprofile=Quality")
-   
-    def generate():
-        cap = cv2.VideoCapture(camera)
-        if not cap.isOpened():
-            print("Error opening RTSP stream")
-            return
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                
-                break
-            bboxes, labels, sims = recog_face(frame, database)
-            for bbox, label, sim in zip(bboxes, labels, sims):
-                x1, y1, x2, y2 = map(int, bbox[:4])
-                face = frame[y1:y2, x1:x2]
-                if face.size == 0:
-                    continue
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)
-                text_label = f"{label} ({sim * 100:.2f}%)"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 4)
-            _, buffer = cv2.imencode('.jpg', frame)
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        cap.release()
+# Open Client Camera
+@app.route('/camera/<int:cam_id>')
+def local_camera_stream(cam_id):
+    # camera_label = request.args.get('camera')
+    # print(camera_label)
+    # print(cam_id)
+    # Return a multipart HTTP response with the generated frames
+    return Response(_open_local_camera(cam_id), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+def _open_local_camera(cam_id):
+    # OpenCV capture from camera
+    print("----------- capture_id: " + str(cam_id) + "-----------")
+    cap = cv2.VideoCapture(cam_id)
 
-@app.route('/stream2')
-def stream2():
-    camera = request.args.get('camera', "http://localhost:5555")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-    def generate():
-        cap = cv2.VideoCapture(camera)
-        if not cap.isOpened():
-            print("Error opening RTSP stream")
-            return
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            bboxes, labels, sims = recog_face(frame, database)
-            for bbox, label, sim in zip(bboxes, labels, sims):
-                x1, y1, x2, y2 = map(int, bbox[:4])
-                face = frame[y1:y2, x1:x2]
-                if face.size == 0:
-                    continue
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)
-                text_label = f"{label} ({sim * 100:.2f}%)"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 4)
-            _, buffer = cv2.imencode('.jpg', frame)
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        cap.release()
+        # Encode the frame to JPEG format
+        ret, buffer = cv2.imencode('.jpg', frame)
+        if not ret:
+            continue
 
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+        # Yield the encoded frame
+        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+    # Release the capture when done
+    cap.release()
 
 if __name__ == '__main__':
-    app.run(port=5002, threaded=True, debug=True)
+    app.run(port=5000, threaded=True, debug=True)

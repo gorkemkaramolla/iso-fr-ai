@@ -13,8 +13,7 @@ from logger import configure_logging
 from pyannote.audio.pipelines.utils.hook import ProgressHook
 hf_auth_token = os.getenv("HF_AUTH_TOKEN")
 # Determine which logging mode to use
-aggressive_mode = os.getenv("AGGRESSIVE_LOGGING", "False").lower() in ['true', '1', 't']
-logger = configure_logging(logging.DEBUG if aggressive_mode else logging.INFO, aggressive=aggressive_mode)
+logger = configure_logging()
 
 
 audio_bp = Blueprint('audio_bp', __name__)

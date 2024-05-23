@@ -10,7 +10,8 @@
     "build": "next build && electron-builder",
     "start": "next start",
     "test": "next dev --experimental-https --hostname 10.15.95.233",
-    "lint": "next lint"
+    "lint": "next lint",
+    "isoai": "next dev"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.3",

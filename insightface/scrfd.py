@@ -1,8 +1,6 @@
-
 from __future__ import division
 import datetime
 import numpy as np
-#import onnx
 import onnxruntime
 import os
 import os.path as osp
@@ -66,7 +64,7 @@ def distance2kps(points, distance, max_shape=None):
 
 class SCRFD:
     def __init__(self, model_file=None, session=None):
-        import onnxruntime
+        
         self.model_file = model_file
         self.session = session
         self.taskname = 'detection'
@@ -94,9 +92,7 @@ class SCRFD:
         outputs = self.session.get_outputs()
         if len(outputs[0].shape) == 3:
             self.batched = True
-        output_names = []
-        for o in outputs:
-            output_names.append(o.name)
+        output_names = [o.name for o in outputs]
         self.input_name = input_name
         self.output_names = output_names
         self.input_mean = 127.5
@@ -117,11 +113,11 @@ class SCRFD:
             self.use_kps = True
         elif len(outputs)==10:
             self.fmc = 5
-            self._feat_stride_fpn = [8, 16, 32, 64, 128]
+            self._feat_stride_fpn = [8, 16, 32, 64, 128, 256, 512]
             self._num_anchors = 1
         elif len(outputs)==15:
             self.fmc = 5
-            self._feat_stride_fpn = [8, 16, 32, 64, 128]
+            self._feat_stride_fpn = [8, 16, 32, 64, 128, 256, 512]
             self._num_anchors = 1
             self.use_kps = True
 
@@ -261,7 +257,7 @@ class SCRFD:
             else:
                 values = area - offset_dist_squared * 2.0  # some extra weight on the centering
             bindex = np.argsort(
-                values)[::-1]  # some extra weight on the centering
+                values)[::-1]  # some extra weight on the cientering
             bindex = bindex[0:max_num]
             det = det[bindex, :]
             if kpss is not None:
@@ -270,7 +266,7 @@ class SCRFD:
 
     def autodetect(self, img, max_num=0, metric='max'):
         bboxes, kpss = self.detect(img, input_size=(640, 640), thresh=0.5)
-        bboxes2, kpss2 = self.detect(img, input_size=(128, 128), thresh=0.5)
+        bboxes2, kpss2 = self.detect(img, input_size=(640, 640), thresh=0.5)
         bboxes_all = np.concatenate([bboxes, bboxes2], axis=0)
         kpss_all = np.concatenate([kpss, kpss2], axis=0)
         keep = self.nms(bboxes_all)
@@ -326,3 +322,20 @@ class SCRFD:
             order = order[inds + 1]
 
         return keep
+
+
+def test():
+    assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
+
+    # Initialize the SCRFD detector with the model file
+    det_10g_model_path =os.path.join(assets_dir, 'det_10g.onnx')
+    img = cv2.imread('../face-images/FatihYavuz.jpg')
+    model = SCRFD(model_file=det_10g_model_path)
+    model.prepare(-1)
+    dets, kpss = model.detect(img, input_size=(640, 640), thresh=0.5)
+    print(dets)
+    if kpss is not None:
+        print(kpss)
+
+if __name__ == '__main__':
+    test()

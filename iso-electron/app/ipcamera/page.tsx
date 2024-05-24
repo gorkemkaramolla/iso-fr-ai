@@ -220,7 +220,7 @@ const VideoStream: React.FC = () => {
                   {camera.isPlaying && (
                     <img
                       className='h-fit'
-                      src={`http://localhost:5002/stream/${camera.id}?camera=${camera.selectedCamera}&quality=${camera.selectedQuality}`}
+                      src={`http://localhost:5004/stream/${camera.id}?camera=${camera.selectedCamera}&quality=${camera.selectedQuality}`}
                       alt={`Video Stream ${camera.id}`}
                       onLoad={() => {
                         setCameraStreams((prevStreams) =>

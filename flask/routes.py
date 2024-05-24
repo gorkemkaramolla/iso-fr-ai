@@ -1,10 +1,14 @@
-from flask import Flask, Blueprint, request, jsonify
+from flask import Flask, Blueprint, request, jsonify,Response
 from services.speaker_diarization import SpeakerDiarizationProcessor
-from services.camera_processor import CameraProcessor
+from services.camera_processor.camera_processor import CameraProcessor
+from services.camera_processor.enums.camera import Camera
+
 app = Flask(__name__)
 
 # Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cpu")
+camera_processor = CameraProcessor(device="cpu")
+
 
 # Setup Blueprint
 audio_bp = Blueprint('audio_bp', __name__)
@@ -37,11 +41,12 @@ app.register_blueprint(audio_bp)
 
 @camera_bp.route('/stream/<int:stream_id>', methods=["GET"])
 def stream(stream_id):
-    camera_label = request.args.get('camera')
-    quality = request.args.get('quality', 'Quality')
-    camera = Camera[camera_label].value + quality
-    return Response(camera_processor.generate(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(camera_processor.stream(stream_id, request.args.get('camera'), request.args.get('quality')), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@camera_bp.route('/camera/<int:cam_id>')
+def local_camera(cam_id) :
+    return Response(camera_processor.local_camera_stream(cam_id), mimetype='multipart/x-mixed-replace; boundary=frame');
+     
 app.register_blueprint(camera_bp)
 
 if __name__ == "__main__":

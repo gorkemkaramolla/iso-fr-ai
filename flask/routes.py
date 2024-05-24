@@ -1,13 +1,14 @@
 from flask import Flask, Blueprint, request, jsonify
 from services.speaker_diarization import SpeakerDiarizationProcessor
-
+from services.camera_processor import CameraProcessor
 app = Flask(__name__)
 
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(processor="cpu")
+diarization_processor = SpeakerDiarizationProcessor(device="cpu")
 
 # Setup Blueprint
 audio_bp = Blueprint('audio_bp', __name__)
+camera_bp = Blueprint('camera_bp', __name__)
 
 @app.route("/hello/", methods=["GET"])
 def hello():
@@ -33,6 +34,15 @@ def rename_segments_route(transcription_id, old_name, new_name):
 
 # Register Blueprint with the application
 app.register_blueprint(audio_bp)
+
+@camera_bp.route('/stream/<int:stream_id>', methods=["GET"])
+def stream(stream_id):
+    camera_label = request.args.get('camera')
+    quality = request.args.get('quality', 'Quality')
+    camera = Camera[camera_label].value + quality
+    return Response(camera_processor.generate(camera), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+app.register_blueprint(camera_bp)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5004)

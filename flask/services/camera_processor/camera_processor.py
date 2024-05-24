@@ -15,7 +15,7 @@ class CameraProcessor:
         # Set the compute device
         self.device = torch.device(device)
         print(f"Using device: {self.device}")
-
+        
         # Initialize ONNX Runtime settings
         onnxruntime.set_default_logger_severity(3)
 
@@ -25,12 +25,12 @@ class CameraProcessor:
         # Initialize the SCRFD detector with the model file
         detector_path = os.path.join(self.assets_dir, 'det_10g.onnx')
         self.detector = SCRFD(detector_path)
-        self.detector.prepare(self.device.index if torch.cuda.is_available() else -1)
+        self.detector.prepare(0 if device=="cuda" else -1)
         
         # Initialize the ArcFace recognizer with the model file
         rec_path = os.path.join(self.assets_dir, 'w600k_r50.onnx')
         self.rec = ArcFaceONNX(rec_path)
-        self.rec.prepare(self.device.index if torch.cuda.is_available() else -1)
+        self.rec.prepare(0 if device=="cuda" else -1)
         
         # Initialize emotion classification model
         self.processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
@@ -39,7 +39,7 @@ class CameraProcessor:
         # Similarity threshold for face recognition
         self.similarity_threshold = 0.4
         # Load or create face database
-        self.database = self.create_face_database(self.rec, self.detector, '/Users/gorkemkaramolla/Documents/python2/oracle/face-images')
+        self.database = self.create_face_database(self.rec, self.detector, "/home/isoaiteam/Documents/iso-fr-ai/face-images")
 
     def create_face_database(self, model, face_detector, image_folder):
         database = {}

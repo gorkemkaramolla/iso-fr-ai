@@ -1,4 +1,3 @@
-# speaker_diarization.py
 from flask import jsonify, Blueprint, request
 from werkzeug.utils import secure_filename
 from pyannote.audio import Pipeline
@@ -15,8 +14,8 @@ from logger import configure_logging
 from pyannote.audio.pipelines.utils.hook import ProgressHook
 
 class SpeakerDiarizationProcessor:
-    def __init__(self,processor):
-        self.processor = processor
+    def __init__(self,device):
+        self.device = device
         self.hf_auth_token = os.getenv("HF_AUTH_TOKEN")
         self.logger = configure_logging()
         self.audio_bp = Blueprint('audio_bp', __name__)
@@ -24,7 +23,7 @@ class SpeakerDiarizationProcessor:
             "pyannote/speaker-diarization-3.1",
             use_auth_token=self.hf_auth_token
         )
-        self.pipeline.to(torch.device(self.processor))
+        self.pipeline.to(torch.device(self.device))
         self.whisper_model = None
 
     def emit_progress(self, progress):
@@ -112,7 +111,7 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(10)
             if not self.whisper_model:
                 torch.cuda.empty_cache()
-                self.whisper_model = whisper.load_model("large", device=self.processor)
+                self.whisper_model = whisper.load_model("large", device=self.device)
 
             audio_data = whisper.load_audio(file_path)
             self.emit_progress(30)

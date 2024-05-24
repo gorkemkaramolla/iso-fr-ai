@@ -33,11 +33,17 @@ class SpeakerDiarizationProcessor:
     def rename_segments(self, transcription_id, old_name, new_name):
         cursor.execute("""
                     UPDATE ze_iso_ai_segments 
-                    SET SPEAKER = %s 
-                    WHERE SPEAKER = %s AND TRANSCRIPT_ID = %s
-                    """, (new_name, old_name, transcription_id))
+                    SET SPEAKER = :new_name 
+                    WHERE SPEAKER = :old_name AND TRANSCRIPT_ID = :transcription_id
+                    """,
+                    {
+                        "new_name": new_name, 
+                        "old_name": old_name, 
+                        "transcription_id": transcription_id
+                    })
         connection.commit()
         return {"status": "success"}, 200
+
 
     def get_transcription(self, id):
         try:
@@ -45,19 +51,25 @@ class SpeakerDiarizationProcessor:
                 """
                 SELECT TRANSCRIPT_ID, CREATED_AT
                 FROM ze_iso_ai_transcripts
-                WHERE TRANSCRIPT_ID = %s
-                """, (id,))
+                WHERE TRANSCRIPT_ID = :transcript_id
+                """,
+                {"transcript_id": id}
+            )
             transcription = cursor.fetchone()
             if not transcription:
                 return jsonify(error="No transcription found for this ID"), 404
 
+    # Query to get segments associated with the transcription
             cursor.execute(
                 """
                 SELECT SEGMENT_ID, START_TIME, END_TIME, SPEAKER, TRANSCRIPT_ID, TRANSCRIBED_TEXT 
                 FROM ze_iso_ai_segments 
-                WHERE TRANSCRIPT_ID = %s
-                """, (id,))
+                WHERE TRANSCRIPT_ID = :transcript_id
+                """,
+                {"transcript_id": id}
+            )
             rows = cursor.fetchall()
+            
             if not rows:
                 return jsonify(error="No transcription found for this ID"), 404
             segments = [

@@ -101,7 +101,7 @@ const VideoStream: React.FC = () => {
             .map((camera) => (
               <div
                 key={camera.id}
-                className='rounded-lg border border-black min-h-[400px] max-h-fit w-1/3 shadow-lg '
+                className='rounded-lg border border-black min-h-[400px] max-h-fit w-3/4 shadow-lg '
               >
                 <div className='text-sm text-center font-bold text-white bg-black border-none rounded-md py-1 m-0 border border-black'>
                   Yayın {camera.id}

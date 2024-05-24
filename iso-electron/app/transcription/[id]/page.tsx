@@ -113,7 +113,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
       segment.SPEAKER === oldName ? { ...segment, SPEAKER: newName } : segment
     );
     if (updatedSegments) {
-      setTranscription({ ...transcription, segments: updatedSegments });
+      setTranscription({ ...transcription!, segments: updatedSegments! });
     }
 
     await axios.post(

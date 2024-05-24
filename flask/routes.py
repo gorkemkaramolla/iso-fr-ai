@@ -6,8 +6,8 @@ from services.camera_processor.enums.camera import Camera
 app = Flask(__name__)
 
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cpu")
-camera_processor = CameraProcessor(device="cpu")
+diarization_processor = SpeakerDiarizationProcessor(device="cuda")
+camera_processor = CameraProcessor(device="cuda")
 
 
 # Setup Blueprint

@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 import json
 import logging
-# from db import cursor, connection, LOB, ERROR
+from db import cursor, connection, LOB, ERROR
 from socketio_instance import socketio
 from logger import configure_logging
 from pyannote.audio.pipelines.utils.hook import ProgressHook
@@ -30,44 +30,43 @@ class SpeakerDiarizationProcessor:
         socketio.emit('progress', {'progress': progress})
 
     def rename_segments(self, transcription_id, old_name, new_name):
-        # cursor.execute("""
-        #             UPDATE ze_iso_ai_segments 
-        #             SET SPEAKER = :new_name 
-        #             WHERE SPEAKER = :old_name AND TRANSCRIPT_ID = :transcription_id
-        #             """,
-        #             {
-        #                 "new_name": new_name, 
-        #                 "old_name": old_name, 
-        #                 "transcription_id": transcription_id
-        #             })
-        # connection.commit()
+        cursor.execute("""
+                    UPDATE ze_iso_ai_segments 
+                    SET SPEAKER = :new_name 
+                    WHERE SPEAKER = :old_name AND TRANSCRIPT_ID = :transcription_id
+                    """,
+                    {
+                        "new_name": new_name, 
+                        "old_name": old_name, 
+                        "transcription_id": transcription_id
+                    })
+        connection.commit()
         return {"status": "success"}, 200
 
 
     def get_transcription(self, id):
         try:
-            # cursor.execute(
-            #     """
-            #     SELECT TRANSCRIPT_ID, CREATED_AT
-            #     FROM ze_iso_ai_transcripts
-            #     WHERE TRANSCRIPT_ID = :transcript_id
-            #     """,
-            #     {"transcript_id": id}
-            # )
-            # transcription = cursor.fetchone()
-            # if not transcription:
-            #     return jsonify(error="No transcription found for this ID"), 404
+            cursor.execute(
+                """
+                SELECT TRANSCRIPT_ID, CREATED_AT
+                FROM ze_iso_ai_transcripts
+                WHERE TRANSCRIPT_ID = :transcript_id
+                """,
+                {"transcript_id": id}
+            )
+            transcription = cursor.fetchone()
+            if not transcription:
+                return jsonify(error="No transcription found for this ID"), 404
 
-    # Query to get segments associated with the transcription
-            # cursor.execute(
-            #     """
-            #     SELECT SEGMENT_ID, START_TIME, END_TIME, SPEAKER, TRANSCRIPT_ID, TRANSCRIBED_TEXT 
-            #     FROM ze_iso_ai_segments 
-            #     WHERE TRANSCRIPT_ID = :transcript_id
-            #     """,
-            #     {"transcript_id": id}
-            # )
-            # rows = cursor.fetchall()
+            cursor.execute(
+                """
+                SELECT SEGMENT_ID, START_TIME, END_TIME, SPEAKER, TRANSCRIPT_ID, TRANSCRIBED_TEXT 
+                FROM ze_iso_ai_segments 
+                WHERE TRANSCRIPT_ID = :transcript_id
+                """,
+                {"transcript_id": id}
+            )
+            rows = cursor.fetchall()
             
             if not rows:
                 return jsonify(error="No transcription found for this ID"), 404
@@ -150,25 +149,25 @@ class SpeakerDiarizationProcessor:
                 'transcription': transcription,
                 'created_at': created_at
             }
-            # cursor.execute(
-            #     "INSERT INTO ze_iso_ai_transcripts (TRANSCRIPT_ID, CREATED_AT, FULL_TEXT) VALUES (:transcript_id, TO_TIMESTAMP(:created_at, 'YYYY-MM-DD HH24:MI:SS.FF'), :full_text)",
-            #     {"transcript_id": transcript_id, "created_at": created_at, "full_text": transcription['text']}
-            # )
-            # connection.commit()
+            cursor.execute(
+                "INSERT INTO ze_iso_ai_transcripts (TRANSCRIPT_ID, CREATED_AT, FULL_TEXT) VALUES (:transcript_id, TO_TIMESTAMP(:created_at, 'YYYY-MM-DD HH24:MI:SS.FF'), :full_text)",
+                {"transcript_id": transcript_id, "created_at": created_at, "full_text": transcription['text']}
+            )
+            connection.commit()
             
-            # for segment in transcription['segments']:
-            #     cursor.execute(
-            #         "INSERT INTO ze_iso_ai_segments (SEGMENT_ID, TRANSCRIPT_ID, START_TIME, END_TIME, TRANSCRIBED_TEXT, SPEAKER) "
-            #         "VALUES (IBS.SEQ_SEGMENT_ID.NEXTVAL, :transcript_id, :start_time, :end_time, :transcribed_text, :speaker)",
-            #         {
-            #             "transcript_id": transcript_id,
-            #             "start_time": segment['start'],
-            #             "end_time": segment['end'],
-            #             "transcribed_text": segment['text'],
-            #             "speaker": segment['speaker']
-            #         }
-            #     )
-            # connection.commit()
+            for segment in transcription['segments']:
+                cursor.execute(
+                    "INSERT INTO ze_iso_ai_segments (SEGMENT_ID, TRANSCRIPT_ID, START_TIME, END_TIME, TRANSCRIBED_TEXT, SPEAKER) "
+                    "VALUES (IBS.SEQ_SEGMENT_ID.NEXTVAL, :transcript_id, :start_time, :end_time, :transcribed_text, :speaker)",
+                    {
+                        "transcript_id": transcript_id,
+                        "start_time": segment['start'],
+                        "end_time": segment['end'],
+                        "transcribed_text": segment['text'],
+                        "speaker": segment['speaker']
+                    }
+                )
+            connection.commit()
 
             return jsonify(response_data), 200
         except Exception as e:

@@ -8,7 +8,7 @@ from socketio_instance import socketio
 app = Flask(__name__)
 CORS(app)
 
-app.register_blueprint(audio_bp)
+# app.register_blueprint(audio_bp)
 app.register_blueprint(camera_bp)
 os.makedirs("temp", exist_ok=True)
 os.makedirs("logs", exist_ok=True)

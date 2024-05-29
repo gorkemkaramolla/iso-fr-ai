@@ -1,3 +1,4 @@
+# speaker_diarization.py
 from flask import jsonify, Blueprint, request
 from werkzeug.utils import secure_filename
 from pyannote.audio import Pipeline
@@ -13,9 +14,29 @@ from socketio_instance import socketio
 from logger import configure_logging
 from pyannote.audio.pipelines.utils.hook import ProgressHook
 import oracledb
+
 class SpeakerDiarizationProcessor:
-    def __init__(self,device):
-        self.device = device
+    @staticmethod
+    def sanitize_string(input_string):
+        """Sanitize strings by stripping leading/trailing whitespace and escaping special characters."""
+        if isinstance(input_string, str):
+            # Strip leading/trailing whitespace
+            cleaned_string = input_string.strip()
+            # Replace single quotes with two single quotes for SQL escaping
+            cleaned_string = cleaned_string.replace("'", "''")
+            return cleaned_string
+        return input_string
+
+    @staticmethod
+    def to_float(input_value):
+        """Convert values to float, handle conversion errors."""
+        try:
+            return float(input_value)
+        except ValueError:
+            return None  # Or handle the error as needed
+
+    def __init__(self,processor):
+        self.processor = processor
         self.hf_auth_token = os.getenv("HF_AUTH_TOKEN")
         self.logger = configure_logging()
         self.audio_bp = Blueprint('audio_bp', __name__)
@@ -23,7 +44,7 @@ class SpeakerDiarizationProcessor:
             "pyannote/speaker-diarization-3.1",
             use_auth_token=self.hf_auth_token
         )
-        self.pipeline.to(torch.device(self.device))
+        self.pipeline.to(torch.device(self.processor))
         self.whisper_model = None
 
     def emit_progress(self, progress):
@@ -43,110 +64,59 @@ class SpeakerDiarizationProcessor:
         connection.commit()
         return {"status": "success"}, 200
 
-    def get_all_transcriptions(self):
+    def get_transcription(self, id):
         try:
+            # Fetching the transcription details
             cursor.execute(
                 """
                 SELECT TRANSCRIPT_ID, CREATED_AT
-                FROM ze_iso_ai_transcripts
-                """
-            )
-            transcriptions = cursor.fetchall()
-            if not transcriptions:
-                return jsonify(error="No transcriptions found"), 404
-
-            all_transcriptions = [
-                {
-                    'transcription_id': transcription[0],
-                    'created_at': transcription[1]
-                }
-                for transcription in transcriptions
-            ]
-            self.logger.info(f"Transcriptions: {all_transcriptions} successfully fetched from database")
-            return jsonify(all_transcriptions), 200
-        except ERROR as e:
-            self.logger.error(f"Database error: {str(e)}")
-            return jsonify(error=str(e)), 500
-    
-    
-    
-    def safe_parse_date(self, date_value):
-        if not date_value:
-            return None
-        if isinstance(date_value, str):
-            return date_value  # If it's already a string, return it directly
-        try:
-            return date_value.isoformat() if date_value else None
-        except ValueError as e:
-            self.logger.error(f"Invalid date encountered: {e}, Date Value: {date_value}")
-            return None
-        except AttributeError as e:
-            self.logger.error(f"Attribute error: {e}, Date Value: {date_value}")
-            return None
-
-
-    def lob_to_string(self, lob_value):
-        if lob_value is not None:
-            return lob_value.read()
-        return None
-    def get_transcription(self, id):
-        self.logger.info(f"Fetching transcription for ID: {id}")  # Log the ID being processed
-        try:
-            cursor.execute(
-                """
-                SELECT TRANSCRIPT_ID, TO_CHAR(CREATED_AT, 'YYYY-MM-DD HH24:MI:SS') AS CREATED_AT
                 FROM ze_iso_ai_transcripts
                 WHERE TRANSCRIPT_ID = :transcript_id
                 """,
                 {"transcript_id": id}
             )
             transcription = cursor.fetchone()
-            self.logger.debug(f"Transcription fetch result: {transcription}")  # Log the fetched result
-
             if not transcription:
-                self.logger.warning(f"No transcription found for ID: {id}")
                 return jsonify(error="No transcription found for this ID"), 404
 
+            # Fetching the segments associated with the transcription
             cursor.execute(
                 """
-                SELECT SEGMENT_ID, START_TIME, END_TIME, SPEAKER, TRANSCRIPT_ID, TRANSCRIBED_TEXT
-                FROM ze_iso_ai_segments
+                SELECT SEGMENT_ID, START_TIME, END_TIME, SPEAKER, TRANSCRIPT_ID, TRANSCRIBED_TEXT 
+                FROM ze_iso_ai_segments 
                 WHERE TRANSCRIPT_ID = :transcript_id
                 """,
-                {"transcript_id": id}
+                {"transcript_id": int(transcription[0])}  # Use the fetched TRANSCRIPT_ID for clarity
             )
             rows = cursor.fetchall()
-            self.logger.debug(f"Segment fetch results: {rows}")  # Log segment results
-
             if not rows:
-                self.logger.warning(f"No transcription segments found for ID: {id}")
-                return jsonify(error="No transcription segments found for this ID"), 404
+                return jsonify(error="No segments found for this transcription"), 404
 
-            segments = []
-            for row in rows:
-                segment = {desc[0]: val for desc, val in zip(cursor.description, row)}
-                self.logger.debug(f"Processing segment: {segment}")  # Log each segment before processing
-                if isinstance(segment.get('TRANSCRIBED_TEXT'), oracledb.LOB):
-                    segment['TRANSCRIBED_TEXT'] = self.lob_to_string(segment['TRANSCRIBED_TEXT'])
-                segment['CREATED_AT'] = self.safe_parse_date(segment.get('CREATED_AT'))
-                segments.append(segment)
+            # Process segments
+            segments = [
+                {column.name: (value.read() if isinstance(value, oracledb.LOB) else value)
+                for column, value in zip(cursor.description, row)}
+                for row in rows
+            ]
 
-            result = {
+            # Return the full transcription with segments
+            return jsonify({
                 'transcription_id': transcription[0],
-                'created_at': self.safe_parse_date(transcription[1]) if transcription[1] else None,
+                'created_at': transcription[1],
                 'segments': segments
-            }
-            self.logger.info(f"get_transcription: {result} successfully fetched from database")
-            return jsonify(result), 200
+            }), 200
 
-        except Exception as e:
-            error_message = f"Error during transcription retrieval: {e}"
-            self.logger.error(error_message)
-            return jsonify(error="An error occurred while retrieving the transcription."), 500
+        except oracledb.Error as e:
+            # Log detailed error information
+            self.logger.error(f"Database error: {str(e)}")
+            return jsonify(error="Internal server error"), 500
 
-    
-    # Process Audio
-    def process_audio(self,client_id):
+
+
+
+
+
+    def process_audio(self):
         self.logger.info("New transcription request received")
         if 'file' not in request.files:
             self.logger.error("No file part in request")
@@ -171,7 +141,7 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(10)
             if not self.whisper_model:
                 torch.cuda.empty_cache()
-                self.whisper_model = whisper.load_model("large", device=self.device)
+                self.whisper_model = whisper.load_model("large", device=self.processor)
 
             audio_data = whisper.load_audio(file_path)
             self.emit_progress(30)
@@ -217,17 +187,26 @@ class SpeakerDiarizationProcessor:
             connection.commit()
             
             for segment in transcription['segments']:
+                sanitized_transcribed_text = self.sanitize_string(segment['text'])
+                sanitized_speaker = self.sanitize_string(segment['speaker'])
+                start_time_float = self.to_float(segment['start'])
+                end_time_float = self.to_float(segment['end'])
                 cursor.execute(
-                    "INSERT INTO ze_iso_ai_segments (SEGMENT_ID, TRANSCRIPT_ID, START_TIME, END_TIME, TRANSCRIBED_TEXT, SPEAKER) "
-                    "VALUES (IBS.SEQ_SEGMENT_ID.NEXTVAL, :transcript_id, :start_time, :end_time, :transcribed_text, :speaker)",
-                    {
-                        "transcript_id": transcript_id,
-                        "start_time": segment['start'],
-                        "end_time": segment['end'],
-                        "transcribed_text": segment['text'],
-                        "speaker": segment['speaker']
-                    }
-                )
+                        """
+                        INSERT INTO ze_iso_ai_segments (
+                            SEGMENT_ID, TRANSCRIPT_ID, START_TIME, END_TIME, TRANSCRIBED_TEXT, SPEAKER
+                        ) VALUES (
+                            IBS.SEQ_SEGMENT_ID.NEXTVAL, :transcript_id, :start_time, :end_time, :transcribed_text, :speaker
+                        )
+                        """,
+                        {
+                            "transcript_id": transcript_id,
+                            "start_time": start_time_float,
+                            "end_time": end_time_float,
+                            "transcribed_text": sanitized_transcribed_text,
+                            "speaker": sanitized_speaker
+                        }
+                    )
             connection.commit()
 
             return jsonify(response_data), 200

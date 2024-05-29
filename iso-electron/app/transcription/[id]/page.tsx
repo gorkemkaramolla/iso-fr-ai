@@ -152,8 +152,14 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
               {transcription.segments.map((segment) => (
                 <tr key={segment.SEGMENT_ID}>
                   <td className='border px-4 py-2'>
-                    {segment.START_TIME.toFixed(2)}s -{' '}
-                    {segment.END_TIME.toFixed(2)}s
+                    {segment && segment.START_TIME
+                      ? segment.START_TIME.toFixed(2)
+                      : 'N/A'}
+                    s -{' '}
+                    {segment && segment.END_TIME
+                      ? segment.END_TIME.toFixed(2)
+                      : 'N/A'}
+                    s
                   </td>
                   <td
                     className='border px-4 py-2 cursor-pointer hover:a   transition-all'

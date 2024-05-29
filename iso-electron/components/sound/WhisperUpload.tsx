@@ -61,7 +61,12 @@ function WhisperUpload() {
       const res = await axios.post<ApiResponse>(
         `http://127.0.0.1:5004/process-audio/`,
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-Client-ID': localStorage.getItem('client_id') || '123456',
+          },
+        }
       );
       setResponse(res.data);
       setLoading(false);

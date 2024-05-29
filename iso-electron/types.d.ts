@@ -14,8 +14,7 @@ interface Transcript {
 
 interface ApiResponse {
   created_at: string;
-  transcription: Transcript;
-  id: String;
+  transcription_id: String;
 }
 
 interface CameraStream {

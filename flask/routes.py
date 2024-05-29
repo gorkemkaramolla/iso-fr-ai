@@ -10,30 +10,41 @@ import xmltodict
 from logger import configure_logging
 import os
 import platform
-app = Flask(__name__)
+from socketio_instance import socketio
+import time
+from threading import Thread
 
+app = Flask(__name__)
 # Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cuda")
 camera_processor = CameraProcessor(device="cuda")
 logger = configure_logging()
-
+import re
 # Setup Blueprint
 audio_bp = Blueprint('audio_bp', __name__)
 camera_bp = Blueprint('camera_bp', __name__)
 system_check = Blueprint('system_check', __name__)
 
-
 def get_cpu_temp_linux():
     try:
-        if os.path.exists("/sys/class/thermal/thermal_zone0/temp"):
-            with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-                temp = int(f.read()) / 1000
-            logger.info(f"Linux CPU temperature: {temp}°C")
-            return temp
+        result = subprocess.run(['sensors'], stdout=subprocess.PIPE, text=True)
+        output = result.stdout
+        
+        core_temps = {}
+        matches = re.findall(r'Core\s+\d+:\s+\+([\d.]+)°C', output)
+        if matches:
+            core_temps = {f"Core {i}": float(temp) for i, temp in enumerate(matches)}
+            avg_temp = sum(core_temps.values()) / len(core_temps)
+            # logger.info(f"CPU core temperatures: {core_temps}")
+            logger.info(f"Average CPU temperature: {avg_temp}°C")
+            return avg_temp
+        else:
+            logger.error("No CPU core temperatures found.")
+            return 'N/A'
     except Exception as e:
-        logger.info(f"Failed to get Linux CPU temperature: {e}")
-    return 'N/A'
-
+        logger.error(f"Failed to get CPU temperatures: {e}")
+        return 'N/A'
+    
 def get_cpu_temp_windows():
     try:
         import wmi
@@ -79,6 +90,30 @@ def get_gpu_stats():
         logger.info(f"Failed to get GPU stats: {e}")
         return 'N/A', 'N/A', 'N/A'
 
+def send_system_info():
+    while True:
+        cpu_temp = get_cpu_temp()
+        cpu_usage = psutil.cpu_percent(interval=1)
+        gpu_temp, gpu_usage, gpu_memory_usage = get_gpu_stats()
+        memory = psutil.virtual_memory()
+        memory_usage = f"{memory.used // (1024 ** 3)}GB / {memory.total // (1024 ** 3)}GB"
+        
+        system_info = {
+            'cpu_temperature': cpu_temp,
+            'cpu_usage': cpu_usage,
+            'gpu_temperature': gpu_temp,
+            'gpu_usage': gpu_usage,
+            'gpu_memory_usage': gpu_memory_usage,
+            'memory_usage': memory_usage
+        }
+
+        socketio.emit('system_info', system_info)
+        time.sleep(2)  # Send data every 2 seconds
+
+# Start the thread to send system info
+thread = Thread(target=send_system_info)
+thread.start()
+
 @system_check.route("/system_check/", methods=["GET"])
 def system_check_route():
     # Get CPU temperature and usage
@@ -104,7 +139,6 @@ def system_check_route():
     }
 
     return jsonify(system_info)
-
 
 
 

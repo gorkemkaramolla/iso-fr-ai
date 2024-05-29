@@ -39,8 +39,7 @@ class CameraProcessor:
         # Similarity threshold for face recognition
         self.similarity_threshold = 0.4
         # Load or create face database
-        self.database = self.create_face_database(self.rec, self.detector, "/home/isoaiteam/Documents/iso-fr-ai/face-images")
-
+        self.database = self.create_face_database(self.rec, self.detector, os.path.join(os.path.dirname(os.getcwd()),"face-images"))
     def create_face_database(self, model, face_detector, image_folder):
         database = {}
         for filename in os.listdir(image_folder):

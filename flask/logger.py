@@ -19,7 +19,10 @@ def configure_logging(log_level=logging.INFO):
     logger = logging.getLogger('audio_processing')
     logger.setLevel(log_level)
 
-    f_handler = RotatingFileHandler('audio_processing.json', maxBytes=10000, backupCount=3)
+    if not os.path.exists('logs') : 
+        os.makedirs('logs')
+        
+    f_handler = RotatingFileHandler('./logs/audio_processing.json', maxBytes=10000, backupCount=3)
     f_handler.setFormatter(JsonFormatter())
 
     logger.addHandler(f_handler)

@@ -24,6 +24,7 @@ interface CameraStream {
   selectedQuality: Quality;
   isPlaying: boolean;
   isLoading: boolean;
+  isRecording: boolean;
 }
 interface SystemInfo {
   cpu_temperature: string;

@@ -1,72 +1,101 @@
-import React from 'react';
+import React from "react";
 import {
   RefreshCwIcon,
   PlayCircleIcon,
   StopCircleIcon,
   XIcon,
   CircleIcon,
-} from 'lucide-react';
+  Video,
+  VideoOff,
+} from "lucide-react";
 
 interface CameraControlsProps {
   isPlaying: boolean;
   isLoading: boolean;
+  isRecording: boolean;
   stopStream: () => void;
   reloadStream: () => void;
   removeStream: () => void;
+  startRecording: () => void;
+  stopRecording: () => void;
 }
 
 const CameraControls: React.FC<CameraControlsProps> = ({
   isPlaying,
   isLoading,
+  isRecording,
   stopStream,
   reloadStream,
   removeStream,
+  startRecording,
+  stopRecording,
 }) => {
   return (
-    <div className='dropdown dropdown-hover '>
-      <div tabIndex={0} role='button' className='btn btn-sm bg-white'>
+    <div className="dropdown dropdown-hover ">
+      <div tabIndex={0} role="button" className="btn btn-sm bg-white">
         {isLoading ? (
-          <span className='loading loading-spinner loading-xs'></span>
+          <span className="loading loading-spinner loading-xs"></span>
         ) : isPlaying ? (
-          <CircleIcon className='w-4 h-4 text-green-500 rounded-full bg-green-500' />
+          <CircleIcon className="w-4 h-4 text-green-500 rounded-full bg-green-500" />
         ) : (
-          <CircleIcon className='w-4 h-4 text-red-500 rounded-full bg-red-500' />
+          <CircleIcon className="w-4 h-4 text-red-500 rounded-full bg-red-500" />
         )}
       </div>
       <ul
         tabIndex={0}
-        className='dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52'
+        className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
       >
         <li>
           <>
             {isPlaying ? (
               <a
                 onClick={() => stopStream()}
-                className='transition-all duration-1000'
+                className="transition-all duration-1000"
               >
-                <StopCircleIcon className='w-6 h-6' />
-                Stop
+                <StopCircleIcon className="w-6 h-6" />
+                Yayını Durdur
               </a>
             ) : (
               <a
                 onClick={() => reloadStream()}
-                className='transition-all duration-1000'
+                className="transition-all duration-1000"
               >
-                <PlayCircleIcon className='w-6 h-6' />
-                Start
+                <PlayCircleIcon className="w-6 h-6" />
+                Yayını Başlat
+              </a>
+            )}
+          </>
+        </li>
+        <li>
+          <>
+            {isRecording ? (
+              <a
+                onClick={() => stopRecording()}
+                className="transition-all duration-1000"
+              >
+                <VideoOff className="w-6 h-6" />
+                Kayıt Durdur
+              </a>
+            ) : (
+              <a
+                onClick={() => startRecording()}
+                className="transition-all duration-1000"
+              >
+                <Video className="w-6 h-6" />
+                Kayıt Başlat
               </a>
             )}
           </>
         </li>
         <li>
           <a onClick={() => reloadStream()}>
-            <RefreshCwIcon className='w-6 h-6' />
+            <RefreshCwIcon className="w-6 h-6" />
             Yenile
           </a>
         </li>
         <li>
-          <a onClick={() => removeStream()} className='text-red-500'>
-            <XIcon className='w-6 h-6' />
+          <a onClick={() => removeStream()} className="text-red-500">
+            <XIcon className="w-6 h-6" />
             Kapat
           </a>
         </li>

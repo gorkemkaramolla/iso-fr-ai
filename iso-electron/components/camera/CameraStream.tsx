@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { Quality } from '@/utils/enums';
-import Image from 'next/image';
+import React, { useEffect } from "react";
+import { Quality } from "@/utils/enums";
+import Image from "next/image";
 
 interface CameraStreamProps {
   id: number;
@@ -25,11 +25,12 @@ const CameraStream: React.FC<CameraStreamProps> = ({
     <div>
       {isPlaying && (
         <Image
-          className='h-fit'
-          src={streamSrc || ''}
+          className="h-fit rounded-b-lg aspect-w-16 aspect-h-9"
+          src={streamSrc || ""}
           alt={`Video Stream`}
           width={1920}
           height={1080}
+          objectFit="cover"
           onLoad={() => {
             setCameraStreams((prevStreams) =>
               prevStreams.map((stream) =>

@@ -152,6 +152,11 @@ class CameraProcessor:
         # OpenCV capture from camera
         print("----------- capture_id: " + str(cam_id) + "-----------")
         cap = cv2.VideoCapture(cam_id)
+           
+        # Set the aspect ratio to 16:9
+
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # Width
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # Height
 
         while True:
             ret, frame = cap.read()

@@ -9,6 +9,9 @@ import platform
 import time
 from threading import Thread
 from flask_cors import CORS
+from services.video.video_recorder import VideoRecorder
+
+
 app = Flask(__name__)
 CORS(app, origins="*")
 # Create an instance of your class
@@ -22,10 +25,37 @@ import re
 audio_bp = Blueprint('audio_bp', __name__)
 camera_bp = Blueprint('camera_bp', __name__)
 system_check = Blueprint('system_check', __name__)
+video_bp = Blueprint('video_bp', __name__)
 
-camera_urls = camera_processor.read_camera_urls()
+# video recorder routes
+recorders = {}  # Dictionary to hold recorder threads
+@video_bp.route('/start-recording', methods=['POST'])
+def start_recording():
+    data = request.json
+    camera_label = data['camera_label']
+    stream_url = data['stream_url']
+    output_path = f"{camera_label}.avi"
+    recorder = VideoRecorder(stream_url, output_path)
+    recorder.start()
+    recorders[camera_label] = recorder
+    return jsonify({"message": "Recording started"}), 200
+
+@video_bp.route('/stop-recording', methods=['POST'])
+def stop_recording():
+    data = request.json
+    camera_label = data['camera_label']
+    if camera_label in recorders:
+        recorders[camera_label].stop()
+        del recorders[camera_label]
+        return jsonify({"message": "Recording stopped"}), 200
+    return jsonify({"error": "Recorder not found"}), 404
+app.register_blueprint(video_bp)
+# ----------------------------
+
 
 # camera url routes
+camera_urls = camera_processor.read_camera_urls()
+
 @camera_bp.route('/camera-url', methods=['POST'])
 def add_camera_url():
     data = request.json

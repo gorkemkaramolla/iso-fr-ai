@@ -25,3 +25,12 @@ interface CameraStream {
   isPlaying: boolean;
   isLoading: boolean;
 }
+interface SystemInfo {
+  cpu_temperature: string;
+  cpu_core_temps: { [key: string]: number };
+  cpu_usage: string;
+  gpu_temperature: string;
+  gpu_usage: string;
+  gpu_memory_usage: string;
+  memory_usage: string;
+}

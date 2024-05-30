@@ -33,6 +33,7 @@
     "react": "^18",
     "react-d3-speedometer": "^2.2.1",
     "react-dom": "^18",
+    "react-draggable": "^4.4.6",
     "react-hls-player": "^3.0.7",
     "react-resizable-panels": "^2.0.19",
     "recharts": "^2.12.7",

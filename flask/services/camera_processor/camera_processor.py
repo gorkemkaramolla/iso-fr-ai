@@ -1,6 +1,7 @@
 
 import cv2
 import numpy as np
+import pandas as pd
 import os
 import os.path as osp
 from services.camera_processor.scrfd import SCRFD
@@ -40,6 +41,23 @@ class CameraProcessor:
         self.similarity_threshold = 0.4
         # Load or create face database
         self.database = self.create_face_database(self.rec, self.detector, os.path.join(os.path.dirname(os.getcwd()),"face-images"))
+     
+        # Camera URLs file
+        self.camera_urls_file = 'camera_urls.csv'
+
+
+    def read_camera_urls(self):
+        if not os.path.exists(self.camera_urls_file):
+            return {}
+        
+        df = pd.read_csv(self.camera_urls_file, index_col=0)
+        return df.to_dict()['url']
+
+    def write_camera_urls(self,camera_urls):
+        df = pd.DataFrame(list(camera_urls.items()), columns=['label', 'url'])
+        df.to_csv(self.camera_urls_file, index=False)
+
+
     def create_face_database(self, model, face_detector, image_folder):
         database = {}
         for filename in os.listdir(image_folder):
@@ -119,7 +137,8 @@ class CameraProcessor:
     def stream(self,stream_id,camera,quality):
         camera_label =camera
         quality = quality
-        camera = Camera[camera_label].value + quality
+        # camera = Camera[camera_label].value + quality
+        camera = self.read_camera_urls()[camera_label] + quality
         return self.generate(camera)
 
     def local_camera_stream(self,cam_id):

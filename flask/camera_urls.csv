@@ -1,0 +1,5 @@
+label,url
+asda,asfasf
+CAM,http://localhost:5004/camera/0?
+CAM2,http://127.0.0.1:5004/camera/1?
+IP_CAM,http://root:N143g144@192.168.100.152/mjpg/video.mjpg?streamprofile=

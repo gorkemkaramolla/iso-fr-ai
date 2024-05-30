@@ -5,6 +5,7 @@ import AddCameraButton from '@/components/camera/AddCameraButton';
 import CameraStreamControl from '@/components/camera/CameraStreamControl';
 import axios from 'axios';
 import CameraDropdown from '@/components/camera/CameraDropdown';
+import { Resizable } from 're-resizable';
 
 const VideoStream: React.FC = () => {
   const [showAddCamera, setShowAddCamera] = useState(false);
@@ -12,11 +13,11 @@ const VideoStream: React.FC = () => {
   const [cameraUrls, setCameraUrls] = useState<{ [key: string]: string }>({});
   const [selectedCamera, setSelectedCamera] = useState<string>('');
   const [availableIds, setAvailableIds] = useState([1, 2, 3, 4, 5, 6]);
-  // const imgRef = useRef<HTMLImageElement>(null);
+
   useEffect(() => {
     const fetchCameraUrls = async () => {
       try {
-        const response = await axios.get('http://localhost:5002/camera-urls');
+        const response = await axios.get(process.env.NEXT_PUBLIC_FLASK_URL + '/camera-urls');
         const data = response.data;
         setCameraUrls(data);
       } catch (error) {
@@ -36,17 +37,16 @@ const VideoStream: React.FC = () => {
         {
           id: newId,
           selectedCamera: cameraLabel,
-          streamSrc: `http://localhost:5002/stream/${newId}?camera=${selectedCamera}&quality=${Quality.Quality}`,
+          streamSrc: `${process.env.NEXT_PUBLIC_FLASK_URL}/stream/${newId}?camera=${selectedCamera}&quality=${Quality.Quality}`,
           selectedQuality: Quality.Quality,
           isPlaying: true,
           isLoading: true,
         },
       ]);
-      // console.log(cameraStreams);
-      // Set selectedCamera to an empty string
       setSelectedCamera('');
     }
   };
+
   const handleCameraChange = (id: number, selectedCamera: string) => {
     setCameraStreams(
       cameraStreams.map((camera) =>
@@ -54,6 +54,7 @@ const VideoStream: React.FC = () => {
       )
     );
   };
+
   const handleQualityChange = (id: number, selectedQuality: string | null) => {
     setCameraStreams(
       cameraStreams.map((camera) =>
@@ -61,14 +62,6 @@ const VideoStream: React.FC = () => {
       )
     );
   };
-
-  // const togglePlay = (id: number) => {
-  //   setCameraStreams(
-  //     cameraStreams.map((camera) =>
-  //       camera.id === id ? { ...camera, isPlaying: !camera.isPlaying } : camera
-  //     )
-  //   );
-  // };
 
   return (
     <div className='h-screen overflow-y-scroll pb-20'>
@@ -92,27 +85,32 @@ const VideoStream: React.FC = () => {
           {cameraStreams
             .sort((a, b) => a.id - b.id)
             .map((camera) => (
-              <CameraStreamControl
-                cameraUrls={cameraUrls}
+              <Resizable
                 key={camera.id}
-                id={camera.id}
-                selectedCamera={camera.selectedCamera}
-                selectedQuality={camera.selectedQuality}
-                isPlaying={camera.isPlaying}
-                isLoading={camera.isLoading}
-                streamSrc={camera.streamSrc}
-                onCameraChange={handleCameraChange}
-                onQualityChange={handleQualityChange}
-                // stopStream={stopStream}
-                availableIds={availableIds}
-                setAvailableIds={setAvailableIds}
-                // reloadStream={reloadStream}
-                cameraStreams={cameraStreams}
-                setCameraStreams={setCameraStreams}
-                // onTogglePlay={togglePlay}s
-
-                // onRemoveStream={removeCameraStream}
-              />
+                defaultSize={{
+                  width: "fit-content",
+                  height: "100%",
+                }}
+                maxWidth="100%"
+                maxHeight="100%"
+                className='bg-slate-100 rounded-xl border-2 border-black'
+              >
+                <CameraStreamControl
+                  cameraUrls={cameraUrls}
+                  id={camera.id}
+                  selectedCamera={camera.selectedCamera}
+                  selectedQuality={camera.selectedQuality}
+                  isPlaying={camera.isPlaying}
+                  isLoading={camera.isLoading}
+                  streamSrc={camera.streamSrc}
+                  onCameraChange={handleCameraChange}
+                  onQualityChange={handleQualityChange}
+                  availableIds={availableIds}
+                  setAvailableIds={setAvailableIds}
+                  cameraStreams={cameraStreams}
+                  setCameraStreams={setCameraStreams}
+                />
+              </Resizable>
             ))}
         </div>
       </div>

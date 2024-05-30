@@ -25,3 +25,6 @@ googleSP2T/temp
 googleSP2T/results
 poetry.lock
 __pycache__
+/insightface/wget-log
+flask/CREATE TABLE IBS.sql
+insightface/cuda_11.8.0_520.61.05_linux.run

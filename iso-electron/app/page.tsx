@@ -12,7 +12,9 @@ export default function Home() {
     <div className='flex justify-center items-center h-screen relative '>
       {/* {option} */}
       {/* <SpeechRecognitionComponent /> */}
-      <MonitorWidget />
+
+      <MonitorWidget uniqueId={'1'} />
+      <MonitorWidget uniqueId={'2'} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
 import Heading from '@/components/ui/Heading';
+import RotatingWheel from '@/components/ui/LogoSpinner';
 
 interface Segment {
   SEGMENT_ID: number;
@@ -122,7 +123,11 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   };
 
   if (!transcription) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <RotatingWheel />
+      </div>
+    );
   }
 
   return (

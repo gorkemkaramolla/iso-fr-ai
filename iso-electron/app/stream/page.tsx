@@ -17,7 +17,9 @@ const VideoStream: React.FC = () => {
   useEffect(() => {
     const fetchCameraUrls = async () => {
       try {
-        const response = await axios.get(process.env.NEXT_PUBLIC_FLASK_URL + '/camera-urls');
+        const response = await axios.get(
+          process.env.NEXT_PUBLIC_FLASK_URL + '/camera-urls'
+        );
         const data = response.data;
         setCameraUrls(data);
       } catch (error) {
@@ -88,11 +90,11 @@ const VideoStream: React.FC = () => {
               <Resizable
                 key={camera.id}
                 defaultSize={{
-                  width: "fit-content",
-                  height: "100%",
+                  width: 'fit-content',
+                  height: '100%',
                 }}
-                maxWidth="100%"
-                maxHeight="100%"
+                maxWidth='100%'
+                maxHeight='100%'
                 className='bg-slate-100 rounded-xl border-2 border-black'
               >
                 <CameraStreamControl

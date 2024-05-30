@@ -87,6 +87,37 @@ def delete_camera_url(label):
     return jsonify({'message': 'Camera URL deleted successfully'}), 200
 # ----------------------------
 
+camera_urls = camera_processor.read_camera_urls()
+
+# camera url routes
+@camera_bp.route('/camera-url', methods=['POST'])
+def add_camera_url():
+    data = request.json
+    label = data.get('label')
+    url = data.get('url')
+    if not label or not url:
+        return jsonify({'error': 'Label and URL are required'}), 400
+    
+    camera_urls[label] = url
+    camera_processor.write_camera_urls(camera_urls)
+
+    return jsonify({'message': 'Camera URL added successfully'}), 200
+
+@camera_bp.route('/camera-urls', methods=['GET'])
+def get_camera_urls():
+    return jsonify(camera_urls), 200
+
+@camera_bp.route('/camera-url/<label>', methods=['DELETE'])
+def delete_camera_url(label):
+    if label not in camera_urls:
+        return jsonify({'error': 'Camera label not found'}), 404
+    
+    del camera_urls[label]
+    camera_processor.write_camera_urls(camera_urls)
+
+    return jsonify({'message': 'Camera URL deleted successfully'}), 200
+# ----------------------------
+
 
 # # Start the thread to send system info
 

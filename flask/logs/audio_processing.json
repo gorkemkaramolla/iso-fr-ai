@@ -1,0 +1,3 @@
+{"time": "2024-05-30 13:47:21,616", "name": "audio_processing", "level": "INFO", "message": "GPU Temperature: 49 C\u00b0C"}
+{"time": "2024-05-30 13:47:21,617", "name": "audio_processing", "level": "INFO", "message": "GPU Usage: 53 %%"}
+{"time": "2024-05-30 13:47:21,617", "name": "audio_processing", "level": "INFO", "message": "GPU Memory Usage: 3670 MiB MiB / 16376 MiB MiB"}

@@ -18,9 +18,10 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
 
   const handleAddCameraUrl = async () => {
     try {
-      await axios.post('http://127.0.0.1:5002/camera-url', {
+      await axios.post(process.env.NEXT_PUBLIC_FLASK_URL+'/camera-url', {
         label: newCameraLabel,
         url: newCameraUrl,
+        crossOriginIsolated: false
       });
       alert('Camera URL added successfully');
       setNewCameraLabel('');

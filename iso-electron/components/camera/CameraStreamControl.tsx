@@ -61,7 +61,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         camera.id === id
           ? {
               ...camera,
-              streamSrc: `http://localhost:5002/stream/${id}?camera=${selectedCamera}&quality=${camera.selectedQuality}`,
+              streamSrc: `${process.env.NEXT_PUBLIC_FLASK_URL}/stream/${id}?camera=${selectedCamera}&quality=${camera.selectedQuality}`,
               isLoading: true,
               isPlaying: true,
             }
@@ -76,7 +76,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     console.log(cameraStreams);
   };
   return (
-    <div className='rounded-lg border border-black min-h-[400px] max-h-fit w-3/4 shadow-lg'>
+    <div className='rounded-lg border border-black min-h-[400px] max-h-fit w-full shadow-lg'>
       <div className='text-sm text-center font-bold  bg-slate-50 border-none rounded-md py-1 m-0 border border-black'>
         <div className='flex flex-row space-x-4 gap-4 items-center justify-around p-2'>
           <div className='text-black'>

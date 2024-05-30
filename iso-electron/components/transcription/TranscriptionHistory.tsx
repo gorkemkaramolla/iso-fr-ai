@@ -76,11 +76,11 @@ const ChatSideMenu: React.FC<Props> = () => {
             <div className='join self-end justify-self-end  bg-red-500'>
               <button className='join-item btn btn-active'>1</button>
             </div>
-            <div className='mockup-window border bg-base-300'>
+            {/* <div className='mockup-window border bg-base-300'>
               <div className='flex justify-center px-4 py-16 bg-base-200'>
                 Hello!
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

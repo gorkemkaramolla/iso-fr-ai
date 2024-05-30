@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import io from 'socket.io-client';
 import {
   LineChart,
   Line,
@@ -11,63 +10,14 @@ import {
   Legend,
 } from 'recharts';
 import ReactSpeedometer from 'react-d3-speedometer';
-
-interface SystemInfo {
-  cpu_temperature: string;
-  cpu_core_temps: { [key: string]: number };
-  cpu_usage: string;
-  gpu_temperature: string;
-  gpu_usage: string;
-  gpu_memory_usage: string;
-  memory_usage: string;
-}
+import useSystemInfo from '@/hooks/useSystemInfo'; // Adjust the import path as necessary
 
 const Dashboard: React.FC = () => {
-  const [systemInfo, setSystemInfo] = useState<SystemInfo>({
-    cpu_temperature: 'N/A',
-    cpu_core_temps: {},
-    cpu_usage: 'N/A',
-    gpu_temperature: 'N/A',
-    gpu_usage: 'N/A',
-    gpu_memory_usage: 'N/A',
-    memory_usage: 'N/A',
-  });
-
-  const [cpuUsageData, setCpuUsageData] = useState<any[]>([]);
-  const [gpuUsageData, setGpuUsageData] = useState<any[]>([]);
+  const { systemInfo, cpuUsageData, gpuUsageData } = useSystemInfo();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const socket = io('http://localhost:5004');
-
-    socket.on('system_info', (data: SystemInfo) => {
-      setSystemInfo(data);
-      console.log(data);
-      // Update CPU usage data
-      setCpuUsageData((prevData) =>
-        [
-          ...prevData,
-          {
-            name: new Date().toLocaleTimeString(),
-            usage: parseFloat(data.cpu_usage),
-          },
-        ].slice(-20)
-      );
-
-      // Update GPU usage data
-      setGpuUsageData((prevData) =>
-        [
-          ...prevData,
-          {
-            name: new Date().toLocaleTimeString(),
-            usage: parseFloat(data.gpu_usage),
-          },
-        ].slice(-20)
-      );
-    });
-
-    return () => {
-      socket.disconnect();
-    };
+    setIsClient(true);
   }, []);
 
   const parseValue = (value: string) => {
@@ -75,8 +25,12 @@ const Dashboard: React.FC = () => {
     return isNaN(parsed) ? 0 : parsed;
   };
 
+  if (!isClient) {
+    return null; // Return null on the server-side render
+  }
+
   return (
-    <div>
+    <div className='h-screen overflow-y-scroll'>
       <h1>System Monitor</h1>
       <div
         style={{

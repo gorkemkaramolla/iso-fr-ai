@@ -35,7 +35,10 @@ const NavigationBar: React.FC<Props> = () => {
               <Link href={'/speech'}>Ses kayıt</Link>
             </li>
             <li>
-              <Link href={'/ipcamera'}>Kameralar</Link>
+              <Link href={'/stream'}>Kameralar</Link>
+            </li>
+            <li>
+              <Link href={'/monitoring'}>İzlence</Link>
             </li>
           </ul>
         </div>

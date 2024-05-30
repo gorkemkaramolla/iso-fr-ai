@@ -9,9 +9,7 @@ import platform
 import time
 from threading import Thread
 from flask_cors import CORS
-from flask_cors import CORS
 app = Flask(__name__)
-CORS(app, origins="*")
 CORS(app, origins="*")
 # Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cpu")
@@ -55,79 +53,12 @@ def delete_camera_url(label):
 
     return jsonify({'message': 'Camera URL deleted successfully'}), 200
 # ----------------------------
-
-camera_urls = camera_processor.read_camera_urls()
-
-# camera url routes
-@camera_bp.route('/camera-url', methods=['POST'])
-def add_camera_url():
-    data = request.json
-    label = data.get('label')
-    url = data.get('url')
-    if not label or not url:
-        return jsonify({'error': 'Label and URL are required'}), 400
-    
-    camera_urls[label] = url
-    camera_processor.write_camera_urls(camera_urls)
-
-    return jsonify({'message': 'Camera URL added successfully'}), 200
-
-@camera_bp.route('/camera-urls', methods=['GET'])
-def get_camera_urls():
-    return jsonify(camera_urls), 200
-
-@camera_bp.route('/camera-url/<label>', methods=['DELETE'])
-def delete_camera_url(label):
-    if label not in camera_urls:
-        return jsonify({'error': 'Camera label not found'}), 404
-    
-    del camera_urls[label]
-    camera_processor.write_camera_urls(camera_urls)
-
-    return jsonify({'message': 'Camera URL deleted successfully'}), 200
-# ----------------------------
-
-camera_urls = camera_processor.read_camera_urls()
-
-# camera url routes
-@camera_bp.route('/camera-url', methods=['POST'])
-def add_camera_url():
-    data = request.json
-    label = data.get('label')
-    url = data.get('url')
-    if not label or not url:
-        return jsonify({'error': 'Label and URL are required'}), 400
-    
-    camera_urls[label] = url
-    camera_processor.write_camera_urls(camera_urls)
-
-    return jsonify({'message': 'Camera URL added successfully'}), 200
-
-@camera_bp.route('/camera-urls', methods=['GET'])
-def get_camera_urls():
-    return jsonify(camera_urls), 200
-
-@camera_bp.route('/camera-url/<label>', methods=['DELETE'])
-def delete_camera_url(label):
-    if label not in camera_urls:
-        return jsonify({'error': 'Camera label not found'}), 404
-    
-    del camera_urls[label]
-    camera_processor.write_camera_urls(camera_urls)
-
-    return jsonify({'message': 'Camera URL deleted successfully'}), 200
-# ----------------------------
-
-
 # # Start the thread to send system info
 
 @app.route("/system_check/", methods=["GET"])
 def system_check_route():
     system_info = system_monitoring_instance.send_system_info()
     return jsonify(system_info)
-
-
-
 
 active_requests = {}
 @audio_bp.route("/process-audio/", methods=["POST"])
@@ -175,5 +106,4 @@ def local_camera(cam_id) :
 app.register_blueprint(camera_bp)
 
 if __name__ == "__main__":
-    app.run(debug=True, threaded=True, port=5004)
     app.run(debug=True, threaded=True, port=5004)

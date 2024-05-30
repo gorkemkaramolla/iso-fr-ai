@@ -19,8 +19,9 @@ interface ApiResponse {
 
 interface CameraStream {
   id: number;
-  selectedCamera: Cameras;
-  selectedQuality: string | null;
+  selectedCamera: string;
+  streamSrc?: string;
+  selectedQuality: Quality;
   isPlaying: boolean;
-  isLoading?: boolean;
+  isLoading: boolean;
 }

@@ -1,0 +1,15 @@
+label,url
+hell,asdaf
+fasasd,asdas
+LOCAL_CAM1,http://localhost:5002/camera/0?
+cam2,asdasd
+Yeni,Local
+Local_CAM,localhost:5002/camera/1?
+LOCAL,http://localhost:5002/camera/1?streamProfile=
+da,1
+Kamera,ip
+Grkem,Karamolla
+karaman,https://www.karaman.bel.tr/SehirKameralari.aspx?jwsource=cl
+beach,http://93.190.253.65/mjpg/video.mjpg
+tree,http://80.75.112.38:9080/axis-cgi/mjpg/video.cgi?
+kopenah,http://155.133.206.74:8080/axis-cgi/mjpg/video.cgi?

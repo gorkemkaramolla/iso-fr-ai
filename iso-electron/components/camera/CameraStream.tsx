@@ -9,6 +9,7 @@ interface CameraStreamProps {
   selectedQuality: Quality;
   isPlaying: boolean;
   isLoading: boolean;
+
   cameraStreams: CameraStream[];
   setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;
   // onLoad: () => void;

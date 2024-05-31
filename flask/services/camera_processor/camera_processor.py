@@ -20,7 +20,7 @@ class CameraProcessor:
         print(f"Using device: {self.device}")
         
         # Initialize ONNX Runtime settings
-        onnxruntime.set_default_logger_severity(3)
+        onnxruntime.set_default_logger_severity(2)
 
         # Set the directory path for the models
         self.assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')

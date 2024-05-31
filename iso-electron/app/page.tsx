@@ -3,6 +3,7 @@ import { Mic } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import SpeechRecognitionComponent from '@/components/sound/GoogleLive';
 import MonitorWidget from '@/components/widgets/MonitorWidget';
+import GaugeWidget from '@/components/widgets/GaugeWidget';
 export default function Home() {
   const [option, setOption] = useState('');
   useEffect(() => {

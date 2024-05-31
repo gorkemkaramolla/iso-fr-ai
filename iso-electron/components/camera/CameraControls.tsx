@@ -36,9 +36,16 @@ const CameraControls: React.FC<CameraControlsProps> = ({
         {isLoading ? (
           <span className="loading loading-spinner loading-xs"></span>
         ) : isPlaying ? (
-          <CircleIcon className="w-4 h-4 text-green-500 rounded-full bg-green-500" />
+          <CircleIcon
+            className={`w-4 h-4 rounded-full 
+                ${
+                  isRecording
+                    ? " animate-pulse bg-red-500 text-red-500"
+                    : " text-[#41B06EE6] bg-[#41B06EE6]"
+                }`}
+          />
         ) : (
-          <CircleIcon className="w-4 h-4 text-red-500 rounded-full bg-red-500" />
+          <CircleIcon className="w-4 h-4 text-slate-800 rounded-full bg-slate-800" />
         )}
       </div>
       <ul

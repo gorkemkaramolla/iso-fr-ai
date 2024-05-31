@@ -30,14 +30,36 @@ const CameraControls: React.FC<CameraControlsProps> = ({
   startRecording,
   stopRecording,
 }) => {
+  const [tooltipText, setTooltipText] = React.useState("");
+  const handleTooltip = () => {
+    if (isLoading) {
+      setTooltipText("Yayın yükleniyor...");
+    } else if (isPlaying && !isRecording) {
+      setTooltipText("Yayın devam ediyor...");
+    } else if (isPlaying && isRecording) {
+      setTooltipText("Video kaydı alınıyor...");
+    } else {
+      setTooltipText("Yayın durdu...");
+    }
+  };
+
+  React.useEffect(() => {
+    handleTooltip();
+  }, [isLoading, isPlaying, isRecording]);
+
   return (
-    <div className="dropdown dropdown-hover ">
-      <div tabIndex={0} role="button" className="btn btn-sm bg-white">
+    <div className="dropdown">
+      <div
+        tabIndex={0}
+        role="button"
+        className="btn btn-sm bg-white tooltip tooltip-left flex items-center justify-center "
+        data-tip={tooltipText}
+      >
         {isLoading ? (
-          <span className="loading loading-spinner loading-xs"></span>
+          <span className="loading loading-spinner loading-sm"></span>
         ) : isPlaying ? (
           <CircleIcon
-            className={`w-4 h-4 rounded-full 
+            className={`w-5 h-5 rounded-full 
                 ${
                   isRecording
                     ? " animate-pulse bg-red-500 text-red-500"
@@ -45,7 +67,7 @@ const CameraControls: React.FC<CameraControlsProps> = ({
                 }`}
           />
         ) : (
-          <CircleIcon className="w-4 h-4 text-slate-800 rounded-full bg-slate-800" />
+          <CircleIcon className="w-5 h-5 text-slate-800 rounded-full bg-slate-800" />
         )}
       </div>
       <ul

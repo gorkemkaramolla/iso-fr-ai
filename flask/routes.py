@@ -99,10 +99,10 @@ def stream(stream_id):
 
     return Response(camera_processor.stream(stream_id, request.args.get('camera'), request.args.get('quality'), is_recording), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@camera_bp.route('/camera/<int:cam_id>')
+@camera_bp.route('/camera/<int:cam_id>', methods=["GET"])
 def local_camera(cam_id):
-    is_recording = request.args.get('is_recording') == 'true'
-    return Response(camera_processor.local_camera_stream(cam_id, is_recording), mimetype='multipart/x-mixed-replace; boundary=frame');
+    
+    return Response(camera_processor.local_camera_stream(cam_id), mimetype='multipart/x-mixed-replace; boundary=frame');
      
 app.register_blueprint(camera_bp)
 

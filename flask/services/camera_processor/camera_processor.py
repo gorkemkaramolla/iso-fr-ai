@@ -12,6 +12,7 @@ import torch
 from PIL import Image
 import onnxruntime
 from services.camera_processor.enums.camera import Camera
+
 class CameraProcessor:
     def __init__(self, device='cuda'):
         # Set the compute device
@@ -45,6 +46,7 @@ class CameraProcessor:
      
         # Camera URLs file
         self.camera_urls_file = 'camera_urls.csv'
+
 
 
     def read_camera_urls(self):
@@ -117,6 +119,7 @@ class CameraProcessor:
         return bboxes, labels, sims, emotions
     
     def generate(self, camera, is_recording=False):
+        print(f"Opening camera stream: {camera}")
         cap = cv2.VideoCapture(camera)
         if not cap.isOpened():
             print("Error opening HTTP stream")
@@ -173,15 +176,15 @@ class CameraProcessor:
         
         
     def stream(self,stream_id,camera,quality, is_recording=False):
-        camera_label =camera
+        camera_label = camera
         quality = quality
         camera = self.read_camera_urls()[camera_label] + quality
         return self.generate(camera, is_recording)
 
-    def local_camera_stream(self,cam_id, is_recording=False):
-        return self._open_local_camera(cam_id, is_recording)
+    def local_camera_stream(self,cam_id):
+        return self._open_local_camera(cam_id)
 
-    def _open_local_camera(self,cam_id, ):
+    def _open_local_camera(self,cam_id ):
         cap = cv2.VideoCapture(cam_id)
         if not cap.isOpened():
             print("Error opening HTTP stream")

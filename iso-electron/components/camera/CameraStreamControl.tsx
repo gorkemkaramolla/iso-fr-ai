@@ -119,7 +119,11 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   };
   return (
     <div className="rounded-lg min-h-[400px] max-h-fit w-full">
-      <div className="text-sm text-center font-bold  bg-slate-50 border-none rounded-md py-1 m-0 border border-black drag-handle">
+      <div
+        className="text-sm text-center font-bold  bg-slate-50 
+      border-none rounded-md py-1 m-0 border border-black drag-handle
+      cursor-move"
+      >
         <div className="flex flex-row space-x-4 gap-4 items-center justify-around p-2">
           <div className="text-black">
             Yayın {id} - <span className="text-red-500">{selectedCamera}</span>

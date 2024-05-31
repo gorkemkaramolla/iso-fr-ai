@@ -18,7 +18,7 @@ interface CameraStreamProps {
   availableIds: number[];
   setAvailableIds: React.Dispatch<React.SetStateAction<number[]>>;
   stopStream?: (id: number) => void;
-  reloadStream?: (id: number) => void;
+  startStream?: (id: number) => void;
   onRemoveStream?: (id: number) => void;
   cameraUrls: { [key: string]: string };
   addCameraStream?: () => void;
@@ -69,7 +69,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         camera.id === id
           ? {
               ...camera,
-              isLoading: true,
+              isLoading: false,
               isPlaying: true,
               isRecording: false,
               streamSrc: `${
@@ -98,7 +98,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
 
-  const reloadStream = () => {
+  const startStream = () => {
     setCameraStreams(
       cameraStreams.map((camera) =>
         camera.id === id
@@ -121,7 +121,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     stopStream();
     setAvailableIds([...availableIds, id].sort((a, b) => a - b));
     setCameraStreams(cameraStreams.filter((camera) => camera.id !== id));
-    console.log(cameraStreams);
+    // console.log(cameraStreams);
   };
   return (
     <div className="rounded-lg min-h-[400px] max-h-fit w-full">
@@ -137,7 +137,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isLoading={isLoading}
               isRecording={isRecording}
               stopStream={() => stopStream()}
-              reloadStream={() => reloadStream()}
+              startStream={() => startStream()}
               removeStream={() => removeStream()}
               startRecording={() => startRecording()}
               stopRecording={() => stopRecording()}

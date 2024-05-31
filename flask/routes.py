@@ -102,7 +102,7 @@ def stream(stream_id):
 @camera_bp.route('/camera/<int:cam_id>', methods=["GET"])
 def local_camera(cam_id):
     
-    return Response(camera_processor.local_camera_stream(cam_id), mimetype='multipart/x-mixed-replace; boundary=frame');
+    return Response(camera_processor.local_camera_stream(cam_id, request.args.get("quality")), mimetype='multipart/x-mixed-replace; boundary=frame');
      
 app.register_blueprint(camera_bp)
 

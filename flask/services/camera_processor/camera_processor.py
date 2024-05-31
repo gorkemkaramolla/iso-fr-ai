@@ -181,23 +181,32 @@ class CameraProcessor:
         camera = self.read_camera_urls()[camera_label] + quality
         return self.generate(camera, is_recording)
 
-    def local_camera_stream(self,cam_id):
-        return self._open_local_camera(cam_id)
-
-    def _open_local_camera(self,cam_id ):
+    def local_camera_stream(self, cam_id, quality="Quality"):
         cap = cv2.VideoCapture(cam_id)
         if not cap.isOpened():
             print("Error opening HTTP stream")
             return
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-  
+
+        # Set the JPEG quality level
+        if quality == "Quality":
+            jpeg_quality = 100
+        if quality == "High":
+            jpeg_quality = 90
+        elif quality == "Medium":
+            jpeg_quality = 50
+        elif quality == "Low":
+            jpeg_quality = 10
+        else:
+            jpeg_quality = 50
+
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            ret, buffer = cv2.imencode('.jpg', frame)
+            ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])
             if not ret:
                 continue
 

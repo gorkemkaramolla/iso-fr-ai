@@ -14,7 +14,7 @@ interface CameraControlsProps {
   isLoading: boolean;
   isRecording: boolean;
   stopStream: () => void;
-  reloadStream: () => void;
+  startStream: () => void;
   removeStream: () => void;
   startRecording: () => void;
   stopRecording: () => void;
@@ -25,7 +25,7 @@ const CameraControls: React.FC<CameraControlsProps> = ({
   isLoading,
   isRecording,
   stopStream,
-  reloadStream,
+  startStream,
   removeStream,
   startRecording,
   stopRecording,
@@ -86,7 +86,7 @@ const CameraControls: React.FC<CameraControlsProps> = ({
               </a>
             ) : (
               <a
-                onClick={() => reloadStream()}
+                onClick={() => startStream()}
                 className="transition-all duration-1000"
               >
                 <PlayCircleIcon className="w-6 h-6" />
@@ -116,12 +116,12 @@ const CameraControls: React.FC<CameraControlsProps> = ({
             )}
           </>
         </li>
-        <li>
-          <a onClick={() => reloadStream()}>
-            <RefreshCwIcon className="w-6 h-6" />
+        {/* <li>
+          <a onClick={() => startStream()} className="group">
+            <RefreshCwIcon className="w-6 h-6 group-active:rotate-180 transition-all duration-300" />
             Yenile
           </a>
-        </li>
+        </li> */}
         <li>
           <a onClick={() => removeStream()} className="text-red-500">
             <XIcon className="w-6 h-6" />

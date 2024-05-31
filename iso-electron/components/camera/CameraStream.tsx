@@ -39,6 +39,14 @@ const CameraStream: React.FC<CameraStreamProps> = ({
               )
             );
           }}
+          onError={() => {
+            console.log("Error loading stream");
+            setCameraStreams((prevStreams) =>
+              prevStreams.map((stream) =>
+                stream.id === id ? { ...stream, isLoading: true } : stream
+              )
+            );
+          }}
         />
       )}
     </div>

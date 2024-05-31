@@ -13,11 +13,11 @@ enum Quality {
   Quality = 'Quality',
   Balanced = 'Balanced',
   Bandwidth = 'Bandwidth',
-  Mobile = 'Mobile',
   Max = 'Max',
   High = 'High',
-  Low = 'Low',
   Medium = 'Medium',
+  Low = 'Low',
+  Mobile = 'Mobile',
 }
 
 export { Camera, Quality };

@@ -91,6 +91,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               streamSrc: "",
               isLoading: false,
               isPlaying: false,
+              isRecording: false,
             }
           : camera
       )
@@ -103,9 +104,14 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         camera.id === id
           ? {
               ...camera,
-              streamSrc: `${process.env.NEXT_PUBLIC_FLASK_URL}/stream/${id}?camera=${selectedCamera}&quality=${camera.selectedQuality}`,
               isLoading: true,
               isPlaying: true,
+              isRecording: false,
+              streamSrc: `${
+                process.env.NEXT_PUBLIC_FLASK_URL
+              }/stream/${id}?camera=${selectedCamera}&quality=${
+                camera.selectedQuality
+              }&is_recording=${false}`,
             }
           : camera
       )
@@ -119,11 +125,12 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   };
   return (
     <div className="rounded-lg min-h-[400px] max-h-fit w-full">
-      <div className="text-sm text-center font-bold  bg-slate-50 border-none rounded-md py-1 m-0 border border-black drag-handle">
+      <div
+        className="text-sm text-center font-bold  bg-slate-50 
+      border-none rounded-md py-1 m-0 border border-black drag-handle
+      cursor-move"
+      >
         <div className="flex flex-row space-x-4 gap-4 items-center justify-around p-2">
-          <div className="text-black">
-            Yayın {id} - <span className="text-red-500">{selectedCamera}</span>
-          </div>
           <div className="flex flex-row gap-4">
             <CameraControls
               isPlaying={isPlaying}
@@ -140,6 +147,9 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               onQualityChange={(quality) => onQualityChange(id, quality)}
             />
           </div>
+          <div className="text-black">
+            Yayın {id} - <span className="text-red-500">{selectedCamera}</span>
+          </div>
         </div>
       </div>
       <div>{streamSrc}</div>
@@ -152,6 +162,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         setCameraStreams={setCameraStreams}
         isPlaying={isPlaying}
         isLoading={isLoading}
+
         // onLoad={() => onCameraChange(id, selectedCamera)}
       />
     </div>

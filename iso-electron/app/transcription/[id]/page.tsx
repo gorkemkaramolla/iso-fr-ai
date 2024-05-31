@@ -100,6 +100,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     };
 
     getTranscription();
+    console.log(transcription);
   }, [id]);
 
   const handleSpeakerClick = (segment: Segment) => {

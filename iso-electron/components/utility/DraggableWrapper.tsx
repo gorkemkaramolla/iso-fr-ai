@@ -20,7 +20,9 @@ const DraggableWrapper = ({ children, uniqueId }: DraggableWrapperProps) => {
       defaultPosition={JSON.parse(
         localStorage.getItem(`DraggablePosition-${uniqueId}`) || '{}'
       )}
-      onStart={() => setIsDragging(true)}
+      onStart={() => {
+        setIsDragging(true);
+      }}
       bounds='parent'
       onStop={handleDragStopped}
     >

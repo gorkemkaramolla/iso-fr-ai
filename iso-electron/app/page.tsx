@@ -14,8 +14,8 @@ export default function Home() {
       {/* {option} */}
       {/* <SpeechRecognitionComponent /> */}
 
-      <MonitorWidget uniqueId={'1'} />
-      <MonitorWidget uniqueId={'2'} />
+      {/* <MonitorWidget uniqueId={'1'} /> */}
+      {/* <MonitorWidget uniqueId={'2'} /> */}
     </div>
   );
 }

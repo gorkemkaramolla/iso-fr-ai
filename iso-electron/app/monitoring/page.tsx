@@ -55,28 +55,14 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className='h-screen flex gap-2 overflow-y-scroll'>
-      <div className='w-3/12 justify-center  items-center flex flex-wrap h-full '>
-        <div className='flex flex-col justify-center items-center flex-wrap w-full'>
-          <h1>System Monitor</h1>
-
-          <div>
-            <h2>CPU Temperature</h2>
-            <GaugeWidget
-              maxValue={100}
-              value={parseValue(systemInfo.cpu_temperature)}
-            />
-            <GaugeWidget
-              maxValue={100}
-              value={parseValue(systemInfo.gpu_temperature)}
-            />
-          </div>
-        </div>
+    <div className='h-[91.5vh]  flex gap-2 overflow-y-scroll'>
+      <div className='w-3/12  relative items-start flex flex-wrap h-full '>
+        <DraggableWrapper uniqueId='1'>
+          <MonitorWidget />
+        </DraggableWrapper>
       </div>
       <div className='w-9/12 flex flex-col gap-3'>
-        <h2>Server Logs</h2>
-
-        <div className='h-1/2 p-4 z-50 relative mockup-code'>
+        <div className='h-1/2 p-4  z-50 relative mockup-code'>
           <button onClick={goFullScreen}>
             <div className='bg-green-500 flex group justify-center items-center w-3 h-3 rounded-full absolute top-4 left-[5.20rem]'>
               <Expand className='w-2 h-2 text-black group-hover:opacity-100 opacity-0 transition-opacity ' />
@@ -158,6 +144,19 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         <div className='h-1/2 w-full flex '>
+          <div className=' w-5/12'>
+            <div className='flex flex-col  justify-center h-full items-center  flex-wrap w-full'>
+              <div className='w-full h-1/2 flex justify-center items-center '>
+                <h2>CPU Temperature</h2>
+                <GaugeWidget value={parseValue(systemInfo.cpu_temperature)} />
+              </div>
+              <div className='w-full h-1/2 flex justify-center items-center '>
+                <h2>GPU Temperature</h2>
+
+                <GaugeWidget value={parseValue(systemInfo.gpu_temperature)} />
+              </div>
+            </div>
+          </div>
           <div className='w-7/12'>
             <h2>CPU Usage</h2>
             <LineChart width={600} height={150} data={cpuUsageData}>
@@ -187,9 +186,6 @@ const Dashboard: React.FC = () => {
                 activeDot={{ r: 8 }}
               />
             </LineChart>
-          </div>
-          <div className=' w-5/12'>
-            <MonitorWidget uniqueId='monitoring' />
           </div>
         </div>
       </div>

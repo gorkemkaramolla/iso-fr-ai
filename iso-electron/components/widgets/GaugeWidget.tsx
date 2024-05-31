@@ -1,75 +1,51 @@
 import React from 'react';
-import GaugeComponent from 'react-gauge-component';
+import { Gauge, gaugeClasses } from '@mui/x-charts/Gauge';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 
 interface Props {
-  maxValue: number;
   value: number;
 }
 
-const GaugeWidget: React.FC<Props> = ({ maxValue, value }) => {
+const theme = createTheme();
+
+const GaugeWidget: React.FC<Props> = ({ value }) => {
   return (
-    <GaugeComponent
-      type='semicircle'
-      arc={{
-        width: 0.2,
-        padding: 0.005,
-        cornerRadius: 1,
-        subArcs: [
-          {
-            limit: maxValue * 0.25,
-            color: 'hsl(132, 81%, 54%)', // Green
-            showTick: true,
-            tooltip: {
-              text: 'Too low temperature!',
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <div style={{ width: '100%', height: '80%', margin: '0 auto' }}>
+        <svg width='0' height='0'>
+          <defs>
+            <linearGradient id='gradient' x1='0%' y1='0%' x2='100%' y2='0%'>
+              <stop
+                offset='0%'
+                style={{ stopColor: '#00CCFF', stopOpacity: 1 }}
+              />
+              <stop
+                offset='100%'
+                style={{ stopColor: '#7D00FF', stopOpacity: 1 }}
+              />
+            </linearGradient>
+          </defs>
+        </svg>
+        <Gauge
+          color
+          value={40}
+          valueMax={100}
+          startAngle={-110}
+          endAngle={110}
+          sx={{
+            [`& .${gaugeClasses.valueText}`]: {
+              fontSize: 20,
+              transform: 'translate(0px, 0px)',
             },
-          },
-          {
-            limit: maxValue * 0.5,
-            color: 'hsl(60, 100%, 50%)', // Light green
-            showTick: true,
-            tooltip: {
-              text: 'Low temperature!',
+            [`& .${gaugeClasses.valueArc}`]: {
+              fill: 'url(#gradient)',
             },
-          },
-          {
-            limit: maxValue * 0.75,
-            color: 'hsl(32, 100%, 51%)', // Yellow
-            showTick: true,
-            tooltip: {
-              text: 'Moderate temperature!',
-            },
-          },
-          {
-            limit: maxValue,
-            color: 'hsl(0, 100%, 50%)', // Red
-            showTick: true,
-            tooltip: {
-              text: 'High temperature!',
-            },
-          },
-        ],
-      }}
-      pointer={{
-        color: '', // Needle color
-        length: 0.8,
-        width: 15,
-      }}
-      labels={{
-        valueLabel: { formatTextValue: (value) => value + 'ºC' },
-        tickLabels: {
-          type: 'outer',
-          ticks: [
-            { value: maxValue * 0.125 },
-            { value: maxValue * 0.375 },
-            { value: maxValue * 0.625 },
-            { value: maxValue * 0.875 },
-          ],
-        },
-      }}
-      value={value}
-      minValue={0}
-      maxValue={maxValue}
-    />
+          }}
+          text={({ value, valueMax }) => `${value} \u00B0C`}
+        />
+      </div>
+    </ThemeProvider>
   );
 };
 

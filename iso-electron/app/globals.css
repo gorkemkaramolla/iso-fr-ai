@@ -78,7 +78,6 @@ body {
   height: 100%; /* Ensure it takes full height */
   overflow-y: scroll; /* Enable vertical scrolling */
   overflow-x: auto; /* Enable horizontal scrolling */
-  padding: 2rem; /* Adjust padding as needed */
   width: 100%; /* Ensure it takes full width */
   z-index: 10; /* Ensure it is on top if needed */
 }
@@ -93,4 +92,13 @@ body {
 .code-scroll {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
+}
+pre {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+code {
+  padding: 0 !important;
+  margin: 0 !important;
 }

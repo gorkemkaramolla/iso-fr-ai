@@ -27,7 +27,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
         <Image
           className="h-fit rounded-b-lg aspect-w-16 aspect-h-9"
           src={streamSrc || ""}
-          alt={`Video Stream`}
+          alt={`Video Stream ${id}`}
           width={1920}
           height={1080}
           objectFit="cover"

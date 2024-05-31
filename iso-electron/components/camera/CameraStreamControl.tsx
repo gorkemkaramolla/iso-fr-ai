@@ -43,39 +43,44 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   cameraUrls,
   addCameraStream,
 }) => {
-  const startRecording = async () => {
-    try {
-      await axios.post(process.env.NEXT_PUBLIC_FLASK_URL + "/start-recording", {
-        camera_label: selectedCamera,
-        stream_url: streamSrc,
-      });
-      alert("Recording started");
-      setCameraStreams(() =>
-        cameraStreams.map((camera) =>
-          camera.id === id ? { ...camera, isRecording: true } : camera
-        )
-      );
-    } catch (error) {
-      console.error("Error starting recording:", error);
-      alert("Failed to start recording");
-    }
+  const startRecording = () => {
+    setCameraStreams(
+      cameraStreams.map((camera) =>
+        camera.id === id
+          ? {
+              ...camera,
+              isLoading: false,
+              isPlaying: true,
+              isRecording: true,
+              streamSrc: `${
+                process.env.NEXT_PUBLIC_FLASK_URL
+              }/stream/${id}?camera=${selectedCamera}&quality=${
+                camera.selectedQuality
+              }&is_recording=${true}`,
+            }
+          : camera
+      )
+    );
   };
 
-  const stopRecording = async () => {
-    try {
-      await axios.post(process.env.NEXT_PUBLIC_FLASK_URL + "/stop-recording", {
-        camera_label: selectedCamera,
-      });
-      alert("Recording stopped");
-      setCameraStreams(() =>
-        cameraStreams.map((camera) =>
-          camera.id === id ? { ...camera, isRecording: false } : camera
-        )
-      );
-    } catch (error) {
-      console.error("Error stopping recording:", error);
-      alert("Failed to stop recording");
-    }
+  const stopRecording = () => {
+    setCameraStreams(
+      cameraStreams.map((camera) =>
+        camera.id === id
+          ? {
+              ...camera,
+              isLoading: true,
+              isPlaying: true,
+              isRecording: false,
+              streamSrc: `${
+                process.env.NEXT_PUBLIC_FLASK_URL
+              }/stream/${id}?camera=${selectedCamera}&quality=${
+                camera.selectedQuality
+              }&is_recording=${false}`,
+            }
+          : camera
+      )
+    );
   };
   const stopStream = () => {
     setCameraStreams(

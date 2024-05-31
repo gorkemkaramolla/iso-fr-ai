@@ -2,6 +2,7 @@
 import cv2
 import numpy as np
 import pandas as pd
+import datetime
 import os
 import os.path as osp
 from services.camera_processor.scrfd import SCRFD
@@ -115,61 +116,88 @@ class CameraProcessor:
             emotions.append(emotion)
         return bboxes, labels, sims, emotions
     
-    def generate(self,camera):
+    def generate(self, camera, is_recording=False):
         cap = cv2.VideoCapture(camera)
         if not cap.isOpened():
             print("Error opening HTTP stream")
             return
+
+        # Initialize video writer if recording is enabled
+        writer = None
+      
+        if is_recording:
+            # Get current date and time
+            now = datetime.datetime.now()
+
+            # Define the directory
+            directory = "./records/"
+
+            # Check if the directory exists, create it if it doesn't
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+            # Format as a string
+            filename = directory + now.strftime("%H:%M:%S_%d.%m.%Y") + ".mp4"
+
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
+            
+            if is_recording and writer is None:
+                # Initialize writer with the frame size of the first frame
+                frame_height, frame_width = frame.shape[:2]
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+                if not writer.isOpened():
+                    print("Error initializing video writer")
+                    break
+
             bboxes, labels, sims, emotions = self.recog_face_and_emotion(frame)
             for bbox, label, sim, emotion in zip(bboxes, labels, sims, emotions):
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
                 text_label = f"{label} ({sim * 100:.2f}%): {emotion}"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
+                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            
+            # Write the frame to the video file if recording
+            if writer:
+                writer.write(frame)
+            
             _, buffer = cv2.imencode('.jpg', frame)
             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        cap.release()
         
-    def stream(self,stream_id,camera,quality):
+        cap.release()
+        if writer:
+            writer.release()
+        
+        
+    def stream(self,stream_id,camera,quality, is_recording=False):
         camera_label =camera
         quality = quality
-        # camera = Camera[camera_label].value + quality
         camera = self.read_camera_urls()[camera_label] + quality
-        return self.generate(camera)
+        return self.generate(camera, is_recording)
 
-    def local_camera_stream(self,cam_id):
-        # camera_label = request.args.get('camera')
-        # print(camera_label)
-        # print(cam_id)
-        # Return a multipart HTTP response with the generated frames
-        return self._open_local_camera(cam_id)
+    def local_camera_stream(self,cam_id, is_recording=False):
+        return self._open_local_camera(cam_id, is_recording)
 
-    def _open_local_camera(self,cam_id):
-        # OpenCV capture from camera
-        print("----------- capture_id: " + str(cam_id) + "-----------")
+    def _open_local_camera(self,cam_id, ):
         cap = cv2.VideoCapture(cam_id)
-           
-        # Set the aspect ratio to 16:9
-
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # Width
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # Height
-
+        if not cap.isOpened():
+            print("Error opening HTTP stream")
+            return
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+  
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # Encode the frame to JPEG format
             ret, buffer = cv2.imencode('.jpg', frame)
             if not ret:
                 continue
 
-            # Yield the encoded frame
             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
-        # Release the capture when done
         cap.release()

@@ -40,7 +40,11 @@ const VideoStream: React.FC = () => {
         {
           id: newId,
           selectedCamera: cameraLabel,
-          streamSrc: `${process.env.NEXT_PUBLIC_FLASK_URL}/stream/${newId}?camera=${selectedCamera}&quality=${Quality.Quality}`,
+          streamSrc: `${
+            process.env.NEXT_PUBLIC_FLASK_URL
+          }/stream/${newId}?camera=${selectedCamera}&quality=${
+            Quality.Quality
+          }&is_recording=${false}`,
           selectedQuality: Quality.Quality,
           isPlaying: true,
           isLoading: true,
@@ -85,7 +89,7 @@ const VideoStream: React.FC = () => {
             showAddCamera={showAddCamera}
           />
         </div>
-        <div className="relative flex flex-wrap justify-center items-start mx-auto gap-4">
+        <div className="relative flex flex-wrap justify-center items-start mx-auto gap-4 min-h-screen">
           {cameraStreams
             .sort((a, b) => a.id - b.id)
             .map((camera) => {

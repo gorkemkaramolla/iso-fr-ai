@@ -4,54 +4,22 @@ from services.system_monitoring import SystemMonitoring
 from services.camera_processor.camera_processor import CameraProcessor
 from services.camera_processor.enums.camera import Camera
 from logger import configure_logging
-import os
-import platform
-import time
-from threading import Thread
 from flask_cors import CORS
-from services.video.video_recorder import VideoRecorder
 
 
 app = Flask(__name__)
 CORS(app, origins="*")
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cpu")
-camera_processor = CameraProcessor(device="cpu")
+diarization_processor = SpeakerDiarizationProcessor(device="cuda")
+camera_processor = CameraProcessor(device="cuda")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 
-import re
+
 # Setup Blueprint
 audio_bp = Blueprint('audio_bp', __name__)
 camera_bp = Blueprint('camera_bp', __name__)
 system_check = Blueprint('system_check', __name__)
-video_bp = Blueprint('video_bp', __name__)
-
-# video recorder routes
-recorders = {}  # Dictionary to hold recorder threads
-@video_bp.route('/start-recording', methods=['POST'])
-def start_recording():
-    data = request.json
-    camera_label = data['camera_label']
-    stream_url = data['stream_url']
-    output_path = f"{camera_label}.avi"
-    recorder = VideoRecorder(stream_url, output_path)
-    recorder.start()
-    recorders[camera_label] = recorder
-    return jsonify({"message": "Recording started"}), 200
-
-@video_bp.route('/stop-recording', methods=['POST'])
-def stop_recording():
-    data = request.json
-    camera_label = data['camera_label']
-    if camera_label in recorders:
-        recorders[camera_label].stop()
-        del recorders[camera_label]
-        return jsonify({"message": "Recording stopped"}), 200
-    return jsonify({"error": "Recorder not found"}), 404
-app.register_blueprint(video_bp)
-# ----------------------------
-
 
 # camera url routes
 camera_urls = camera_processor.read_camera_urls()
@@ -127,11 +95,14 @@ app.register_blueprint(audio_bp)
 
 @camera_bp.route('/stream/<int:stream_id>', methods=["GET"])
 def stream(stream_id):
-    return Response(camera_processor.stream(stream_id, request.args.get('camera'), request.args.get('quality')), mimetype='multipart/x-mixed-replace; boundary=frame')
+    is_recording = request.args.get('is_recording') == 'true'
+
+    return Response(camera_processor.stream(stream_id, request.args.get('camera'), request.args.get('quality'), is_recording), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @camera_bp.route('/camera/<int:cam_id>')
-def local_camera(cam_id) :
-    return Response(camera_processor.local_camera_stream(cam_id), mimetype='multipart/x-mixed-replace; boundary=frame');
+def local_camera(cam_id):
+    is_recording = request.args.get('is_recording') == 'true'
+    return Response(camera_processor.local_camera_stream(cam_id, is_recording), mimetype='multipart/x-mixed-replace; boundary=frame');
      
 app.register_blueprint(camera_bp)
 

@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className='flex flex-col h-full md:w-7/12'>
             <div className='flex-grow w-full h-full relative'>
-              <UsageChart cpuData={cpuUsageData} gpuData={fakeGPUData} />
+              <UsageChart cpuData={cpuUsageData} gpuData={gpuUsageData} />
             </div>
           </div>
         </div>

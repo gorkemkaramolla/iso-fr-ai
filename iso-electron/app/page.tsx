@@ -10,12 +10,20 @@ export default function Home() {
     localStorage.setItem('client_id', '123456');
   }, []);
   return (
-    <div className='flex justify-center items-center h-screen relative '>
+    <div className='flex justify-center items-center h-full relative '>
       {/* {option} */}
       {/* <SpeechRecognitionComponent /> */}
 
       {/* <MonitorWidget uniqueId={'1'} /> */}
       {/* <MonitorWidget uniqueId={'2'} /> */}
+      <div className='w-1/2 h-full bg-red-500'>
+        <div className='h-1/2 w-full bg-yellow-500'></div>
+        <div className='h-1/2 w-full bg-indigo-500'></div>
+      </div>
+      <div className='w-1/2 h-full bg-blue-500'>
+        <div className='h-1/2 w-full bg-yellow-500'></div>
+        <div className='h-1/2 w-full bg-indigo-500'></div>
+      </div>
     </div>
   );
 }

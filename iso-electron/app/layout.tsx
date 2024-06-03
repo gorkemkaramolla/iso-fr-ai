@@ -14,14 +14,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='tr' className='w-screen overflow-x-hidden overflow-y-hidden'>
+    <html lang='tr' className='w-screen overflow-x-hidden '>
       <body
         data-theme='light'
         className={inter.className + 'light flex justify-center'}
       >
-        <div className='w-full h-screen'>
+        <div className='w-full h-[100dvh]'>
           <NavigationBar />
-          {children}
+          <div className='grow h-[93dvh]'>{children}</div>
         </div>
       </body>
     </html>

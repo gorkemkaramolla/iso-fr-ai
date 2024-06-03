@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import React from 'react';
-
+import Image from 'next/image';
 interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
   return (
-    <div className='navbar w-full  border justify-between  bg-base-100 flex '>
+    <nav className='navbar h-[7vh] w-full  border justify-between  bg-base-100 flex '>
       <div className=' navbar-start '>
         <div className='dropdown'>
           <div tabIndex={0} role='button' className='btn btn-ghost btn-circle'>
@@ -45,7 +45,13 @@ const NavigationBar: React.FC<Props> = () => {
       </div>
       <div className='navbar-center'>
         <Link href={'/'} className=' btn-md   text-xl'>
-          <img src='iso_logo.jpg' alt='' className='w-full  h-full' />
+          <Image
+            width={100}
+            height={100}
+            src='iso_logo.jpg'
+            alt=''
+            className='w-full  h-full'
+          />
         </Link>
       </div>
       <div className='navbar-end'>
@@ -96,7 +102,7 @@ const NavigationBar: React.FC<Props> = () => {
           Bildirim
         </ul>
       </div>
-    </div>
+    </nav>
   );
 };
 

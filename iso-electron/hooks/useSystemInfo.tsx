@@ -2,16 +2,6 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
-interface SystemInfo {
-  cpu_temperature: string;
-  cpu_core_temps: { [key: string]: number };
-  cpu_usage: string;
-  gpu_temperature: string;
-  gpu_usage: string;
-  gpu_memory_usage: string;
-  memory_usage: string;
-}
-
 const useSystemInfo = () => {
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
     cpu_temperature: 'N/A',
@@ -21,10 +11,11 @@ const useSystemInfo = () => {
     gpu_usage: 'N/A',
     gpu_memory_usage: 'N/A',
     memory_usage: 'N/A',
+    logs_data: '',
   });
 
-  const [cpuUsageData, setCpuUsageData] = useState<any[]>([]);
-  const [gpuUsageData, setGpuUsageData] = useState<any[]>([]);
+  const [cpuUsageData, setCpuUsageData] = useState<UsageData[]>([]);
+  const [gpuUsageData, setGpuUsageData] = useState<UsageData[]>([]);
 
   useEffect(() => {
     const socket = io('http://localhost:5004');

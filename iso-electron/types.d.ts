@@ -34,4 +34,15 @@ interface SystemInfo {
   gpu_usage: string;
   gpu_memory_usage: string;
   memory_usage: string;
+  logs_data: string;
+}
+
+interface UsageData {
+  name: string;
+  usage: number;
+}
+
+interface UsageChartProps {
+  cpuData: UsageData[];
+  gpuData: UsageData[];
 }

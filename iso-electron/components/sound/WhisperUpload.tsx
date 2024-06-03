@@ -59,7 +59,7 @@ function WhisperUpload() {
 
     try {
       const res = await axios.post<ApiResponse>(
-        `http://127.0.0.1:5004/process-audio/`,
+        `http://localhost:5004/process-audio/`,
         formData,
         {
           headers: {

@@ -59,6 +59,33 @@ const useSystemInfo = () => {
       );
     });
 
+    socket.on('system_info', (data: SystemInfo) => {
+      console.log('Received system_info:', data);
+      setSystemInfo(data);
+
+      // Update CPU usage data
+      setCpuUsageData((prevData) =>
+        [
+          ...prevData,
+          {
+            name: new Date().toLocaleTimeString(),
+            usage: parseFloat(data.cpu_usage),
+          },
+        ].slice(-20)
+      );
+
+      // Update GPU usage data
+      setGpuUsageData((prevData) =>
+        [
+          ...prevData,
+          {
+            name: new Date().toLocaleTimeString(),
+            usage: parseFloat(data.gpu_usage),
+          },
+        ].slice(-20)
+      );
+    });
+
     return () => {
       socket.disconnect();
     };

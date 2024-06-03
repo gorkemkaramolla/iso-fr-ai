@@ -78,11 +78,10 @@ class SystemMonitoring:
             return 'N/A', 'N/A', 'N/A'
 
     def send_system_info(self):
-        logs_file_path = './logs/audio_processing2.json'  # Adjust this to your logs.json file path
+        logs_file_path = './logs/audio_processing.json'  # Adjust this to your logs.json file path
 
         while True:
             try:
-                # Read the log file
                 with open(logs_file_path, 'r') as file:
                     logs_data = json.load(file)
 

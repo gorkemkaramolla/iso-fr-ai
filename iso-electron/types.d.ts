@@ -27,6 +27,7 @@ interface CameraStream {
   isRecording: boolean;
 }
 interface SystemInfo {
+  logs_data: string;
   cpu_temperature: string;
   cpu_core_temps: { [key: string]: number };
   cpu_usage: string;
@@ -34,7 +35,6 @@ interface SystemInfo {
   gpu_usage: string;
   gpu_memory_usage: string;
   memory_usage: string;
-  logs_data: string;
 }
 
 interface UsageData {

@@ -10,7 +10,7 @@ from logger import configure_logging
 # Configure logging
 from socketio_instance import socketio
 logger = configure_logging()
-
+import  json
 class SystemMonitoring:
     def __init__(self):
         self.socketio = socketio
@@ -78,24 +78,36 @@ class SystemMonitoring:
             return 'N/A', 'N/A', 'N/A'
 
     def send_system_info(self):
+        logs_file_path = './logs/audio_processing2.json'  # Adjust this to your logs.json file path
+
         while True:
             try:
+                # Read the log file
+                with open(logs_file_path, 'r') as file:
+                    logs_data = json.load(file)
+
+                # Gather system stats
                 cpu_temp = self.get_cpu_temp()
                 cpu_usage = psutil.cpu_percent(interval=1)
                 gpu_temp, gpu_usage, gpu_memory_usage = self.get_gpu_stats()
                 memory = psutil.virtual_memory()
                 memory_usage = f"{memory.used // (1024 ** 3)}GB / {memory.total // (1024 ** 3)}GB"
                 
+                # Compile the data to be sent
                 system_info = {
                     'cpu_temperature': cpu_temp,
                     'cpu_usage': cpu_usage,
                     'gpu_temperature': gpu_temp,
                     'gpu_usage': gpu_usage,
                     'gpu_memory_usage': gpu_memory_usage,
-                    'memory_usage': memory_usage
+                    'memory_usage': memory_usage,
+                    'logs_data': logs_data  # Add logs data
                 }
 
+                # Emit system info and logs data
                 self.socketio.emit('system_info', system_info)
-                time.sleep(2)  # This interval can be adjusted based on how often you want updates
+                time.sleep(2)  # Adjustable interval for updates
             except Exception as e:
-                logger.error(f"Error during system monitoring: {e}")
+                print(f"Error during system monitoring or reading logs: {e}")
+                # Handle exceptions, perhaps wait a bit longer if there's an error
+                time.sleep(10)

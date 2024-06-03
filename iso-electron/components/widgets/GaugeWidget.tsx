@@ -29,7 +29,7 @@ const GaugeWidget: React.FC<Props> = ({ value }) => {
         </svg>
         <Gauge
           color
-          value={40}
+          value={value}
           valueMax={100}
           startAngle={-110}
           endAngle={110}

@@ -6,7 +6,7 @@ from flask_jwt_extended import JWTManager
 from socketio_instance import socketio
 
 app = Flask(__name__)
-CORS(app)
+CORS(app,origins="*")
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') 
 jwt = JWTManager(app)
 app.register_blueprint(audio_bp)

@@ -49,25 +49,21 @@ class SpeakerDiarizationProcessor:
 
     def rename_segments(self, transcription_id, old_name, new_name):
         # Access the collection
-        collection = self.mongo_db['ze_iso_ai_segments']
+        collection = self.mongo_db['segments']
         
-        # Ensure the transcription_id is converted to an ObjectId
-        try:
-            transcription_oid = ObjectId(transcription_id)
-        except:
-            return jsonify({"status": "error", "message": "Invalid transcription ID format"}), 400
-
         # MongoDB update operation
         update_result = collection.update_many(
-            {"speaker": old_name, "transcript_id": transcription_oid},
+            {"speaker": old_name, "transcript_id": transcription_id},
             {"$set": {"speaker": new_name}}
         )
         
-        # Check if the update was successful
         if update_result.modified_count > 0:
-            return jsonify({"status": "success", "updated": update_result.modified_count}), 200
+            return {"status": "success"}, 200
         else:
-            return jsonify({"status": "error", "message": "No segments found or updated"}), 404
+            return {"status": "no changes made"}, 200
+
+
+
     # def get_all_transcriptions(self):
     #     try:
     #         cursor.execute(
@@ -116,7 +112,7 @@ class SpeakerDiarizationProcessor:
             self.logger.info(f"Transcriptions: {all_transcriptions} successfully fetched from database")
             return jsonify(all_transcriptions), 200
         except Exception as e:
-            self.logger.error(f"Database error: {str(e)}")
+            self.logger.info(f"Database error: {str(e)}")
             return jsonify(error=str(e)), 500
     
     
@@ -139,31 +135,24 @@ class SpeakerDiarizationProcessor:
     #     if lob_value is not None:
     #         return lob_value.read()
     #     return None
+    
     def get_transcription(self, id):
-        self.logger.info(f"Fetching transcription for ID: {id}")  # Log the ID being processed
-        try:
-            # Convert ID to ObjectId
-            transcription_id = ObjectId(id)
-        except:
-            self.logger.error(f"Invalid ID format: {id}")
-            return jsonify(error="Invalid ID format"), 400
-
         try:
             # Access the collection
             transcripts_collection = self.mongo_db['transcripts']
             segments_collection = self.mongo_db['segments']
 
             # Fetch the transcription document
-            transcription = transcripts_collection.find_one({'_id': transcription_id})
+            transcription = transcripts_collection.find_one({'_id': id})
             if not transcription:
-                self.logger.warning(f"No transcription found for ID: {id}")
+                self.logger.error(f"No transcription found for ID: {id}")
                 return jsonify(error="No transcription found for this ID"), 404
 
             # Fetch related segments
-            segments = list(segments_collection.find({'transcript_id': transcription_id}))
+            segments = list(segments_collection.find({'transcript_id': id}))
 
             if not segments:
-                self.logger.warning(f"No transcription segments found for ID: {id}")
+                self.logger.error(f"No transcription segments found for ID: {id}")
                 return jsonify(error="No transcription segments found for this ID"), 404
 
             # Construct response data

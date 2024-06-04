@@ -16,3 +16,4 @@ oracledb == 2.2.0
 python-dotenv==0.19.2
 flask-socketio==5.3.6
 pymongo == 4.7.2
+bson = 0.5.10

@@ -84,7 +84,16 @@ class SystemMonitoring:
             try:
                 with open(logs_file_path, 'r') as file:
                     logs_data = json.load(file)
+            except FileNotFoundError:
+                print(f"File {logs_file_path} not found.")
+                time.sleep(10)
+                continue
+            except json.JSONDecodeError:
+                print(f"Error decoding JSON from {logs_file_path}.")
+                time.sleep(10)
+                continue
 
+            try:
                 # Gather system stats
                 cpu_temp = self.get_cpu_temp()
                 cpu_usage = psutil.cpu_percent(interval=1)
@@ -107,6 +116,6 @@ class SystemMonitoring:
                 self.socketio.emit('system_info', system_info)
                 time.sleep(2)  # Adjustable interval for updates
             except Exception as e:
-                print(f"Error during system monitoring or reading logs: {e}")
+                print(f"Error during system monitoring: {e}")
                 # Handle exceptions, perhaps wait a bit longer if there's an error
                 time.sleep(10)

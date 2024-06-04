@@ -14,8 +14,8 @@ app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 jwt = JWTManager(app)
 
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cpu")
-camera_processor = CameraProcessor(device="cpu")
+diarization_processor = SpeakerDiarizationProcessor(device="cuda")
+camera_processor = CameraProcessor(device="cuda")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 

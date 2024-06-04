@@ -4,20 +4,19 @@ import axios from 'axios';
 import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
 import Heading from '@/components/ui/Heading';
 import RotatingWheel from '@/components/ui/LogoSpinner';
+import useStore from '@/lib/store';
 
 interface Segment {
-  SEGMENT_ID: number;
-  START_TIME: number;
-  END_TIME: number;
-  SPEAKER: string;
-  TRANSCRIBED_TEXT: string;
-  TRANSCRIPT_ID: number;
+  segment_id: string;
+  start_time: number;
+  end_time: number;
+  speaker: string;
+  transcribed_text: string;
 }
 
 interface TranscriptionData {
   segments: Segment[];
   created_at: string;
-  transcription_id: string;
 }
 
 interface Props {
@@ -27,7 +26,7 @@ interface Props {
 }
 
 interface Speaker {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -79,19 +78,20 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   );
   const [showModal, setShowModal] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<Speaker>({
-    id: 0,
+    id: '',
     name: '',
   });
-
+  const access_token = useStore((state) => state.accessToken);
   useEffect(() => {
     const getTranscription = async () => {
       try {
-        console.log(
-          'process.env.NEXT_PUBLIC_FLASK_URL',
-          process.env.NEXT_PUBLIC_FLASK_URL
-        );
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_FLASK_URL}/transcriptions/${id}`
+          `${process.env.NEXT_PUBLIC_FLASK_URL}/transcriptions/${String(id)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+            },
+          }
         );
         setTranscription(response.data);
       } catch (error) {
@@ -100,11 +100,10 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     };
 
     getTranscription();
-    console.log(transcription);
-  }, [id]);
+  }, [id, access_token]);
 
   const handleSpeakerClick = (segment: Segment) => {
-    setCurrentSpeaker({ id: segment.SEGMENT_ID, name: segment.SPEAKER });
+    setCurrentSpeaker({ id: segment.segment_id, name: segment.speaker });
     setShowModal(true);
   };
 
@@ -112,14 +111,18 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     setShowModal(false);
     const oldName = currentSpeaker.name;
     const updatedSegments = transcription?.segments.map((segment) =>
-      segment.SPEAKER === oldName ? { ...segment, SPEAKER: newName } : segment
+      segment.speaker === oldName ? { ...segment, speaker: newName } : segment
     );
     if (updatedSegments) {
-      setTranscription({ ...transcription!, segments: updatedSegments! });
+      setTranscription({ ...transcription!, segments: updatedSegments });
     }
 
     await axios.post(
-      `${process.env.NEXT_PUBLIC_FLASK_URL}/rename_segments/${id}/${oldName}/${newName}`
+      `${process.env.NEXT_PUBLIC_FLASK_URL}/rename_segments/${id}/${oldName}/${newName}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      }
     );
   };
 
@@ -134,11 +137,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   return (
     <div>
       <Heading level='h1' text={transcription.created_at} />
-      <Heading
-        level='h2'
-        text={'Transcription_id : ' + transcription.transcription_id}
-      />
-      <div className='overflow-y-scroll w-full h-screen p-5 bg-gray-100 flex  items-start '>
+      <div className='overflow-y-scroll w-full h-screen p-5 bg-gray-100 flex items-start'>
         <RenameSpeakerModal
           open={showModal}
           onClose={() => setShowModal(false)}
@@ -156,25 +155,19 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
             </thead>
             <tbody>
               {transcription.segments.map((segment) => (
-                <tr key={segment.SEGMENT_ID}>
+                <tr key={segment.segment_id}>
                   <td className='border px-4 py-2'>
-                    {segment && segment.START_TIME
-                      ? segment.START_TIME.toFixed(2)
-                      : 'N/A'}
-                    s -{' '}
-                    {segment && segment.END_TIME
-                      ? segment.END_TIME.toFixed(2)
-                      : 'N/A'}
-                    s
+                    {segment.start_time.toFixed(2)}s -{' '}
+                    {segment.end_time.toFixed(2)}s
                   </td>
                   <td
-                    className='border px-4 py-2 cursor-pointer hover:a   transition-all'
+                    className='border px-4 py-2 cursor-pointer hover:underline transition-all'
                     onClick={() => handleSpeakerClick(segment)}
                   >
-                    {segment.SPEAKER}
+                    {segment.speaker}
                   </td>
                   <td className='border px-4 py-2'>
-                    {segment.TRANSCRIBED_TEXT}
+                    {segment.transcribed_text}
                   </td>
                 </tr>
               ))}

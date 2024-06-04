@@ -9,10 +9,10 @@ from threading import Thread
 from logger import configure_logging
 # Configure logging
 from socketio_instance import socketio
-logger = configure_logging()
 import  json
 class SystemMonitoring:
     def __init__(self):
+        self.logger = configure_logging()
         self.socketio = socketio
         thread = Thread(target=self.send_system_info)
         
@@ -28,13 +28,13 @@ class SystemMonitoring:
             if matches:
                 core_temps = {f"Core {i}": float(temp) for i, temp in enumerate(matches)}
                 avg_temp = sum(core_temps.values()) / len(core_temps)
-                logger.info(f"Average CPU temperature: {avg_temp}°C")
+                self.logger.info(f"Average CPU temperature: {avg_temp}°C")
                 return avg_temp
             else:
-                logger.error("No CPU core temperatures found.")
+                self.logger.error("No CPU core temperatures found.")
                 return 'N/A'
         except Exception as e:
-            logger.error(f"Failed to get CPU temperatures: {e}")
+            self.logger.error(f"Failed to get CPU temperatures: {e}")
             return 'N/A'
 
     
@@ -44,10 +44,10 @@ class SystemMonitoring:
     #         temperature_infos = w.Sensor()
     #         for sensor in temperature_infos:
     #             if sensor.SensorType == 'Temperature' and 'CPU' in sensor.Name:
-    #                 logger.info(f"Windows CPU temperature: {sensor.Value}°C")
+    #                 self.logger.info(f"Windows CPU temperature: {sensor.Value}°C")
     #                 return sensor.Value
     #     except Exception as e:
-    #         logger.error(f"Failed to get Windows CPU temperature: {e}")
+    #         self.logger.error(f"Failed to get Windows CPU temperature: {e}")
     #     return 'N/A'
 
     def get_cpu_temp(self):
@@ -56,7 +56,7 @@ class SystemMonitoring:
         elif platform.system() == 'Windows':
             return self.get_cpu_temp_windows()
         else:
-            logger.info(f"Unsupported platform: {platform.system()}")
+            self.logger.info(f"Unsupported platform: {platform.system()}")
             return 'N/A'
 
     def get_gpu_stats(self):
@@ -69,12 +69,12 @@ class SystemMonitoring:
             gpu_memory_total = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['total']
             gpu_memory_used = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['used']
             gpu_memory_usage = f"{gpu_memory_used} MiB / {gpu_memory_total} MiB"
-            logger.info(f"GPU Temperature: {gpu_temp}°C")
-            logger.info(f"GPU Usage: {gpu_usage}%")
-            logger.info(f"GPU Memory Usage: {gpu_memory_usage}")
+            self.logger.info(f"GPU Temperature: {gpu_temp}°C")
+            self.logger.info(f"GPU Usage: {gpu_usage}%")
+            self.logger.info(f"GPU Memory Usage: {gpu_memory_usage}")
             return gpu_temp, gpu_usage, gpu_memory_usage
         except Exception as e:
-            logger.error(f"Failed to get GPU stats: {e}")
+            self.logger.error(f"Failed to get GPU stats: {e}")
             return 'N/A', 'N/A', 'N/A'
 
     def send_system_info(self):

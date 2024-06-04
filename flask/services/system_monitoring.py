@@ -28,13 +28,13 @@ class SystemMonitoring:
             if matches:
                 core_temps = {f"Core {i}": float(temp) for i, temp in enumerate(matches)}
                 avg_temp = sum(core_temps.values()) / len(core_temps)
-                self.logger.info(f"Average CPU temperature: {avg_temp}°C")
+                # self.logger.info(f"Average CPU temperature: {avg_temp}°C")
                 return avg_temp
             else:
-                self.logger.error("No CPU core temperatures found.")
+                # self.logger.error("No CPU core temperatures found.")
                 return 'N/A'
         except Exception as e:
-            self.logger.error(f"Failed to get CPU temperatures: {e}")
+            # self.logger.error(f"Failed to get CPU temperatures: {e}")
             return 'N/A'
 
     
@@ -56,7 +56,7 @@ class SystemMonitoring:
         elif platform.system() == 'Windows':
             return self.get_cpu_temp_windows()
         else:
-            self.logger.info(f"Unsupported platform: {platform.system()}")
+            # self.logger.info(f"Unsupported platform: {platform.system()}")
             return 'N/A'
 
     def get_gpu_stats(self):
@@ -69,12 +69,12 @@ class SystemMonitoring:
             gpu_memory_total = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['total']
             gpu_memory_used = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['used']
             gpu_memory_usage = f"{gpu_memory_used} MiB / {gpu_memory_total} MiB"
-            self.logger.info(f"GPU Temperature: {gpu_temp}°C")
-            self.logger.info(f"GPU Usage: {gpu_usage}%")
-            self.logger.info(f"GPU Memory Usage: {gpu_memory_usage}")
+            # self.logger.info(f"GPU Temperature: {gpu_temp}°C")
+            # self.logger.info(f"GPU Usage: {gpu_usage}%")
+            # self.logger.info(f"GPU Memory Usage: {gpu_memory_usage}")
             return gpu_temp, gpu_usage, gpu_memory_usage
         except Exception as e:
-            self.logger.error(f"Failed to get GPU stats: {e}")
+            # self.logger.error(f"Failed to get GPU stats: {e}")
             return 'N/A', 'N/A', 'N/A'
 
     def send_system_info(self):

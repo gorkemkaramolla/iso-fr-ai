@@ -85,6 +85,28 @@ const VideoStream: React.FC = () => {
     );
   };
 
+  const saveCameraStreamPositionAndSize = (
+    id: number,
+    position: { x: number; y: number },
+    size: { width: string | number; height: string | number }
+  ) => {
+    if (typeof window !== "undefined") {
+      const savedStreams = localStorage.getItem("cameraStreams");
+      let cameraStreamsList: CameraStream[] = savedStreams
+        ? JSON.parse(savedStreams)
+        : [];
+
+      // Update the position and size of the cameraStream with the specified id
+      cameraStreamsList = cameraStreamsList.map((camera) =>
+        camera.id === id ? { ...camera, position, size } : camera
+      );
+      console.log(cameraStreamsList);
+
+      // Save the updated list back to localStorage
+      localStorage.setItem("cameraStreams", JSON.stringify(cameraStreamsList));
+    }
+  };
+
   return (
     <div className="h-full w-full overflow-auto">
       <div className="container mx-auto mb-20">
@@ -110,20 +132,37 @@ const VideoStream: React.FC = () => {
               return (
                 <Draggable
                   key={camera.id}
+                  defaultPosition={camera.position || { x: 0, y: 0 }} // Set the initial position from the saved position
                   handle=".drag-handle"
                   bounds="parent"
+                  onStop={(e, data) =>
+                    saveCameraStreamPositionAndSize(
+                      camera.id,
+                      { x: data.x, y: data.y },
+                      camera.size!
+                    )
+                  }
                 >
                   <Resizable
                     key={camera.id}
-                    defaultSize={{
-                      width: "100%",
-                      height: "100%",
-                    }}
+                    defaultSize={
+                      camera.size || {
+                        width: "100%",
+                        height: "100%",
+                      }
+                    }
                     minHeight={400}
                     minWidth={600}
                     maxWidth="100%"
                     maxHeight="100%"
                     className="bg-slate-100 rounded-lg border border-slate-400 shadow-lg"
+                    onResizeStop={(e, direction, ref) =>
+                      saveCameraStreamPositionAndSize(
+                        camera.id,
+                        camera.position!,
+                        { width: ref.style.width, height: ref.style.height }
+                      )
+                    }
                   >
                     <CameraStreamControl
                       cameraUrls={cameraUrls}

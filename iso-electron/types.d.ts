@@ -25,6 +25,8 @@ interface CameraStream {
   isPlaying: boolean;
   isLoading: boolean;
   isRecording: boolean;
+  position?: { x: number; y: number };
+  size?: { width: string | number; height: string | number };
 }
 interface SystemInfo {
   logs_data: string;

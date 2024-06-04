@@ -12,63 +12,81 @@ from PIL import Image
 import onnxruntime
 from services.camera_processor.enums.camera import Camera
 import uuid
+from cv2.typing import MatLike
+
 
 class CameraProcessor:
-    def __init__(self, device='cuda'):
+    def __init__(self, device="cuda"):
         # Set the compute device
         self.device = torch.device(device)
         print(f"Using device: {self.device}")
-        
+
         # Initialize ONNX Runtime settings
-        onnxruntime.set_default_logger_severity(2)
+        onnxruntime.set_default_logger_severity(3)
 
         # Set the directory path for the models
-        self.assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
-        
+        self.assets_dir = os.path.expanduser("~/.insightface/models/buffalo_l")
+
         # Initialize the SCRFD detector with the model file
-        detector_path = os.path.join(self.assets_dir, 'det_10g.onnx')
+        detector_path = os.path.join(self.assets_dir, "det_10g.onnx")
         self.detector = SCRFD(detector_path)
-        self.detector.prepare(0 if device=="cuda" else -1)
-        
+        self.detector.prepare(0 if device == "cuda" else -1)
+
         # Initialize the ArcFace recognizer with the model file
-        rec_path = os.path.join(self.assets_dir, 'w600k_r50.onnx')
+        rec_path = os.path.join(self.assets_dir, "w600k_r50.onnx")
         self.rec = ArcFaceONNX(rec_path)
-        self.rec.prepare(0 if device=="cuda" else -1)
-        
+        self.rec.prepare(0 if device == "cuda" else -1)
+
         # Initialize emotion classification model
-        self.processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-        self.emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to(self.device)
-        self.id_to_label = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
+        self.processor = AutoImageProcessor.from_pretrained(
+            "trpakov/vit-face-expression"
+        )
+        self.emotion_model = AutoModelForImageClassification.from_pretrained(
+            "trpakov/vit-face-expression"
+        ).to(self.device)
+        self.id_to_label = {
+            0: "angry",
+            1: "disgust",
+            2: "fear",
+            3: "happy",
+            4: "neutral",
+            5: "sad",
+            6: "surprise",
+        }
         # Similarity threshold for face recognition
         self.similarity_threshold = 0.4
         # Load or create face database
-        self.database = self.create_face_database(self.rec, self.detector, os.path.join(os.path.dirname(os.getcwd()),"face-images"))
-     
+        self.database = self.create_face_database(
+            self.rec,
+            self.detector,
+            os.path.join(os.path.dirname(os.getcwd()), "face-images"),
+        )
+
         # Camera URLs file
-        self.camera_urls_file = 'camera_urls.csv'
+        self.camera_urls_file = "camera_urls.csv"
 
         # Initialize log file
-        self.log_file = 'recognized_faces_log.csv'
+        self.log_file = "recognized_faces_log.csv"
         self.init_log_file()
 
         # Dictionary to track last recognition times
         self.last_recognitions = {}
 
         # Directory for unknown faces
-        self.unknown_faces_dir = 'unknown_faces'
+        self.unknown_faces_dir = "unknown_faces"
         if not os.path.exists(self.unknown_faces_dir):
             os.makedirs(self.unknown_faces_dir)
 
     def init_log_file(self):
         # Initialize the log file with headers if it doesn't exist
         if not os.path.exists(self.log_file):
-            df = pd.DataFrame(columns=['Timestamp', 'Label', 'Similarity', 'Emotion'])
+            df = pd.DataFrame(columns=["Timestamp", "Label", "Similarity", "Emotion"])
             df.to_csv(self.log_file, index=False)
 
     def log_recognition(self, label, similarity, emotion):
         # Log the recognized face with the current timestamp
         now = datetime.datetime.now()
-        timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
         # Check if this face was recognized recently
         if label in self.last_recognitions:
@@ -82,38 +100,61 @@ class CameraProcessor:
         self.last_recognitions[label] = now
 
         # Append to log file
-        df = pd.DataFrame([[timestamp, label, similarity, emotion]], columns=['Timestamp', 'Label', 'Similarity', 'Emotion'])
-        df.to_csv(self.log_file, mode='a', header=False, index=False)
+        df = pd.DataFrame(
+            [[timestamp, label, similarity, emotion]],
+            columns=["Timestamp", "Label", "Similarity", "Emotion"],
+        )
+        df.to_csv(self.log_file, mode="a", header=False, index=False)
 
-    def compare_similarity(self, image1, image2):
-        bboxes1, kpss1 = self.detector.autodetect(image1, max_num=1)
-        if bboxes1.shape[0]==0:
+    def compare_similarity(self, image1: MatLike, image2: MatLike):
+        if image1 is None or image2 is None:
+            return -1.0, "One or both images are None"
+
+        if len(image1.shape) < 2 or len(image2.shape) < 2:
+            return -1.0, "One or both images are not valid"
+
+        bboxes1, kpss1 = self.detector.detect(
+            image1,
+            max_num=1,
+            input_size=(128, 128),
+            thresh=0.5,
+            metric="max",
+        )
+        if bboxes1.shape[0] == 0:
             return -1.0, "Face not found in Image-1"
-        bboxes2, kpss2 = self.detector.autodetect(image2, max_num=1)
-        if bboxes2.shape[0]==0:
+
+        bboxes2, kpss2 = self.detector.detect(
+            image2,
+            max_num=1,
+            input_size=(128, 128),
+            thresh=0.5,
+            metric="max",
+        )
+        if bboxes2.shape[0] == 0:
             return -1.0, "Face not found in Image-2"
+
         kps1 = kpss1[0]
         kps2 = kpss2[0]
         feat1 = self.rec.get(image1, kps1)
         feat2 = self.rec.get(image2, kps2)
         sim = self.rec.compute_sim(feat1, feat2)
-        if sim<0.2:
-            conclu = 'They are NOT the same person'
-        elif sim>=0.2 and sim<0.28:
-            conclu = 'They are LIKELY TO be the same person'
+        if sim < 0.2:
+            conclu = "They are NOT the same person"
+        elif sim >= 0.2 and sim < 0.28:
+            conclu = "They are LIKELY TO be the same person"
         else:
-            conclu = 'They ARE the same person'
+            conclu = "They ARE the same person"
         return sim, conclu
 
     def read_camera_urls(self):
         if not os.path.exists(self.camera_urls_file):
             return {}
-        
-        df = pd.read_csv(self.camera_urls_file, index_col=0)
-        return df.to_dict()['url']
 
-    def write_camera_urls(self,camera_urls):
-        df = pd.DataFrame(list(camera_urls.items()), columns=['label', 'url'])
+        df = pd.read_csv(self.camera_urls_file, index_col=0)
+        return df.to_dict()["url"]
+
+    def write_camera_urls(self, camera_urls):
+        df = pd.DataFrame(list(camera_urls.items()), columns=["label", "url"])
         df.to_csv(self.camera_urls_file, index=False)
 
     def create_face_database(self, model, face_detector, image_folder):
@@ -143,13 +184,37 @@ class CameraProcessor:
 
     def save_unknown_face(self, face_image, best_match):
         """Save the unknown face image with a unique ID"""
-        file_path = os.path.join(self.unknown_faces_dir, f"Unknown-{best_match}.jpg")
+        # Get the current date and time
+        now = datetime.datetime.now()
+        # Format the date and time as a string
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        # Create the filename
+        filename = f"Unknown-{best_match}-{timestamp}.jpg"
+
+        # Create a new directory for the person
+        person_dir = os.path.join(self.unknown_faces_dir, best_match)
+        os.makedirs(person_dir, exist_ok=True)
+
+        # Create the full file path
+        file_path = os.path.join(person_dir, filename)
+
+        # Save the image
         cv2.imwrite(file_path, face_image)
         return file_path
 
-    def recog_face_and_emotion(self, image):
+    def recog_face_and_emotion(self, image: MatLike):
         """Recognize faces and emotions in the given image"""
-        bboxes, kpss = self.detector.autodetect(image, max_num=0)
+        if image is None:
+            return [], [], [], []
+
+        if len(image.shape) < 2:
+            return [], [], [], []
+
+        bboxes, kpss = self.detector.autodetect(image, max_num=49)
+
+        if bboxes.shape[0] == 0:
+            return [], [], [], []
+
         labels = []
         sims = []
         emotions = []
@@ -158,8 +223,9 @@ class CameraProcessor:
             embedding = self.rec.get(image, kps)
             embeddings.append(embedding)
         for idx, embedding in enumerate(embeddings):
-            min_dist = float('inf')
+            min_dist = float("inf")
             best_match = None
+            label = "Unknown"
             for name, db_embedding in self.database.items():
                 dist = np.linalg.norm(db_embedding - embedding)
                 if dist < min_dist:
@@ -168,7 +234,7 @@ class CameraProcessor:
             sim = self.rec.compute_sim(embedding, self.database[best_match])
             if sim >= self.similarity_threshold:
                 label = best_match
-            else:
+            elif sim >= 0.25:
                 # Save the unknown face and assign a unique ID
                 bbox = bboxes[idx]
                 x1, y1, x2, y2 = map(int, bbox[:4])
@@ -176,15 +242,22 @@ class CameraProcessor:
 
                 # Check similarity with previously saved unknown faces
                 is_similar = False
-                for unknown_face_file in os.listdir(self.unknown_faces_dir):
-                    unknown_face_path = os.path.join(self.unknown_faces_dir, unknown_face_file)
-                    unknown_face_image = cv2.imread(unknown_face_path)
-                    sim, _ = self.compare_similarity(face_image, unknown_face_image)
-                    if sim >= self.similarity_threshold:
-                        is_similar = True
-                        label = f"Unknown-{unknown_face_file.split('-')[1].split('.')[0]}"
-                        break
-                
+                person_dir = os.path.join(self.unknown_faces_dir, best_match)
+                if os.path.exists(person_dir):
+                    for person_file in os.listdir(person_dir):
+                        person_path = os.path.join(person_dir, person_file)
+                        person_image = cv2.imread(person_path)
+                        compare_sim, _ = self.compare_similarity(
+                            face_image, person_image
+                        )
+                        # print(f"Similarity with {person_file}: {compare_sim}")
+                        if compare_sim >= 0.2:
+                            is_similar = True
+                            label = f"Person-{person_file.split('-')[1].split('.')[0]}"
+                            break
+                else:
+                    print(f"Directory {person_dir} does not exist.")
+
                 if not is_similar:
                     self.save_unknown_face(face_image, best_match)
                     label = f"Unknown-{best_match}"
@@ -203,7 +276,7 @@ class CameraProcessor:
             # Log the recognition
             self.log_recognition(label, sim, emotion)
         return bboxes, labels, sims, emotions
-    
+
     def generate(self, camera, is_recording=False):
         print(f"Opening camera stream: {camera}")
         cap = cv2.VideoCapture(camera)
@@ -213,7 +286,7 @@ class CameraProcessor:
 
         # Initialize video writer if recording is enabled
         writer = None
-      
+
         if is_recording:
             # Get current date and time
             now = datetime.datetime.now()
@@ -232,12 +305,14 @@ class CameraProcessor:
             ret, frame = cap.read()
             if not ret:
                 break
-            
+
             if is_recording and writer is None:
                 # Initialize writer with the frame size of the first frame
                 frame_height, frame_width = frame.shape[:2]
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                writer = cv2.VideoWriter(
+                    filename, fourcc, 20.0, (frame_width, frame_height)
+                )
                 if not writer.isOpened():
                     print("Error initializing video writer")
                     break
@@ -247,21 +322,31 @@ class CameraProcessor:
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
                 text_label = f"{label} ({sim * 100:.2f}%): {emotion}"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            
+                cv2.putText(
+                    frame,
+                    text_label,
+                    (x1 + 5, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2,
+                )
+
             # Write the frame to the video file if recording
             if writer:
                 writer.write(frame)
-            
-            _, buffer = cv2.imencode('.jpg', frame)
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        
+
+            _, buffer = cv2.imencode(".jpg", frame)
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
+            )
+
         cap.release()
         if writer:
             writer.release()
-        
-        
-    def stream(self,stream_id,camera,quality, is_recording=False):
+
+    def stream(self, stream_id, camera, quality, is_recording=False):
         camera_label = camera
         quality = quality
         camera = self.read_camera_urls()[camera_label] + quality
@@ -292,15 +377,18 @@ class CameraProcessor:
             if not ret:
                 break
 
-            ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])
+            ret, buffer = cv2.imencode(
+                ".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality]
+            )
             if not ret:
                 continue
 
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\r')
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\r"
+            )
 
         cap.release()
-
-
 
 
 # import cv2
@@ -323,23 +411,23 @@ class CameraProcessor:
 #         # Set the compute device
 #         self.device = torch.device(device)
 #         print(f"Using device: {self.device}")
-        
+
 #         # Initialize ONNX Runtime settings
 #         onnxruntime.set_default_logger_severity(2)
 
 #         # Set the directory path for the models
 #         self.assets_dir = os.path.expanduser('~/.insightface/models/buffalo_l')
-        
+
 #         # Initialize the SCRFD detector with the model file
 #         detector_path = os.path.join(self.assets_dir, 'det_10g.onnx')
 #         self.detector = SCRFD(detector_path)
 #         self.detector.prepare(0 if device=="cuda" else -1)
-        
+
 #         # Initialize the ArcFace recognizer with the model file
 #         rec_path = os.path.join(self.assets_dir, 'w600k_r50.onnx')
 #         self.rec = ArcFaceONNX(rec_path)
 #         self.rec.prepare(0 if device=="cuda" else -1)
-        
+
 #         # Initialize emotion classification model
 #         self.processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
 #         self.emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to(self.device)
@@ -348,7 +436,7 @@ class CameraProcessor:
 #         self.similarity_threshold = 0.4
 #         # Load or create face database
 #         self.database = self.create_face_database(self.rec, self.detector, os.path.join(os.path.dirname(os.getcwd()),"face-images"))
-     
+
 #         # Camera URLs file
 #         self.camera_urls_file = 'camera_urls.csv'
 
@@ -415,7 +503,7 @@ class CameraProcessor:
 #     def read_camera_urls(self):
 #         if not os.path.exists(self.camera_urls_file):
 #             return {}
-        
+
 #         df = pd.read_csv(self.camera_urls_file, index_col=0)
 #         return df.to_dict()['url']
 
@@ -497,7 +585,7 @@ class CameraProcessor:
 #             # Log the recognition
 #             self.log_recognition(label, sim, emotion)
 #         return bboxes, labels, sims, emotions
-    
+
 #     def generate(self, camera, is_recording=False):
 #         print(f"Opening camera stream: {camera}")
 #         cap = cv2.VideoCapture(camera)
@@ -507,7 +595,7 @@ class CameraProcessor:
 
 #         # Initialize video writer if recording is enabled
 #         writer = None
-      
+
 #         if is_recording:
 #             # Get current date and time
 #             now = datetime.datetime.now()
@@ -526,7 +614,7 @@ class CameraProcessor:
 #             ret, frame = cap.read()
 #             if not ret:
 #                 break
-            
+
 #             if is_recording and writer is None:
 #                 # Initialize writer with the frame size of the first frame
 #                 frame_height, frame_width = frame.shape[:2]
@@ -542,19 +630,19 @@ class CameraProcessor:
 #                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
 #                 text_label = f"{label} ({sim * 100:.2f}%): {emotion}"
 #                 cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            
+
 #             # Write the frame to the video file if recording
 #             if writer:
 #                 writer.write(frame)
-            
+
 #             _, buffer = cv2.imencode('.jpg', frame)
 #             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        
+
 #         cap.release()
 #         if writer:
 #             writer.release()
-        
-        
+
+
 #     def stream(self,stream_id,camera,quality, is_recording=False):
 #         camera_label = camera
 #         quality = quality

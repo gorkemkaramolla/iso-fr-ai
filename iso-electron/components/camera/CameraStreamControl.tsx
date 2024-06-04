@@ -13,7 +13,7 @@ interface CameraStreamProps {
   isLoading: boolean;
   isRecording: boolean;
   streamSrc?: string;
-  onCameraChange: (id: number, selectedCamera: string) => void;
+
   onQualityChange: (id: number, selectedQuality: Quality) => void;
   availableIds: number[];
   setAvailableIds: React.Dispatch<React.SetStateAction<number[]>>;
@@ -38,7 +38,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   availableIds,
   setCameraStreams,
   setAvailableIds,
-  onCameraChange,
+
   onQualityChange,
   cameraUrls,
   addCameraStream,
@@ -121,7 +121,22 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     stopStream();
     setAvailableIds([...availableIds, id].sort((a, b) => a - b));
     setCameraStreams(cameraStreams.filter((camera) => camera.id !== id));
-    // console.log(cameraStreams);
+
+    if (typeof window !== "undefined") {
+      // Retrieve the existing list of cameraStreams from localStorage
+      const savedStreams = localStorage.getItem("cameraStreams");
+      let cameraStreamsList: CameraStream[] = savedStreams
+        ? JSON.parse(savedStreams)
+        : [];
+
+      // Filter out the cameraStream with the specified id
+      cameraStreamsList = cameraStreamsList.filter(
+        (camera) => camera.id !== id
+      );
+
+      // Save the updated list back to localStorage
+      localStorage.setItem("cameraStreams", JSON.stringify(cameraStreamsList));
+    }
   };
   return (
     <div className="rounded-lg min-h-[400px] max-h-fit w-full">

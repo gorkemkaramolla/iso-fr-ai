@@ -130,18 +130,19 @@ def process_audio_route():
         del active_requests[client_id]  # Ensure to clear the flag irrespective of success or failure
 
 @audio_bp.route("/transcriptions/", defaults={'id': None}, methods=["GET"])
-@audio_bp.route("/transcriptions/<int:id>", methods=["GET"])
+@audio_bp.route("/transcriptions/<id>", methods=["GET"])
 @jwt_required()
 def get_transcription_route(id):
     if id is None:
-        # Get all transcriptions
+
         response = diarization_processor.get_all_transcriptions()
+        print(str(response))
     else:
         # Get transcription with the specified id
         response = diarization_processor.get_transcription(id)
     return response
 
-@audio_bp.route("/rename_segments/<int:transcription_id>/<old_name>/<new_name>", methods=["POST"])
+@audio_bp.route("/rename_segments/<transcription_id>/<old_name>/<new_name>", methods=["POST"])
 @jwt_required()
 def rename_segments_route(transcription_id, old_name, new_name):
     result, status_code = diarization_processor.rename_segments(transcription_id, old_name, new_name)

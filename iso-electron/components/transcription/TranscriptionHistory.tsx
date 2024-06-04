@@ -6,20 +6,31 @@ import { Pen } from 'lucide-react';
 interface Props {}
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import axios from 'axios';
+import useStore from '@/lib/store';
 
 const ChatSideMenu: React.FC<Props> = () => {
   const [menuToggle, setMenuToggle] = useState<boolean>(true);
   const [responses, setResponses] = useState<ApiResponse[]>([]); // Initialize as an array
+  const access_token = useStore((state) => state.accessToken);
 
   const handleMenuToggle = () => {
     setMenuToggle(!menuToggle);
   };
   const getTranscriptions = async () => {
-    const storedResponses = await axios.get(
-      'http://localhost:5004/transcriptions'
-    );
-    setResponses(storedResponses.data);
-    console.log(storedResponses.data);
+    try {
+      const storedResponses = await axios.get(
+        process.env.NEXT_PUBLIC_FLASK_URL + '/transcriptions/',
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      );
+      setResponses(storedResponses.data);
+      console.log(storedResponses.data);
+    } catch (error) {
+      console.error('Failed to fetch transcriptions:', error);
+    }
   };
   useEffect(() => {
     getTranscriptions();
@@ -29,8 +40,9 @@ const ChatSideMenu: React.FC<Props> = () => {
 
   return (
     <div
-      className={`h-full relative  overflow-y-scroll flex flex-col items-center  transition-all duration-500  `}
+      className={`h-full  sticky top-0 overflow-y-scroll flex flex-col items-center transition-all duration-500`}
     >
+      {/* {access_token} */}
       {menuToggle && (
         <div className='py-4'>
           <h2 className='text-lg  font-bold text-center '>Transkript Kaydı</h2>

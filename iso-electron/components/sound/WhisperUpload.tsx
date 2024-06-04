@@ -2,6 +2,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
+import useStore from '@/lib/store';
 
 interface Segment {
   id: number;
@@ -29,6 +30,7 @@ function WhisperUpload() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
+  const access_token = useStore((state) => state.accessToken);
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     setFile(event.target.files ? event.target.files[0] : null);
@@ -63,6 +65,7 @@ function WhisperUpload() {
         formData,
         {
           headers: {
+            Authorization: `Bearer ${access_token}`,
             'Content-Type': 'multipart/form-data',
             'X-Client-ID': localStorage.getItem('client_id') || '123456',
           },

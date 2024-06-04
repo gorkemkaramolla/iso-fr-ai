@@ -19,7 +19,16 @@ const VideoStream: React.FC = () => {
     if (typeof window !== "undefined") {
       const savedStreams = localStorage.getItem("cameraStreams");
       if (savedStreams) {
-        setCameraStreams(JSON.parse(savedStreams));
+        const parsedStreams = JSON.parse(savedStreams);
+        setCameraStreams(parsedStreams);
+
+        // Update availableIds to remove ids that are already used
+        setAvailableIds((prevAvailableIds) => {
+          return prevAvailableIds.filter(
+            (id) =>
+              !parsedStreams.some((stream: CameraStream) => stream.id === id)
+          );
+        });
       }
     }
   }, []);

@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
-    "@types/node": "^20",
+    "@types/node": "^20.14.1",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-highlight": "^0.12.8",

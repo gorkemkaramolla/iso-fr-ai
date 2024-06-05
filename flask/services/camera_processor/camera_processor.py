@@ -189,7 +189,7 @@ class CameraProcessor:
         # Format the date and time as a string
         timestamp = now.strftime("%Y%m%d-%H%M%S")
         # Create the filename
-        filename = f"Unknown-{best_match}-{timestamp}.jpg"
+        filename = f"{best_match}-{timestamp}.jpg"
 
         # Create a new directory for the person
         person_dir = os.path.join(self.unknown_faces_dir, best_match)
@@ -261,6 +261,18 @@ class CameraProcessor:
                 if not is_similar:
                     self.save_unknown_face(face_image, best_match)
                     label = f"Unknown-{best_match}"
+            else:
+
+                # Save the unknown face and assign a unique ID
+                bbox = bboxes[idx]
+                x1, y1, x2, y2 = map(int, bbox[:4])
+                face_image = image[y1:y2, x1:x2]
+
+                # Save the unknown face under the "bilinmeyen" folder
+                self.save_unknown_face(face_image, "bilinmeyen")
+                label = (
+                    f"bilinmeyen-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+                )
 
             labels.append(label)
             sims.append(sim)

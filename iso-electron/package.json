@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev \" \"electron .\"",
-    "build": "next build && electron-builder",
+    "build": "next build",
     "start": "next start",
     "test": "next dev --experimental-https --hostname 10.15.95.233",
     "lint": "next lint",
@@ -39,12 +39,10 @@
     "re-resizable": "^6.9.17",
     "react": "^18",
     "react-chartjs-2": "^5.2.0",
-    "react-d3-speedometer": "^2.2.1",
     "react-dom": "^18",
     "react-draggable": "^4.4.6",
     "react-gauge-component": "^1.2.21",
     "react-highlight": "^0.15.0",
-    "react-hls-player": "^3.0.7",
     "react-resizable-panels": "^2.0.19",
     "recharts": "^2.12.7",
     "socket.io-client": "^4.7.5",
@@ -64,7 +62,6 @@
     "eslint": "^8",
     "eslint-config-next": "14.1.4",
     "postcss": "^8",
-    "shiki": "^1.6.1",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
   }

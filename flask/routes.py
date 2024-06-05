@@ -8,15 +8,18 @@ from flask_cors import CORS
 from auth.auth_provider import AuthProvider
 from flask_jwt_extended import jwt_required, JWTManager
 import os
+from datetime import timedelta
 
 app = Flask(__name__)
 CORS(app, origins="*")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
 jwt = JWTManager(app)
 
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cuda")
-camera_processor = CameraProcessor(device="cuda")
+diarization_processor = SpeakerDiarizationProcessor(device="cpu")
+camera_processor = CameraProcessor(device="cpu")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 
@@ -31,6 +34,14 @@ auth_bp = Blueprint("auth_bp", __name__)
 # Register Auth Provider
 auth_provider = AuthProvider()
 
+@auth_bp.route('/token/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    
+    # resp.set_cookie('access_token', new_token, httponly=True, secure=True,
+    #                 expires=datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+    access_token = auth_provider.refresh_token()
+    return  jsonify({"access_token": access_token}), 200
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -52,8 +63,8 @@ def login():
     if not username or not password:
         return jsonify({"error": "Username and password are required"}), 400
 
-    response = auth_provider.login(username, password)
-    return response
+    tokens = auth_provider.login(username, password)
+    return jsonify(tokens), 200
 
 
 app.register_blueprint(auth_bp)
@@ -64,7 +75,7 @@ camera_urls = camera_processor.read_camera_urls()
 
 
 @camera_bp.route("/camera-url", methods=["POST"])
-# @jwt_required()
+@jwt_required()
 def add_camera_url():
     data = request.json
     label = data.get("label")
@@ -79,13 +90,13 @@ def add_camera_url():
 
 
 @camera_bp.route("/camera-urls", methods=["GET"])
-# @jwt_required()
+@jwt_required()
 def get_camera_urls():
     return jsonify(camera_urls), 200
 
 
 @camera_bp.route("/camera-url/<label>", methods=["DELETE"])
-# @jwt_required()
+@jwt_required()
 def delete_camera_url(label):
     if label not in camera_urls:
         return jsonify({"error": "Camera label not found"}), 404
@@ -98,7 +109,7 @@ def delete_camera_url(label):
 
 # ****************************************************************************
 @camera_bp.route("/stream/<int:stream_id>", methods=["GET"])
-# @jwt_required()
+@jwt_required()
 def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
 
@@ -114,7 +125,7 @@ def stream(stream_id):
 
 
 @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
-# @jwt_required()
+@jwt_required()
 def local_camera(cam_id):
 
     return Response(
@@ -129,7 +140,7 @@ app.register_blueprint(camera_bp)
 # ----------------------------
 # # Start the thread to send system info
 @app.route("/system_check/", methods=["GET"])
-# @jwt_required()
+@jwt_required()
 def system_check_route():
     system_info = system_monitoring_instance.send_system_info()
     return jsonify(system_info)
@@ -140,7 +151,7 @@ active_requests = {}
 
 
 @audio_bp.route("/process-audio/", methods=["POST"])
-# @jwt_required()
+@jwt_required()
 def process_audio_route():
     client_id = request.headers.get("X-Client-ID")
     if not client_id:

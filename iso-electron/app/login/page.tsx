@@ -30,7 +30,8 @@ export default function Login() {
       );
       if (response.data.access_token) {
         setAccessToken(response.data.access_token); // Update Zustand store
-        localStorage.setItem('access_token', response.data.access_token); // Optionally store in localStorage
+        sessionStorage.setItem('access_token', response.data.access_token);
+        sessionStorage.setItem('refresh_token', response.data.refresh_token);
         router.push('/'); // Redirect to home page
       }
     } catch (error) {

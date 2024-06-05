@@ -34,7 +34,7 @@ const ChatSideMenu: React.FC<Props> = () => {
 
   return (
     <div
-      className={`h-full  sticky top-0 overflow-y-scroll flex flex-col items-center transition-all duration-500`}
+      className={`h-full  sticky top-0  flex flex-col items-center transition-all duration-500`}
     >
       {/* {access_token} */}
       {menuToggle && (

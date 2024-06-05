@@ -5,7 +5,7 @@ interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
   return (
-    <nav className='navbar h-[7vh] w-full  border justify-between  bg-base-100 flex '>
+    <nav className='navbar h-[7vh] w-full   justify-between  bg-base-100 flex '>
       <div className=' navbar-start '>
         <div className='dropdown'>
           <div tabIndex={0} role='button' className='btn btn-ghost btn-circle'>

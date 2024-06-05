@@ -86,14 +86,14 @@ function WhisperUpload() {
   };
 
   return (
-    <div className='w-full'>
-      <div className='w-full my-0 absolute bottom-0 bg-gray-300 rounded-full'>
+    <div className='w-full h-full overflow-auto'>
+      <div className='w-full my-0 absolute bottom-0 bg-gray-900 rounded-full'>
         <div
-          className='h-2 bg-blue-500   rounded-full'
+          className='h-2 bg-terminalGreen   rounded-full'
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <div className='p-8 rounded-xl'>
+      <div className='p-8  h-full  rounded-xl'>
         <h1 className='my-1'>Dosya Yükleme</h1>
         <input
           type='file'
@@ -106,7 +106,7 @@ function WhisperUpload() {
         </button>
         {error && <div className='text-red-500'>{error}</div>}
         {response && (
-          <div className='bg-gray-50 rounded-xl p-4 w-full '>
+          <div className='rounded-xl p-4 w-full overflow-auto'>
             <h3>Processed at: {response.created_at}</h3>
             <h3>Language: {response.transcription.language}</h3>
             <ul>

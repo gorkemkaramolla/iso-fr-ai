@@ -8,7 +8,7 @@ import useStore from '@/library/store';
 interface Props {}
 const Speech: React.FC<Props> = () => {
   return (
-    <div className='w-screen h-[91.5vh] overflow-y-scroll z-0 flex flex-col justify-center   '>
+    <div className='w-screen h-[91.5vh] z-0 flex flex-col justify-center   '>
       <div className='flex h-full justify-between '>
         <PanelGroup
           autoSaveId='example'
@@ -18,7 +18,7 @@ const Speech: React.FC<Props> = () => {
           <Panel defaultSize={75}>
             <WhisperUpload />
           </Panel>
-          <PanelResizeHandle className='w-1 border-2' />
+          <PanelResizeHandle className='w-1 border-2 border-red-500 border-base-200' />
 
           <Panel defaultSize={25} className='z-0'>
             <TranscriptionHistory />

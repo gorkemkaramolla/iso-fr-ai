@@ -1,6 +1,6 @@
 import React from 'react';
 import Highlight from 'react-highlight';
-import 'highlight.js/styles/atom-one-dark.css';
+import 'highlight.js/styles/xt256.min.css';
 
 const CodeHighlighter = ({
   language,

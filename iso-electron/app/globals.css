@@ -18,12 +18,12 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
+  /* background: linear-gradient(
       to bottom,
       transparent,
       rgb(var(--background-end-rgb))
     )
-    rgb(var(--background-start-rgb));
+    rgb(var(--background-start-rgb)); */
 }
 
 @layer utilities {
@@ -66,7 +66,7 @@ body {
 }
 /* CustomHighlight.css */
 .hljs {
-  background: none !important; /* Important to override existing styles */
+  /* background: none !important; */
   padding: 0 !important;
   margin: 0 !important;
 }
@@ -94,8 +94,8 @@ body {
   scrollbar-width: none; /* Firefox */
 }
 pre {
-  padding: 0 !important;
-  margin: 0 !important;
+  font-size: 14px;
+  padding-bottom: 40px;
 }
 
 code {

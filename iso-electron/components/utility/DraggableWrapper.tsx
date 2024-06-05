@@ -26,7 +26,7 @@ const DraggableWrapper = ({ children, uniqueId }: DraggableWrapperProps) => {
       bounds='parent'
       onStop={handleDragStopped}
     >
-      <div className='cursor-grab'>{children}</div>
+      <div className='cursor-grab w-full'>{children}</div>
     </Draggable>
   );
 };

@@ -12,7 +12,7 @@ const GaugeWidget: React.FC<Props> = ({ value }) => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div style={{ width: '100%', height: '80%', margin: '0 auto' }}>
+      <div style={{ width: '100%', height: '100%' }}>
         <svg width='0' height='0'>
           <defs>
             <linearGradient id='gradient' x1='0%' y1='0%' x2='100%' y2='0%'>
@@ -29,17 +29,24 @@ const GaugeWidget: React.FC<Props> = ({ value }) => {
         </svg>
         <Gauge
           color
-          value={value}
+          value={parseFloat(value.toFixed(2))}
           valueMax={100}
           startAngle={-110}
           endAngle={110}
           sx={{
             [`& .${gaugeClasses.valueText}`]: {
-              fontSize: 20,
+              fontSize: 36,
+              fill: 'white',
               transform: 'translate(0px, 0px)',
+              [`& tspan`]: {
+                fill: 'white', // replace 'yourColorHere' with the color you want
+              },
             },
             [`& .${gaugeClasses.valueArc}`]: {
               fill: 'url(#gradient)',
+            },
+            [`& .${gaugeClasses.referenceArc}`]: {
+              fill: 'white',
             },
           }}
           text={({ value, valueMax }) => `${value} \u00B0C`}

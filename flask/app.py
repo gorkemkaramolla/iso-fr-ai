@@ -4,10 +4,12 @@ import os
 from routes import audio_bp, camera_bp, system_check, auth_bp
 from flask_jwt_extended import JWTManager
 from socketio_instance import socketio
-
+from datetime import timedelta
 app = Flask(__name__)
 CORS(app,origins="*")
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') 
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)
 jwt = JWTManager(app)
 app.register_blueprint(audio_bp)
 app.register_blueprint(camera_bp)

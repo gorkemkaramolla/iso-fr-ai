@@ -7,6 +7,7 @@ interface Props {}
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import axios from 'axios';
 import useStore from '@/lib/store';
+import api from '@/utils/axios_instance';
 
 const ChatSideMenu: React.FC<Props> = () => {
   const [menuToggle, setMenuToggle] = useState<boolean>(true);
@@ -18,14 +19,7 @@ const ChatSideMenu: React.FC<Props> = () => {
   };
   const getTranscriptions = async () => {
     try {
-      const storedResponses = await axios.get(
-        process.env.NEXT_PUBLIC_FLASK_URL + '/transcriptions/',
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-        }
-      );
+      const storedResponses = await api.get('/transcriptions/');
       setResponses(storedResponses.data);
       console.log(storedResponses.data);
     } catch (error) {

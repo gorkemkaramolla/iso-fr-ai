@@ -5,6 +5,7 @@ import TranscriptionHistory from '@/components/transcription/TranscriptionHistor
 import Heading from '@/components/ui/Heading';
 import RotatingWheel from '@/components/ui/LogoSpinner';
 import useStore from '@/lib/store';
+import api from '@/utils/axios_instance';
 
 interface Segment {
   segment_id: string;
@@ -81,26 +82,17 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     id: '',
     name: '',
   });
-  const access_token = useStore((state) => state.accessToken);
   useEffect(() => {
     const getTranscription = async () => {
       try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_FLASK_URL}/transcriptions/${String(id)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-            },
-          }
-        );
+        const response = await api.get(`/transcriptions/${String(id)}`);
         setTranscription(response.data);
       } catch (error) {
         console.error('Error fetching transcription:', error);
       }
     };
-
     getTranscription();
-  }, [id, access_token]);
+  }, [id]);
 
   const handleSpeakerClick = (segment: Segment) => {
     setCurrentSpeaker({ id: segment.segment_id, name: segment.speaker });
@@ -117,13 +109,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
       setTranscription({ ...transcription!, segments: updatedSegments });
     }
 
-    await axios.post(
-      `${process.env.NEXT_PUBLIC_FLASK_URL}/rename_segments/${id}/${oldName}/${newName}`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${access_token}` },
-      }
-    );
+    await api.post(`/rename_segments/${id}/${oldName}/${newName}`, {});
   };
 
   if (!transcription) {

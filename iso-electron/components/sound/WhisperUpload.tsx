@@ -3,6 +3,7 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
 import useStore from '@/lib/store';
+import api from '@/utils/axios_instance';
 
 interface Segment {
   id: number;
@@ -60,20 +61,15 @@ function WhisperUpload() {
     formData.append('file', file, file.name);
 
     try {
-      const res = await axios.post<ApiResponse>(
-        `http://localhost:5004/process-audio/`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Content-Type': 'multipart/form-data',
-            'X-Client-ID': localStorage.getItem('client_id') || '123456',
-          },
-        }
-      );
+      const res = await api.post<ApiResponse>('/process-audio/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-Client-ID': localStorage.getItem('client_id') || '123456',
+        },
+      });
       setResponse(res.data);
       setLoading(false);
-      setProgress(100); // This ensures the progress bar completes if the server misses the last increment
+      setProgress(100);
 
       // Store the response for future sessions or other component use
       let responses = JSON.parse(localStorage.getItem('responses') || '[]');

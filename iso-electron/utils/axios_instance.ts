@@ -2,11 +2,17 @@ import axios from 'axios';
 import { redirect } from 'next/navigation';
 
 function getAccessToken() {
-  return sessionStorage.getItem('access_token') || '';
+  if (typeof window !== 'undefined') {
+    return sessionStorage.getItem('access_token') || '';
+  }
+  return '';
 }
 
 function getRefreshToken() {
-  return sessionStorage.getItem('refresh_token') || '';
+  if (typeof window !== 'undefined') {
+    return sessionStorage.getItem('refresh_token') || '';
+  }
+  return '';
 }
 
 const api = axios.create({
@@ -60,7 +66,9 @@ api.interceptors.response.use(
       return new Promise((resolve, reject) => {
         refreshAccessToken(refreshToken)
           .then((newAccessToken) => {
-            sessionStorage.setItem('access_token', newAccessToken);
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('access_token', newAccessToken);
+            }
             api.defaults.headers['Authorization'] = 'Bearer ' + newAccessToken;
             originalRequest.headers['Authorization'] =
               'Bearer ' + newAccessToken;

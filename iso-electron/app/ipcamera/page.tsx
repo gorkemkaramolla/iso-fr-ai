@@ -17,6 +17,7 @@ const VideoStream: React.FC = () => {
       selectedQuality: Quality.Quality,
       isPlaying: true,
       isLoading: true,
+      isRecording: false,
     },
   ]);
 
@@ -42,6 +43,7 @@ const VideoStream: React.FC = () => {
           selectedQuality: Quality.Quality,
           isPlaying: true,
           isLoading: true,
+          isRecording: false,
         },
       ]);
     }

@@ -2,8 +2,8 @@
 import { User, KeySquare } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import useStore from '@/lib/store';
-import { loginSchema, LoginData } from '@/lib/validation';
+import useStore from '@/library/store';
+import { loginSchema, LoginData } from '@/library/validation';
 import { FormEvent } from 'react';
 
 export default function Login() {

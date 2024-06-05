@@ -5,7 +5,7 @@ import cv2
 from services.camera_processor.scrfd import SCRFD
 from services.camera_processor.arcface_onnx import ArcFaceONNX
 
-device = torch.device("cuda")
+device = torch.device("cpu")
 print(f"Using device: {device}")
 
 # Initialize ONNX Runtime settings

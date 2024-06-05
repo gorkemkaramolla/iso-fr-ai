@@ -18,10 +18,10 @@ model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expres
 
 onnxruntime.set_default_logger_severity(3)
 
-assets_dir = osp.expanduser('~/.insightface/models/buffalo_l')
-detector = SCRFD(os.path.join(assets_dir, 'det_10g.onnx'))
+assets_dir = osp.expanduser('~/.insightface/models/antelopev2')
+detector = SCRFD(os.path.join(assets_dir, 'scrfd_10g_bnkps.onnx'))
 detector.prepare(0)
-model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
+model_path = os.path.join(assets_dir, 'glintr100.onnx')
 rec = ArcFaceONNX(model_path)
 rec.prepare(0)
 

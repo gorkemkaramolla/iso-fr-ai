@@ -3,7 +3,7 @@ import WhisperUpload from '@/components/sound/WhisperUpload';
 import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
 import React from 'react';
 import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
-import useStore from '@/lib/store';
+import useStore from '@/library/store';
 
 interface Props {}
 const Speech: React.FC<Props> = () => {

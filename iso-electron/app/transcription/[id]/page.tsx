@@ -4,7 +4,7 @@ import axios from 'axios';
 import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
 import Heading from '@/components/ui/Heading';
 import RotatingWheel from '@/components/ui/LogoSpinner';
-import useStore from '@/lib/store';
+import useStore from '@/library/store';
 import api from '@/utils/axios_instance';
 
 interface Segment {

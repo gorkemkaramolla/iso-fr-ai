@@ -6,7 +6,7 @@ import { Pen } from 'lucide-react';
 interface Props {}
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import axios from 'axios';
-import useStore from '@/lib/store';
+import useStore from '@/library/store';
 import api from '@/utils/axios_instance';
 
 const ChatSideMenu: React.FC<Props> = () => {

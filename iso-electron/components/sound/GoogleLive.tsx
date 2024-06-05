@@ -1,6 +1,5 @@
 'use client';
 import { Mic, MicOff, Chrome } from 'lucide-react';
-import { Button } from 'primereact/button';
 import React, { useEffect, useState, FC } from 'react';
 
 interface ISpeechRecognition {

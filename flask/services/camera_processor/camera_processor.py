@@ -363,11 +363,11 @@ class CameraProcessor:
         # Set the JPEG quality level
         if quality == "Quality":
             jpeg_quality = 100
-        if quality == "High":
+        if quality == "Balanced":
             jpeg_quality = 90
-        elif quality == "Medium":
+        elif quality == "Bandwidth":
             jpeg_quality = 50
-        elif quality == "Low":
+        elif quality == "Mobile":
             jpeg_quality = 10
         else:
             jpeg_quality = 50

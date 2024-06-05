@@ -2,20 +2,22 @@ import React from 'react';
 import { Quality } from '@/utils/enums';
 
 interface QualityDropdownProps {
+  id: number;
   selectedQuality: Quality;
-  onQualityChange: (selectedQuality: Quality) => void;
+  handleQualityChange: (id: number, quality: Quality) => void;
 }
 
 const QualityDropdown: React.FC<QualityDropdownProps> = ({
+  id,
   selectedQuality,
-  onQualityChange,
+  handleQualityChange,
 }) => {
   return (
     <div>
       <select
         value={String(selectedQuality)}
-        onChange={(e) => onQualityChange(e.target.value as Quality)}
-        className='select select-bordered w-full max-w-xs select-sm '
+        onChange={(e) => handleQualityChange(id, e.target.value as Quality)}
+        className='select select-bordered w-full max-w-xs select-sm'
       >
         <option disabled value='' className='select-option'>
           Çözünürlük

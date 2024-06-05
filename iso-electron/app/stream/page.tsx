@@ -57,12 +57,14 @@ const VideoStream: React.FC = () => {
         streamSrc: `${
           process.env.NEXT_PUBLIC_FLASK_URL
         }/stream/${newId}?camera=${selectedCamera}&quality=${
-          Quality.Quality
+          Object.keys(Quality)[0]
         }&is_recording=${false}`,
-        selectedQuality: Quality.Quality,
+        selectedQuality: Object.keys(Quality)[0],
         isPlaying: true,
         isLoading: true,
         isRecording: false,
+        position: { x: 0, y: 0 },
+        size: { width: '100%', height: '100%' },
       };
 
       setCameraStreams([...cameraStreams, newCameraStream]);
@@ -85,17 +87,28 @@ const VideoStream: React.FC = () => {
     }
   };
 
-  const handleQualityChange = (id: number, selectedQuality: string | null) => {
-    setCameraStreams(
-      cameraStreams.map((camera) =>
-        camera.id === id ? { ...camera, selectedQuality } : camera
-      )
-    );
+  const saveCameraStreamPosition = (
+    id: number,
+    position: { x: number; y: number }
+  ) => {
+    if (typeof window !== 'undefined') {
+      const savedStreams = localStorage.getItem('cameraStreams');
+      let cameraStreamsList: CameraStream[] = savedStreams
+        ? JSON.parse(savedStreams)
+        : [];
+
+      // Update the position of the cameraStream with the specified id
+      cameraStreamsList = cameraStreamsList.map((camera) =>
+        camera.id === id ? { ...camera, position } : camera
+      );
+
+      // Save the updated list back to localStorage
+      localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
+    }
   };
 
-  const saveCameraStreamPositionAndSize = (
+  const saveCameraStreamSize = (
     id: number,
-    position: { x: number; y: number },
     size: { width: string | number; height: string | number }
   ) => {
     if (typeof window !== 'undefined') {
@@ -104,11 +117,10 @@ const VideoStream: React.FC = () => {
         ? JSON.parse(savedStreams)
         : [];
 
-      // Update the position and size of the cameraStream with the specified id
+      // Update the size of the cameraStream with the specified id
       cameraStreamsList = cameraStreamsList.map((camera) =>
-        camera.id === id ? { ...camera, position, size } : camera
+        camera.id === id ? { ...camera, size } : camera
       );
-      console.log(cameraStreamsList);
 
       // Save the updated list back to localStorage
       localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
@@ -133,7 +145,7 @@ const VideoStream: React.FC = () => {
             showAddCamera={showAddCamera}
           />
         </div>
-        <div className='relative flex flex-wrap justify-center items-start mx-auto gap-4 min-h-screen'>
+        <div className='relative flex justify-center items-start mx-auto gap-4 min-h-screen'>
           {cameraStreams
             .sort((a, b) => a.id - b.id)
             .map((camera) => {
@@ -144,11 +156,10 @@ const VideoStream: React.FC = () => {
                   handle='.drag-handle'
                   bounds='parent'
                   onStop={(e, data) =>
-                    saveCameraStreamPositionAndSize(
-                      camera.id,
-                      { x: data.x, y: data.y },
-                      camera.size!
-                    )
+                    saveCameraStreamPosition(camera.id, {
+                      x: data.x,
+                      y: data.y,
+                    })
                   }
                 >
                   <Resizable
@@ -165,11 +176,10 @@ const VideoStream: React.FC = () => {
                     maxHeight='100%'
                     className='bg-slate-100 rounded-lg border border-slate-400 shadow-lg'
                     onResizeStop={(e, direction, ref) =>
-                      saveCameraStreamPositionAndSize(
-                        camera.id,
-                        camera.position!,
-                        { width: ref.style.width, height: ref.style.height }
-                      )
+                      saveCameraStreamSize(camera.id, {
+                        width: ref.style.width,
+                        height: ref.style.height,
+                      })
                     }
                   >
                     <CameraStreamControl
@@ -181,7 +191,6 @@ const VideoStream: React.FC = () => {
                       isLoading={camera.isLoading}
                       isRecording={camera.isRecording}
                       streamSrc={camera.streamSrc}
-                      onQualityChange={handleQualityChange}
                       availableIds={availableIds}
                       setAvailableIds={setAvailableIds}
                       cameraStreams={cameraStreams}

@@ -29,7 +29,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
         className='select select-bordered select-primary w-fit'
       >
         <option disabled value='' className='select-option'>
-          Kamera
+          Kamera Seçiniz
         </option>
         {Object.keys(cameraUrls)
           .filter(

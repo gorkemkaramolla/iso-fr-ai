@@ -8,16 +8,10 @@ enum Camera {
   LOCAL_CAM2 = 'LOCAL_CAM2',
 }
 enum Quality {
-  MotionJPEG = 'Motion JPEG',
-  H264 = 'H.264',
-  Quality = 'Quality',
-  Balanced = 'Balanced',
-  Bandwidth = 'Bandwidth',
-  Max = 'Max',
-  High = 'High',
-  Medium = 'Medium',
-  Low = 'Low',
-  Mobile = 'Mobile',
+  Quality = 'Yüksek Kalite',
+  Balanced = 'Dengeli',
+  Bandwidth = 'Bant Genişliği',
+  Mobile = 'Mobil',
 }
 
 export { Camera, Quality };

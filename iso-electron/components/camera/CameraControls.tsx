@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  RefreshCwIcon,
   PlayCircleIcon,
   StopCircleIcon,
   XIcon,
@@ -95,33 +94,30 @@ const CameraControls: React.FC<CameraControlsProps> = ({
             )}
           </>
         </li>
-        <li>
-          <>
-            {isRecording ? (
-              <a
-                onClick={() => stopRecording()}
-                className="transition-all duration-1000"
-              >
-                <VideoOff className="w-6 h-6" />
-                Kayıt Durdur
-              </a>
-            ) : (
-              <a
-                onClick={() => startRecording()}
-                className="transition-all duration-1000"
-              >
-                <Video className="w-6 h-6" />
-                Kayıt Başlat
-              </a>
-            )}
-          </>
-        </li>
-        {/* <li>
-          <a onClick={() => startStream()} className="group">
-            <RefreshCwIcon className="w-6 h-6 group-active:rotate-180 transition-all duration-300" />
-            Yenile
-          </a>
-        </li> */}
+        {!isLoading && isPlaying && (
+          <li>
+            <>
+              {isRecording ? (
+                <a
+                  onClick={() => stopRecording()}
+                  className="transition-all duration-1000"
+                >
+                  <VideoOff className="w-6 h-6" />
+                  Kayıt Durdur
+                </a>
+              ) : (
+                <button
+                  onClick={() => startRecording()}
+                  className="transition-all duration-1000 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Video className="w-6 h-6" />
+                  Kayıt Başlat
+                </button>
+              )}
+            </>
+          </li>
+        )}
+
         <li>
           <a onClick={() => removeStream()} className="text-red-500">
             <XIcon className="w-6 h-6" />

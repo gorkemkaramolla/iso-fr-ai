@@ -2,3 +2,4 @@ label,url
 CAM,http://localhost:5004/camera/0?quality=
 CAM2,http://127.0.0.1:5004/camera/1?quality=
 IP_CAM,http://root:N143g144@192.168.100.152/mjpg/video.mjpg?streamprofile=
+asdasd,asda

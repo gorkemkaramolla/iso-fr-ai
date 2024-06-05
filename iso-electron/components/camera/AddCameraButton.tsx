@@ -18,19 +18,24 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
   const [newCameraUrl, setNewCameraUrl] = useState('');
 
   const handleAddCameraUrl = async () => {
+    if (!newCameraLabel || !newCameraUrl) {
+      alert("Kamera ismi ve URL'si boş olamaz!");
+      return;
+    }
+
     try {
       await api.post('/camera-url', {
         label: newCameraLabel,
         url: newCameraUrl,
         crossOriginIsolated: false,
       });
-      alert('Camera URL added successfully');
+      alert('Kamera URL eklendi 🎉');
       setNewCameraLabel('');
       setNewCameraUrl('');
       setShowAddCamera(false); // Hide the section after adding a camera
     } catch (error) {
       console.error('Error adding camera URL:', error);
-      alert('Failed to add camera URL');
+      alert('Kamera URL ekleme hatası: ' + error);
     }
   };
 

@@ -1,10 +1,10 @@
-import React from "react";
-import CameraDropdown from "./CameraDropdown";
-import QualityDropdown from "./QualityDropdown";
-import CameraControls from "./CameraControls";
-import CameraStream from "./CameraStream";
-import { Quality } from "@/utils/enums";
-import axios from "axios";
+import React from 'react';
+import CameraDropdown from './CameraDropdown';
+import QualityDropdown from './QualityDropdown';
+import CameraControls from './CameraControls';
+import CameraStream from './CameraStream';
+import { Quality } from '@/utils/enums';
+import axios from 'axios';
 interface CameraStreamProps {
   id: number;
   selectedCamera: string;
@@ -13,8 +13,6 @@ interface CameraStreamProps {
   isLoading: boolean;
   isRecording: boolean;
   streamSrc?: string;
-
-  onQualityChange: (id: number, selectedQuality: Quality) => void;
   availableIds: number[];
   setAvailableIds: React.Dispatch<React.SetStateAction<number[]>>;
   stopStream?: (id: number) => void;
@@ -38,10 +36,6 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   availableIds,
   setCameraStreams,
   setAvailableIds,
-
-  onQualityChange,
-  cameraUrls,
-  addCameraStream,
 }) => {
   const startRecording = () => {
     setCameraStreams(
@@ -88,7 +82,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         camera.id === id
           ? {
               ...camera,
-              streamSrc: "",
+              streamSrc: '',
               isLoading: false,
               isPlaying: false,
               isRecording: false,
@@ -122,9 +116,9 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     setAvailableIds([...availableIds, id].sort((a, b) => a - b));
     setCameraStreams(cameraStreams.filter((camera) => camera.id !== id));
 
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       // Retrieve the existing list of cameraStreams from localStorage
-      const savedStreams = localStorage.getItem("cameraStreams");
+      const savedStreams = localStorage.getItem('cameraStreams');
       let cameraStreamsList: CameraStream[] = savedStreams
         ? JSON.parse(savedStreams)
         : [];
@@ -135,18 +129,32 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
       );
 
       // Save the updated list back to localStorage
-      localStorage.setItem("cameraStreams", JSON.stringify(cameraStreamsList));
+      localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
     }
   };
+  const handleQualityChange = (id: number, selectedQuality: string | null) => {
+    setCameraStreams(
+      cameraStreams.map((camera) =>
+        camera.id === id
+          ? {
+              ...camera,
+              selectedQuality: selectedQuality,
+              streamSrc: `${process.env.NEXT_PUBLIC_FLASK_URL}/stream/${id}?camera=${selectedCamera}&quality=${selectedQuality}&is_recording=${camera.isRecording}`,
+            }
+          : camera
+      )
+    );
+    console.log(cameraStreams);
+  };
   return (
-    <div className="rounded-lg min-h-[400px] max-h-fit w-full">
+    <div className='rounded-lg min-h-[400px] max-h-fit w-full'>
       <div
-        className="text-sm text-center font-bold  bg-slate-50 
+        className='text-sm text-center font-bold  bg-slate-50 
       border-none rounded-md py-1 m-0 border border-black drag-handle
-      cursor-move"
+      cursor-move'
       >
-        <div className="flex flex-row space-x-4 gap-4 items-center justify-around p-2">
-          <div className="flex flex-row gap-4">
+        <div className='flex flex-row space-x-4 gap-4 items-center justify-around p-2'>
+          <div className='flex flex-row gap-4'>
             <CameraControls
               isPlaying={isPlaying}
               isLoading={isLoading}
@@ -158,12 +166,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               stopRecording={() => stopRecording()}
             />
             <QualityDropdown
+              id={id}
               selectedQuality={selectedQuality}
-              onQualityChange={(quality) => onQualityChange(id, quality)}
+              handleQualityChange={handleQualityChange}
             />
           </div>
-          <div className="text-black">
-            Yayın {id} - <span className="text-red-500">{selectedCamera}</span>
+          <div className='text-black'>
+            Yayın {id} - <span className='text-red-500'>{selectedCamera}</span>
           </div>
         </div>
       </div>

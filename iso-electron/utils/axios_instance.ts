@@ -69,7 +69,7 @@ api.interceptors.response.use(
           })
           .catch((refreshError) => {
             processQueue(refreshError, null);
-            redirect('/login'); // Redirect to login or handle session expiration
+            redirect('/login');
             reject(refreshError);
           })
           .finally(() => {
@@ -89,7 +89,7 @@ async function refreshAccessToken(refreshToken: string) {
       {},
       {
         headers: {
-          Authorization: `Bearer ${refreshToken}`, // Use refresh token here
+          Authorization: `Bearer ${refreshToken}`, //
         },
       }
     );

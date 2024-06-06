@@ -21,6 +21,7 @@ class CameraProcessor:
         # Set the compute device
         self.device = torch.device(device)
         print(f"Using device: {self.device}")
+        self.model_test = AntiSpoofPredict(0)
 
         # Initialize ONNX Runtime settings
         onnxruntime.set_default_logger_severity(3)
@@ -408,7 +409,7 @@ class CameraProcessor:
     def liveness_detector(self,frame):
         image_cropper = CropImage()
     
-        image_bbox = model_test.get_bbox(frame)
+        image_bbox = self.model_test.get_bbox(frame)
         if image_bbox[0] == 0 and image_bbox[1] == 0 and image_bbox[2] == 1 and image_bbox[3] == 1:
             return False
         prediction = np.zeros((1, 3))
@@ -427,7 +428,7 @@ class CameraProcessor:
             if scale is None:
                 param["crop"] = False
             img = image_cropper.crop(**param)
-            prediction += model_test.predict(img, os.path.join(model_dir, model_name))
+            prediction += self.model_test.predict(img, os.path.join(model_dir, model_name))
 
         # label: face is true or fake
         label = np.argmax(prediction)

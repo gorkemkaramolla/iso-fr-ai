@@ -131,20 +131,12 @@ const Dashboard: React.FC = () => {
             <div className='flex flex-col  justify-center h-full items-center  flex-wrap w-full'>
               <div className='w-full h-1/2 flex justify-center items-center '>
                 <h2>CPU Temperature</h2>
-                <GaugeWidget
-                  value={Number(
-                    parseValue(systemInfo.cpu_temperature).toFixed(2)
-                  )}
-                />
+                <GaugeWidget value={Number(parseValue(48).toFixed(2))} />
               </div>
               <div className='w-full h-1/2 flex justify-center items-center '>
                 <h2>GPU Temperature</h2>
 
-                <GaugeWidget
-                  value={Number(
-                    parseValue(systemInfo.gpu_temperature).toFixed(2)
-                  )}
-                />
+                <GaugeWidget value={Number(parseValue(60).toFixed(2))} />
               </div>
             </div>
           </div>

@@ -13,7 +13,8 @@ import onnxruntime
 from services.camera_processor.enums.camera import Camera
 import uuid
 from cv2.typing import MatLike
-
+from minivision.src.generate_patches import CropImage
+from minivision.src.anti_spoof_predict import AntiSpoofPredict
 
 class CameraProcessor:
     def __init__(self, device="cuda"):
@@ -25,15 +26,16 @@ class CameraProcessor:
         onnxruntime.set_default_logger_severity(3)
 
         # Set the directory path for the models
-        self.assets_dir = os.path.expanduser("~/.insightface/models/buffalo_l")
+        self.assets_dir = os.path.expanduser("~/.insightface/models/")
+    
 
         # Initialize the SCRFD detector with the model file
-        detector_path = os.path.join(self.assets_dir, "det_10g.onnx")
+        detector_path = os.path.join(self.assets_dir, "buffalo_l/det_10g.onnx")
         self.detector = SCRFD(detector_path)
         self.detector.prepare(0 if device == "cuda" else -1)
 
         # Initialize the ArcFace recognizer with the model file
-        rec_path = os.path.join(self.assets_dir, "w600k_r50.onnx")
+        rec_path = os.path.join(self.assets_dir, "buffalo_l/w600k_r50.onnx")
         self.rec = ArcFaceONNX(rec_path)
         self.rec.prepare(0 if device == "cuda" else -1)
 
@@ -394,6 +396,8 @@ class CameraProcessor:
             )
             if not ret:
                 continue
+            if not self.liveness_detector(frame):
+                continue
 
             yield (
                 b"--frame\r\n"
@@ -402,6 +406,38 @@ class CameraProcessor:
 
         cap.release()
 
+    def liveness_detector(self,frame):
+        image_cropper = CropImage()
+    
+        image_bbox = model_test.get_bbox(frame)
+        if image_bbox[0] == 0 and image_bbox[1] == 0 and image_bbox[2] == 1 and image_bbox[3] == 1:
+            return False
+        prediction = np.zeros((1, 3))
+        test_speed = 0
+        # sum the prediction from single model's result
+        for model_name in os.listdir(self.assets_dir):
+            h_input, w_input, model_type, scale = parse_model_name(model_name)
+            param = {
+                "org_img": frame,
+                "bbox": image_bbox,
+                "scale": scale,
+                "out_w": w_input,
+                "out_h": h_input,
+                "crop": True,
+            }
+            if scale is None:
+                param["crop"] = False
+            img = image_cropper.crop(**param)
+            prediction += model_test.predict(img, os.path.join(model_dir, model_name))
+
+        # label: face is true or fake
+        label = np.argmax(prediction)
+        # value: the score of prediction
+        value = prediction[0][label]
+        if label == 1 and value > 0.7:
+            return True
+        else:
+            return False
 
 # import cv2
 # import numpy as np

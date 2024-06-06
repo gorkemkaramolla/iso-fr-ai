@@ -36,11 +36,11 @@ model_path = os.path.join(assets_dir, 'w600k_r50.onnx')
 # Initialize the ArcFace recognizer with the model file
 rec = ArcFaceONNX(model_path)
 rec.prepare(0)
-device = torch.device("cuda" )
+device = torch.device("cpu" )
 print(f"Using device: {device}")
 id_to_label = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5: 'sad', 6: 'surprise'}
 processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to("cuda")
+emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to("cpu")
 
 
 def create_face_database(model, face_detector, image_folder):
@@ -67,7 +67,7 @@ id_to_label = {0: 'angry', 1: 'disgust', 2: 'fear', 3: 'happy', 4: 'neutral', 5:
 def get_emotion(face_image):
     """ Process the cropped face image to classify emotion """
     pil_image = Image.fromarray(face_image)
-    processed_image = processor(pil_image, return_tensors="pt").to("cuda")
+    processed_image = processor(pil_image, return_tensors="pt").to("cpu")
     with torch.no_grad():
         outputs = emotion_model(**processed_image)
         predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)

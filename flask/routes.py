@@ -75,7 +75,7 @@ camera_urls = camera_processor.read_camera_urls()
 
 
 @camera_bp.route("/camera-url", methods=["POST"])
-@jwt_required()
+# @jwt_required()
 def add_camera_url():
     data = request.json
     label = data.get("label")
@@ -90,13 +90,13 @@ def add_camera_url():
 
 
 @camera_bp.route("/camera-urls", methods=["GET"])
-@jwt_required()
+# @jwt_required()
 def get_camera_urls():
     return jsonify(camera_urls), 200
 
 
 @camera_bp.route("/camera-url/<label>", methods=["DELETE"])
-@jwt_required()
+# @jwt_required()
 def delete_camera_url(label):
     if label not in camera_urls:
         return jsonify({"error": "Camera label not found"}), 404
@@ -109,7 +109,7 @@ def delete_camera_url(label):
 
 # ****************************************************************************
 @camera_bp.route("/stream/<int:stream_id>", methods=["GET"])
-@jwt_required()
+# @jwt_required()
 def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
 
@@ -125,7 +125,7 @@ def stream(stream_id):
 
 
 @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
-@jwt_required()
+# @jwt_required()
 def local_camera(cam_id):
 
     return Response(

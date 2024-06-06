@@ -415,7 +415,7 @@ class CameraProcessor:
         prediction = np.zeros((1, 3))
         test_speed = 0
         # sum the prediction from single model's result
-        for model_name in os.listdir(self.assets_dir):
+        for model_name in os.listdir("../../resources/liveness_model"):
             h_input, w_input, model_type, scale = parse_model_name(model_name)
             param = {
                 "org_img": frame,

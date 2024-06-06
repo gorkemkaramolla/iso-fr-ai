@@ -319,7 +319,8 @@ class CameraProcessor:
             ret, frame = cap.read()
             if not ret:
                 break
-
+            if not self.liveness_detector(frame):
+                continue
             if is_recording and writer is None:
                 # Initialize writer with the frame size of the first frame
                 frame_height, frame_width = frame.shape[:2]
@@ -395,8 +396,6 @@ class CameraProcessor:
                 ".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality]
             )
             if not ret:
-                continue
-            if not self.liveness_detector(frame):
                 continue
 
             yield (

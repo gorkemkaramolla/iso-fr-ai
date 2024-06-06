@@ -1,136 +1,320 @@
-from __future__ import division
 import cv2
-import os.path as osp
-import onnxruntime
-from common import Face
-from scrfd import SCRFD
 import numpy as np
+from insightface.app import FaceAnalysis
+from typing import Optional, List, Tuple
+import os
 
-__all__ = ["FaceAnalysis"]
 
-
-class FaceAnalysis:
+class GenderAgeRecognition:
     def __init__(
         self,
-        root="~/.insightface",
-        models="/models",
-        name="/buffalo_l",
-        detection_model="genderage.onnx",
-        det_thresh=0.5,
-        det_size=(640, 640),
-        session=None,
+        providers: List[str] = ["CUDAExecutionProvider", "CPUExecutionProvider"],
+        det_size: Tuple[int, int] = (640, 640),
     ):
-        onnxruntime.set_default_logger_severity(3)
+        self.app = FaceAnalysis(providers=providers)
+        self.app.prepare(ctx_id=0, det_size=det_size)
 
-        # InsightFace's desired model path
-        # self.model = "~/.insightface/models/buffalo_l/genderage.onnx"
+    def detect_age_and_gender(
+        self, img: np.ndarray
+    ) -> List[Tuple[str, int, np.ndarray]]:
+        """
+        Analyzes the given image and returns the age, gender, and bounding boxes for detected faces.
 
-        # # Detection model path
-        # self.det_model_path = osp.join(self.model_dir, detection_model)
-        # Check if the model file exists
-        home_dir = osp.expanduser("~")
-        self.model = f"{home_dir}/.insightface/models/buffalo_l/genderage.onnx"
+        Args:
+            img (np.ndarray): The image to analyze.
 
-        # Check if the model file exists
-        assert osp.isfile(self.model), "Model file not found!" + self.model
+        Returns:
+            List[Tuple[str, int, np.ndarray]]: A list of tuples containing gender, age, and bounding box for each detected face.
+        """
+        results: List[Tuple[str, int, np.ndarray]] = []
 
-        self.session = session
-        self.taskname = "genderage"
-        if self.session is None:
-            # assert self.model is not None
-            # assert osp.exists(self.model), "Model file not found!" + self.model
-            self.session = onnxruntime.InferenceSession(
-                self.model,
-                providers=["CUDAExecutionProvider"],
-            )
-        self.det_thresh = det_thresh
-        self.det_size = det_size
+        # Detect faces
+        faces = self.app.get(img)
 
-        # Set the directory path for the models
-        self.assets_dir = osp.expanduser("~/.insightface/models/buffalo_l")
+        for face in faces:
+            gender: str = "Male" if face.gender == 1 else "Female"
+            age: int = face.age
+            bbox: np.ndarray = face.bbox.astype(np.int32)
+            results.append((gender, age, bbox))
 
-        # Initialize the SCRFD detector with the model file
-        detector_path = osp.join(self.assets_dir, "det_10g.onnx")
-        self.det_model = SCRFD(detector_path)
-        self.det_model.prepare(0)
-
-    # def prepare(self, ctx_id, ):
-    #     self.det_thresh = det_thresh
-    #     assert det_size is not None
-    #     print("set det-size:", det_size)
-    #     self.det_size = det_size
-    #     for taskname, model in self.models.items():
-    #         if taskname == "detection":
-    #             model.prepare(
-    #                 ctx_id,
-    #                 input_size=det_size,
-    #                 det_thresh=det_thresh,
-    #             )
-    #         else:
-    #             model.prepare(ctx_id)
-
-    def get(self, img, max_num=0):
-        bboxes, kpss = self.det_model.detect(
-            img,
-            max_num=max_num,
-            input_size=self.det_size,
-            metric="default",
-        )
-        if bboxes.shape[0] == 0:
-            return []
-        ret = []
-        for i in range(bboxes.shape[0]):
-            bbox = bboxes[i, 0:4]
-            det_score = bboxes[i, 4]
-            kps = None
-            if kpss is not None:
-                kps = kpss[i]
-            face = Face(bbox=bbox, kps=kps, det_score=det_score)
-            # for taskname, model in self.models.items():
-            #     if taskname == "detection":
-            #         continue
-            # model.get(img, face)
-            ret.append(face)
-        return ret
-
-    def draw_on(self, img, faces):
-
-        dimg = img.copy()
-        for i in range(len(faces)):
-            face = faces[i]
-            box = face.bbox.astype(int)
-            color = (0, 0, 255)
-            cv2.rectangle(dimg, (box[0], box[1]), (box[2], box[3]), color, 2)
-            if face.kps is not None:
-                kps = face.kps.astype(int)
-                # print(landmark.shape)
-                for l in range(kps.shape[0]):
-                    color = (0, 0, 255)
-                    if l == 0 or l == 3:
-                        color = (0, 255, 0)
-                    cv2.circle(dimg, (kps[l][0], kps[l][1]), 1, color, 2)
-            if face.gender is not None and face.age is not None:
-                cv2.putText(
-                    dimg,
-                    "%s,%d" % (face.sex, face.age),
-                    (box[0] - 1, box[1] - 4),
-                    cv2.FONT_HERSHEY_COMPLEX,
-                    0.7,
-                    (0, 255, 0),
-                    1,
-                )
-        return dimg
+        return results
 
 
-# ----------------------------
-
+# Usage example
 if __name__ == "__main__":
-    fa = FaceAnalysis()
+    directory = "../../../face-images"
+    recognizer = GenderAgeRecognition()
+    # recognizer.process_directory(directory)
 
-    img = cv2.imread("../../../face-images/FatihYavuz.jpg")
-    faces = fa.get(img)
-    print(faces)
-    img = fa.draw_on(img, faces)
-    cv2.imshow("facedet", img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # Example for analyze_image method
+    img_path = "../../../face-images/FatihYavuz.jpg"
+    img = cv2.imread(img_path)
+    if img is not None:
+        results = recognizer.detect_age_and_gender(img)
+        for gender, age, bbox in results:
+            print(f"Detected Gender: {gender}, Age: {age}, Bounding Box: {bbox}")
+    else:
+        print(f"Could not load image: {img_path}")
+
+    # def detect_age_and_gender(self, image_path: str) -> Optional[np.ndarray]:
+    #     """
+    #     Detects age and gender for faces in the given image.
+
+    #     Args:
+    #         image_path (str): The path to the image file.
+
+    #     Returns:
+    #         Optional[np.ndarray]: The image with detected faces, age, and gender annotated.
+    #     """
+    #     # Load the image
+    #     img: Optional[np.ndarray] = cv2.imread(image_path)
+    #     if img is None:
+    #         print(f"Could not load image: {image_path}")
+    #         return None
+
+    #     # Detect faces
+    #     faces = self.app.get(img)
+
+    #     for face in faces:
+    #         gender: str = "Male" if face.gender == 1 else "Female"
+    #         age: int = face.age
+    #         print(f"Gender: {gender}")
+    #         print(f"Age: {age}")
+
+    #         # Draw bounding box and annotate gender and age
+    #         bbox: np.ndarray = face.bbox.astype(np.int32)
+    #         cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
+    #         cv2.putText(
+    #             img,
+    #             f"Gender: {gender}, Age: {age}",
+    #             (bbox[0], bbox[1] - 10),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.5,
+    #             (0, 255, 0),
+    #             2,
+    #         )
+
+    #     return img
+
+    # def process_directory(self, directory: str) -> None:
+    #     """
+    #     Processes all images in the given directory for age and gender detection.
+
+    #     Args:
+    #         directory (str): The path to the directory containing image files.
+    #     """
+    #     # Check if the directory exists
+    #     if not os.path.isdir(directory):
+    #         print("Directory does not exist")
+    #         return
+
+    #     print("Directory exists")
+
+    #     # Loop through all files in the directory
+    #     for filename in os.listdir(directory):
+    #         file_path: str = os.path.join(directory, filename)
+
+    #         # Check if the file is an image (basic check based on file extension)
+    #         if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+    #             print(f"Processing {filename}")
+
+    #             # Detect age and gender
+    #             result_img: Optional[np.ndarray] = self.detect_age_and_gender(file_path)
+
+    #             if result_img is not None:
+    #                 # Display the result
+    #                 cv2.imshow("Gender and Age Detection", result_img)
+    #                 cv2.waitKey(0)
+    #                 cv2.destroyAllWindows()
+
+
+# import cv2
+# import numpy as np
+# from insightface.app import FaceAnalysis
+# from typing import Optional
+# import os
+
+
+# class GenderAgeRecognition:
+#     def __init__(
+#         self,
+#         providers: list[str] = ["CUDAExecutionProvider", "CPUExecutionProvider"],
+#         det_size: tuple[int, int] = (640, 640),
+#     ):
+#         self.app = FaceAnalysis(providers=providers)
+#         self.app.prepare(ctx_id=0, det_size=det_size)
+
+#     def detect_age_and_gender(self, image_path: str) -> Optional[np.ndarray]:
+#         """
+#         Detects age and gender for faces in the given image.
+
+#         Args:
+#             image_path (str): The path to the image file.
+
+#         Returns:
+#             Optional[np.ndarray]: The image with detected faces, age, and gender annotated.
+#         """
+#         # Load the image
+#         img: Optional[np.ndarray] = cv2.imread(image_path)
+#         if img is None:
+#             print(f"Could not load image: {image_path}")
+#             return None
+
+#         # Detect faces
+#         faces = self.app.get(img)
+
+#         for face in faces:
+#             gender: str = "Male" if face.gender == 1 else "Female"
+#             age: int = face.age
+#             print(f"Gender: {gender}")
+#             print(f"Age: {age}")
+
+#             # Draw bounding box and annotate gender and age
+#             bbox: np.ndarray = face.bbox.astype(np.int32)
+#             cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
+#             cv2.putText(
+#                 img,
+#                 f"Gender: {gender}, Age: {age}",
+#                 (bbox[0], bbox[1] - 10),
+#                 cv2.FONT_HERSHEY_SIMPLEX,
+#                 0.5,
+#                 (0, 255, 0),
+#                 2,
+#             )
+
+#         return img
+
+#     def process_directory(self, directory: str) -> None:
+#         """
+#         Processes all images in the given directory for age and gender detection.
+
+#         Args:
+#             directory (str): The path to the directory containing image files.
+#         """
+#         # Check if the directory exists
+#         if not os.path.isdir(directory):
+#             print("Directory does not exist")
+#             return
+
+#         print("Directory exists")
+
+#         # Loop through all files in the directory
+#         for filename in os.listdir(directory):
+#             file_path: str = os.path.join(directory, filename)
+
+#             # Check if the file is an image (basic check based on file extension)
+#             if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+#                 print(f"Processing {filename}")
+
+#                 # Detect age and gender
+#                 result_img: Optional[np.ndarray] = self.detect_age_and_gender(file_path)
+
+#                 if result_img is not None:
+#                     # Display the result
+#                     cv2.imshow("Gender and Age Detection", result_img)
+#                     cv2.waitKey(0)
+#                     cv2.destroyAllWindows()
+
+
+# # Usage example
+# if __name__ == "__main__":
+#     directory = "../../../face-images"
+#     recognizer = GenderAgeRecognition()
+#     recognizer.process_directory(directory)
+
+
+# import cv2
+# import numpy as np
+# from insightface.app import FaceAnalysis
+# from typing import Optional
+# import os
+
+# # Initialize the FaceAnalysis object with CUDA and CPU providers
+# app = FaceAnalysis(providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+# app.prepare(ctx_id=0, det_size=(640, 640))
+
+
+# def detect_age_and_gender(image_path: str) -> Optional[np.ndarray]:
+#     """
+#     Detects age and gender for faces in the given image.
+
+#     Args:
+#         image_path (str): The path to the image file.
+
+#     Returns:
+#         Optional[np.ndarray]: The image with detected faces, age, and gender annotated.
+#     """
+#     # Load the image
+#     img: Optional[np.ndarray] = cv2.imread(image_path)
+#     if img is None:
+#         print(f"Could not load image: {image_path}")
+#         return None
+
+#     # Detect faces
+#     faces = app.get(img)
+
+#     for face in faces:
+#         gender: str = "Male" if face.gender == 1 else "Female"
+#         age: int = face.age
+#         print(f"Gender: {gender}")
+#         print(f"Age: {age}")
+
+#         # Draw bounding box and annotate gender and age
+#         bbox: np.ndarray = face.bbox.astype(np.int32)
+#         cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
+#         cv2.putText(
+#             img,
+#             f"Gender: {gender}, Age: {age}",
+#             (bbox[0], bbox[1] - 10),
+#             cv2.FONT_HERSHEY_SIMPLEX,
+#             0.5,
+#             (0, 255, 0),
+#             2,
+#         )
+
+#     return img
+
+
+# # Define the directory containing the images
+# directory: str = "../../../face-images"
+
+# # Check if the directory exists
+# if os.path.isdir(directory):
+#     print("Directory exists")
+
+#     # Loop through all files in the directory
+#     for filename in os.listdir(directory):
+#         file_path: str = os.path.join(directory, filename)
+
+#         # Check if the file is an image (basic check based on file extension)
+#         if filename.lower().endswith((".png", ".jpg", ".jpeg")):
+#             print(f"Processing {filename}")
+
+#             # Detect age and gender
+#             result_img: Optional[np.ndarray] = detect_age_and_gender(file_path)
+
+#             if result_img is not None:
+#                 # Display the result
+
+#                 # Get screen size
+#                 # screen_res = 1280, 720  # Replace with your screen resolution
+
+#                 # # Get the aspect ratio of the image
+#                 # aspect = result_img.shape[1] / float(result_img.shape[0])
+
+#                 # if aspect > 1:
+#                 #     # If image is wide
+#                 #     res = int(screen_res[0] / aspect), screen_res[0]
+#                 # else:
+#                 #     # If image is tall or square
+#                 #     res = screen_res[1], int(screen_res[1] * aspect)
+
+#                 # # Resize the image to fit the screen
+#                 # img = cv2.resize(result_img, res, interpolation=cv2.INTER_CUBIC)
+
+#                 # Display the image
+#                 cv2.imshow("image", result_img)
+#                 cv2.waitKey(0)
+#                 cv2.destroyAllWindows()
+# else:
+#     print("Directory does not exist")

@@ -408,6 +408,7 @@ class CameraProcessor:
 
     def liveness_detector(self,frame):
         image_cropper = CropImage()
+        model_dir = '../../resources/liveness_model'
     
         image_bbox = self.model_test.get_bbox(frame)
         if image_bbox[0] == 0 and image_bbox[1] == 0 and image_bbox[2] == 1 and image_bbox[3] == 1:
@@ -415,7 +416,7 @@ class CameraProcessor:
         prediction = np.zeros((1, 3))
         test_speed = 0
         # sum the prediction from single model's result
-        for model_name in os.listdir("../../resources/liveness_model"):
+        for model_name in os.listdir(model_dir):
             h_input, w_input, model_type, scale = parse_model_name(model_name)
             param = {
                 "org_img": frame,

@@ -15,11 +15,11 @@ CORS(app, origins="*")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
-jwt = JWTManager(app)
+# jwt = JWTManager(app)
 
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cuda")
-camera_processor = CameraProcessor(device="cuda")
+diarization_processor = SpeakerDiarizationProcessor(device="cpu")
+camera_processor = CameraProcessor(device="cpu")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 
@@ -114,26 +114,29 @@ def delete_camera_url(label):
 # @jwt_required()
 def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
-
+    camera_label = request.args.get("camera")
+    quality = request.args.get("quality")
+    # print("Camera: ", camera)
+    # print("Quality: ", quality)
     return Response(
-        camera_processor.stream(
+        camera_processor.generate(
             stream_id,
-            request.args.get("camera"),
-            request.args.get("quality"),
-            is_recording,
-        ),
+            camera_label=camera_label,
+            quality=quality,
+            is_recording=is_recording),
+      
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
 
 
-@camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
-# @jwt_required()
-def local_camera(cam_id):
+# @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
+# # @jwt_required()
+# def local_camera(cam_id):
 
-    return Response(
-        camera_processor.local_camera_stream(cam_id, request.args.get("quality")),
-        mimetype="multipart/x-mixed-replace; boundary=frame",
-    )
+#     return Response(
+#         camera_processor.local_camera_stream(cam_id, request.args.get("quality")),
+#         mimetype="multipart/x-mixed-replace; boundary=frame",
+#     )
 
 
 app.register_blueprint(camera_bp)

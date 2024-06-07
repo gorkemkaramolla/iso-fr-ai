@@ -13,7 +13,7 @@ import onnxruntime
 from services.camera_processor.enums.camera import Camera
 import uuid
 from cv2.typing import MatLike
-
+import logging
 # from minivision.src.generate_patches import CropImage
 # from minivision.src.anti_spoof_predict import AntiSpoofPredict
 
@@ -293,12 +293,20 @@ class CameraProcessor:
             self.log_recognition(label, sim, emotion)
         return bboxes, labels, sims, emotions
 
-    def generate(self, camera, is_recording=False):
-        print(f"Opening camera stream: {camera}")
-        cap = cv2.VideoCapture(camera)
-        if not cap.isOpened():
-            print("Error opening HTTP stream")
-            return
+    def generate(self, stream_id, camera_label, quality="Quality", is_recording=False):
+        camera = self.read_camera_urls()[camera_label]
+        # camera = self.read_camera_urls()[camera_label] + quality
+        logging.info(f"Opening camera stream: {camera}")
+
+        try:
+            # Try to convert the camera variable to an integer
+            camera_int = int(camera)
+            cap = cv2.VideoCapture(camera_int)
+        except ValueError:
+            # If the conversion fails, append the quality to the camera string
+            cap = cv2.VideoCapture(camera + quality)
+
+        print("Camera Opened:  " + str(cap.isOpened()))
 
         # Initialize video writer if recording is enabled
         writer = None
@@ -320,9 +328,8 @@ class CameraProcessor:
         while True:
             ret, frame = cap.read()
             if not ret:
+                logging.error("Error reading frame")
                 break
-            # if not self.liveness_detector(frame):
-            #     continue
             if is_recording and writer is None:
                 # Initialize writer with the frame size of the first frame
                 frame_height, frame_width = frame.shape[:2]
@@ -331,7 +338,7 @@ class CameraProcessor:
                     filename, fourcc, 20.0, (frame_width, frame_height)
                 )
                 if not writer.isOpened():
-                    print("Error initializing video writer")
+                    logging.error("Error initializing video writer")
                     break
 
             bboxes, labels, sims, emotions = self.recog_face_and_emotion(frame)
@@ -362,50 +369,57 @@ class CameraProcessor:
         cap.release()
         if writer:
             writer.release()
+        logging.info('Finished generate function')
+    # def stream(self, stream_id, camera, quality, is_recording=False):
+    #     camera_label = camera
+    #     quality = quality
+    #     camera = self.read_camera_urls()[camera_label] + quality
+    #     print(camera)
+    #     return self.generate(camera, is_recording)
 
-    def stream(self, stream_id, camera, quality, is_recording=False):
-        camera_label = camera
-        quality = quality
-        camera = self.read_camera_urls()[camera_label] + quality
-        return self.generate(camera, is_recording)
 
-    def local_camera_stream(self, cam_id, quality="Quality"):
-        cap = cv2.VideoCapture(cam_id)
-        if not cap.isOpened():
-            print("Error opening HTTP stream")
-            return
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-        # Set the JPEG quality level
-        if quality == "Quality":
-            jpeg_quality = 100
-        if quality == "Balanced":
-            jpeg_quality = 90
-        elif quality == "Bandwidth":
-            jpeg_quality = 50
-        elif quality == "Mobile":
-            jpeg_quality = 10
-        else:
-            jpeg_quality = 50
+    # def local_camera_stream(self, cam_id, quality="Quality"):
+    #     logging.info('Starting local_camera_stream function with cam_id: %s and quality: %s', cam_id, quality)
+    #     cap = cv2.VideoCapture(cam_id)
+    #     if not cap.isOpened():
+    #         logging.error('Error opening HTTP stream')
+    #         return
+    #     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    #     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
+    #     # Set the JPEG quality level
+    #     if quality == "Quality":
+    #         jpeg_quality = 100
+    #     elif quality == "Balanced":
+    #         jpeg_quality = 90
+    #     elif quality == "Bandwidth":
+    #         jpeg_quality = 50
+    #     elif quality == "Mobile":
+    #         jpeg_quality = 10
+    #     else:
+    #         jpeg_quality = 50
 
-            ret, buffer = cv2.imencode(
-                ".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality]
-            )
-            if not ret:
-                continue
+    #     while True:
+    #         ret, frame = cap.read()
+    #         if not ret:
+    #             logging.error('Error reading frame')
+    #             break
 
-            yield (
-                b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\r"
-            )
+    #         ret, buffer = cv2.imencode(
+    #             ".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality]
+    #         )
+    #         if not ret:
+    #             logging.error('Error encoding frame')
+    #             continue
 
-        cap.release()
+    #         yield (
+    #             b"--frame\r\n"
+    #             b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\r"
+    #         )
+
+    #     cap.release()
+    #     logging.info('Finished local_camera_stream function')
 
     # def liveness_detector(self,frame):
     #     image_cropper = CropImage()

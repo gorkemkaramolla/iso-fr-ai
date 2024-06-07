@@ -13,22 +13,23 @@ import onnxruntime
 from services.camera_processor.enums.camera import Camera
 import uuid
 from cv2.typing import MatLike
-from minivision.src.generate_patches import CropImage
-from minivision.src.anti_spoof_predict import AntiSpoofPredict
+
+# from minivision.src.generate_patches import CropImage
+# from minivision.src.anti_spoof_predict import AntiSpoofPredict
+
 
 class CameraProcessor:
     def __init__(self, device="cuda"):
         # Set the compute device
         self.device = torch.device(device)
         print(f"Using device: {self.device}")
-        self.model_test = AntiSpoofPredict(0)
+        # self.model_test = AntiSpoofPredict(0)
 
         # Initialize ONNX Runtime settings
         onnxruntime.set_default_logger_severity(3)
 
         # Set the directory path for the models
         self.assets_dir = os.path.expanduser("~/.insightface/models/")
-    
 
         # Initialize the SCRFD detector with the model file
         detector_path = os.path.join(self.assets_dir, "buffalo_l/det_10g.onnx")
@@ -320,8 +321,8 @@ class CameraProcessor:
             ret, frame = cap.read()
             if not ret:
                 break
-            if not self.liveness_detector(frame):
-                continue
+            # if not self.liveness_detector(frame):
+            #     continue
             if is_recording and writer is None:
                 # Initialize writer with the frame size of the first frame
                 frame_height, frame_width = frame.shape[:2]
@@ -406,39 +407,40 @@ class CameraProcessor:
 
         cap.release()
 
-    def liveness_detector(self,frame):
-        image_cropper = CropImage()
-        model_dir = '../../resources/liveness_model'
-    
-        image_bbox = self.model_test.get_bbox(frame)
-        if image_bbox[0] == 0 and image_bbox[1] == 0 and image_bbox[2] == 1 and image_bbox[3] == 1:
-            return False
-        prediction = np.zeros((1, 3))
-        test_speed = 0
-        # sum the prediction from single model's result
-        for model_name in os.listdir(model_dir):
-            h_input, w_input, model_type, scale = parse_model_name(model_name)
-            param = {
-                "org_img": frame,
-                "bbox": image_bbox,
-                "scale": scale,
-                "out_w": w_input,
-                "out_h": h_input,
-                "crop": True,
-            }
-            if scale is None:
-                param["crop"] = False
-            img = image_cropper.crop(**param)
-            prediction += self.model_test.predict(img, os.path.join(model_dir, model_name))
+    # def liveness_detector(self,frame):
+    #     image_cropper = CropImage()
+    #     model_dir = '../../resources/liveness_model'
 
-        # label: face is true or fake
-        label = np.argmax(prediction)
-        # value: the score of prediction
-        value = prediction[0][label]
-        if label == 1 and value > 0.7:
-            return True
-        else:
-            return False
+    #     image_bbox = self.model_test.get_bbox(frame)
+    #     if image_bbox[0] == 0 and image_bbox[1] == 0 and image_bbox[2] == 1 and image_bbox[3] == 1:
+    #         return False
+    #     prediction = np.zeros((1, 3))
+    #     test_speed = 0
+    #     # sum the prediction from single model's result
+    #     for model_name in os.listdir(model_dir):
+    #         h_input, w_input, model_type, scale = parse_model_name(model_name)
+    #         param = {
+    #             "org_img": frame,
+    #             "bbox": image_bbox,
+    #             "scale": scale,
+    #             "out_w": w_input,
+    #             "out_h": h_input,
+    #             "crop": True,
+    #         }
+    #         if scale is None:
+    #             param["crop"] = False
+    #         img = image_cropper.crop(**param)
+    #         prediction += self.model_test.predict(img, os.path.join(model_dir, model_name))
+
+    #     # label: face is true or fake
+    #     label = np.argmax(prediction)
+    #     # value: the score of prediction
+    #     value = prediction[0][label]
+    #     if label == 1 and value > 0.7:
+    #         return True
+    #     else:
+    #         return False
+
 
 # import cv2
 # import numpy as np

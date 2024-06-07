@@ -18,8 +18,8 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
 jwt = JWTManager(app)
 
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cpu")
-camera_processor = CameraProcessor(device="cpu")
+diarization_processor = SpeakerDiarizationProcessor(device="cuda")
+camera_processor = CameraProcessor(device="cuda")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 
@@ -34,14 +34,16 @@ auth_bp = Blueprint("auth_bp", __name__)
 # Register Auth Provider
 auth_provider = AuthProvider()
 
-@auth_bp.route('/token/refresh', methods=['POST'])
+
+@auth_bp.route("/token/refresh", methods=["POST"])
 @jwt_required(refresh=True)
 def refresh():
-    
+
     # resp.set_cookie('access_token', new_token, httponly=True, secure=True,
     #                 expires=datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
     access_token = auth_provider.refresh_token()
-    return  jsonify({"access_token": access_token}), 200
+    return jsonify({"access_token": access_token}), 200
+
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -169,7 +171,8 @@ def process_audio_route():
             client_id
         ]  # Ensure to clear the flag irrespective of success or failure
 
-@audio_bp.route("/transcriptions/", defaults={'id': None}, methods=["GET"])
+
+@audio_bp.route("/transcriptions/", defaults={"id": None}, methods=["GET"])
 @audio_bp.route("/transcriptions/<id>", methods=["GET"])
 @jwt_required()
 def get_transcription_route(id):
@@ -182,7 +185,10 @@ def get_transcription_route(id):
         response = diarization_processor.get_transcription(id)
     return response
 
-@audio_bp.route("/rename_segments/<transcription_id>/<old_name>/<new_name>", methods=["POST"])
+
+@audio_bp.route(
+    "/rename_segments/<transcription_id>/<old_name>/<new_name>", methods=["POST"]
+)
 @jwt_required()
 def rename_segments_route(transcription_id, old_name, new_name):
     result, status_code = diarization_processor.rename_segments(

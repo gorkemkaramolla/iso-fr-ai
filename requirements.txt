@@ -1,7 +1,7 @@
 flask==3.0.3
 opencv-python==4.9.0.80
 onnxruntime==1.17.1
-#onnxruntime-gpu == 11.7.1
+#onnxruntime-gpu == 1.7.1
 onnx==1.16.0
 scikit-image==0.23.2
 transformers==4.40.2
@@ -16,4 +16,6 @@ oracledb == 2.2.0
 python-dotenv==0.19.2
 flask-socketio==5.3.6
 pymongo == 4.7.2
-bson = 0.5.10
+psutil==5.9.8
+xmltodict==0.13.0
+flask_jwt_extended==4.6.0

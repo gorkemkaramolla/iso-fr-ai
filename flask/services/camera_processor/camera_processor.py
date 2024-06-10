@@ -14,6 +14,7 @@ from services.camera_processor.enums.camera import Camera
 import uuid
 from cv2.typing import MatLike
 import logging
+
 # from minivision.src.generate_patches import CropImage
 # from minivision.src.anti_spoof_predict import AntiSpoofPredict
 
@@ -124,7 +125,7 @@ class CameraProcessor:
             thresh=0.5,
             metric="max",
         )
-        if bboxes1.shape[0] == 0:
+        if len(bboxes1) == 0 or bboxes1.shape[0] == 0:
             return -1.0, "Face not found in Image-1"
 
         bboxes2, kpss2 = self.detector.detect(
@@ -134,7 +135,7 @@ class CameraProcessor:
             thresh=0.5,
             metric="max",
         )
-        if bboxes2.shape[0] == 0:
+        if len(bboxes2) == 0 or bboxes2.shape[0] == 0:
             return -1.0, "Face not found in Image-2"
 
         kps1 = kpss1[0]
@@ -188,6 +189,10 @@ class CameraProcessor:
 
     def save_unknown_face(self, face_image, best_match):
         """Save the unknown face image with a unique ID"""
+        if face_image is None or face_image.size == 0:
+            print("Error: The face image is empty and cannot be saved.")
+            return "Error: Empty face image"
+
         # Get the current date and time
         now = datetime.datetime.now()
         # Format the date and time as a string
@@ -202,8 +207,25 @@ class CameraProcessor:
         # Create the full file path
         file_path = os.path.join(person_dir, filename)
 
-        # Save the image
-        cv2.imwrite(file_path, face_image)
+        try:
+            # Save the image
+            success = cv2.imwrite(file_path, face_image)
+            if not success:
+                print("Error: Failed to save the image.")
+                return "Error: Failed to save image"
+        except cv2.error as e:
+            print(f"OpenCV error: {e}")
+            return f"Error: OpenCV error - {e}"
+        except PermissionError as e:
+            print(f"Permission error: {e}")
+            return f"Error: Permission error - {e}"
+        except FileNotFoundError as e:
+            print(f"File not found error: {e}")
+            return f"Error: File not found error - {e}"
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return f"Error: Unexpected error - {e}"
+
         return file_path
 
     def recog_face_and_emotion(self, image: MatLike):
@@ -238,33 +260,33 @@ class CameraProcessor:
             sim = self.rec.compute_sim(embedding, self.database[best_match])
             if sim >= self.similarity_threshold:
                 label = best_match
-            elif sim >= 0.25:
-                # Save the unknown face and assign a unique ID
-                bbox = bboxes[idx]
-                x1, y1, x2, y2 = map(int, bbox[:4])
-                face_image = image[y1:y2, x1:x2]
+            # elif sim >= 0.25:
+            #     # Save the unknown face and assign a unique ID
+            #     bbox = bboxes[idx]
+            #     x1, y1, x2, y2 = map(int, bbox[:4])
+            #     face_image = image[y1:y2, x1:x2]
 
-                # Check similarity with previously saved unknown faces
-                is_similar = False
-                person_dir = os.path.join(self.unknown_faces_dir, best_match)
-                if os.path.exists(person_dir):
-                    for person_file in os.listdir(person_dir):
-                        person_path = os.path.join(person_dir, person_file)
-                        person_image = cv2.imread(person_path)
-                        compare_sim, _ = self.compare_similarity(
-                            face_image, person_image
-                        )
-                        # print(f"Similarity with {person_file}: {compare_sim}")
-                        if compare_sim >= 0.2:
-                            is_similar = True
-                            label = f"Person-{person_file.split('-')[1].split('.')[0]}"
-                            break
-                else:
-                    print(f"Directory {person_dir} does not exist.")
+            #     # Check similarity with previously saved unknown faces
+            #     is_similar = False
+            #     person_dir = os.path.join(self.unknown_faces_dir, best_match)
+            #     if os.path.exists(person_dir):
+            #         for person_file in os.listdir(person_dir):
+            #             person_path = os.path.join(person_dir, person_file)
+            #             person_image = cv2.imread(person_path)
+            #             compare_sim, _ = self.compare_similarity(
+            #                 face_image, person_image
+            #             )
+            #             # print(f"Similarity with {person_file}: {compare_sim}")
+            #             if compare_sim >= 0.2:
+            #                 is_similar = True
+            #                 label = f"Person-{person_file.split('-')[1].split('.')[0]}"
+            #                 break
+            #     else:
+            #         print(f"Directory {person_dir} does not exist.")
 
-                if not is_similar:
-                    self.save_unknown_face(face_image, best_match)
-                    label = f"Unknown-{best_match}"
+            #     if not is_similar:
+            #         self.save_unknown_face(face_image, best_match)
+            #         label = f"{best_match}*"
             else:
 
                 # Save the unknown face and assign a unique ID
@@ -369,15 +391,14 @@ class CameraProcessor:
         cap.release()
         if writer:
             writer.release()
-        logging.info('Finished generate function')
+        logging.info("Finished generate function")
+
     # def stream(self, stream_id, camera, quality, is_recording=False):
     #     camera_label = camera
     #     quality = quality
     #     camera = self.read_camera_urls()[camera_label] + quality
     #     print(camera)
     #     return self.generate(camera, is_recording)
-
-
 
     # def local_camera_stream(self, cam_id, quality="Quality"):
     #     logging.info('Starting local_camera_stream function with cam_id: %s and quality: %s', cam_id, quality)

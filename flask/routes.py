@@ -18,8 +18,8 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
 # jwt = JWTManager(app)
 
 # Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cpu")
-camera_processor = CameraProcessor(device="cpu")
+diarization_processor = SpeakerDiarizationProcessor(device="cuda")
+camera_processor = CameraProcessor(device="cuda")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 
@@ -123,8 +123,8 @@ def stream(stream_id):
             stream_id,
             camera_label=camera_label,
             quality=quality,
-            is_recording=is_recording),
-      
+            is_recording=is_recording,
+        ),
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
 

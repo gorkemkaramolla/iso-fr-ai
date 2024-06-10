@@ -33,3 +33,4 @@ flask/temp
 flask/logs
 flask/unknown_faces
 flask/recognized_faces_log.csv
+flask/known_faces

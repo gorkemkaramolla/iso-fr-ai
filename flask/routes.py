@@ -1,4 +1,5 @@
 from flask import Flask, Blueprint, request, jsonify, Response
+from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
 from services.camera_processor.camera_processor import CameraProcessor
@@ -9,6 +10,7 @@ from auth.auth_provider import AuthProvider
 from flask_jwt_extended import jwt_required, JWTManager
 import os
 from datetime import timedelta
+from bson.objectid import ObjectId
 
 app = Flask(__name__)
 CORS(app, origins="*")
@@ -16,6 +18,11 @@ app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
 # jwt = JWTManager(app)
+
+# Setup MongoDB
+client = MongoClient("mongodb://localhost:27017/")
+db = client["isoai"]
+collection = db["recognition_logs"]
 
 # Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cuda")
@@ -29,7 +36,8 @@ audio_bp = Blueprint("audio_bp", __name__)
 camera_bp = Blueprint("camera_bp", __name__)
 system_check = Blueprint("system_check", __name__)
 auth_bp = Blueprint("auth_bp", __name__)
-
+# Setup Blueprint
+recognition_bp = Blueprint("recognition_bp", __name__)
 
 # Register Auth Provider
 auth_provider = AuthProvider()
@@ -128,6 +136,37 @@ def stream(stream_id):
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
 
+
+@recognition_bp.route("/recognition_logs", methods=["GET"])
+def get_all_logs():
+    logs = list(collection.find({}, {"_id": 0}))  # Exclude _id from the results
+    return jsonify(logs)
+
+
+@recognition_bp.route("/recognition_logs/<id>", methods=["GET"])
+def get_log(id):
+    log = collection.find_one({"_id": ObjectId(id)})
+    if log:
+        return jsonify(log)
+    else:
+        return jsonify({"error": "Log not found"}), 404
+
+
+@recognition_bp.route("/recognition_logs/<id>", methods=["PUT"])
+def update_log(id):
+    data = request.json
+    collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+    return jsonify({"message": "Log updated successfully"}), 200
+
+
+@recognition_bp.route("/recognition_logs/<id>", methods=["DELETE"])
+def delete_log(id):
+    collection.delete_one({"_id": ObjectId(id)})
+    return jsonify({"message": "Log deleted successfully"}), 200
+
+
+# Register the blueprint
+app.register_blueprint(recognition_bp)
 
 # @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
 # # @jwt_required()

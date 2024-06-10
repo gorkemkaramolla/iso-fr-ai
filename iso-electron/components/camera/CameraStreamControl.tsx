@@ -176,7 +176,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
           </div>
         </div>
       </div>
-      <div>{streamSrc}</div>
+      {/* <div>{streamSrc}</div>  */}
       <CameraStream
         id={id}
         streamSrc={streamSrc}

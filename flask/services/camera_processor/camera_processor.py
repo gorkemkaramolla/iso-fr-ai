@@ -77,18 +77,18 @@ class CameraProcessor:
         self.last_recognitions = {}
 
         # Directory for known faces
-        self.known_faces_dir = "known_faces"
-
+        self.known_faces_dir = "recog/known_faces"
+        if not os.path.exists(self.known_faces_dir):
+            os.makedirs(self.known_faces_dir)
         # Directory for unknown faces
-        self.unknown_faces_dir = "unknown_faces"
+        self.unknown_faces_dir = "recog/unknown_faces"
         if not os.path.exists(self.unknown_faces_dir):
             os.makedirs(self.unknown_faces_dir)
 
         # Initialize MongoDB client
         self.client = MongoClient("mongodb://localhost:27017/")
         self.db = self.client["isoai"]
-        self.unknown_faces_collection = self.db["unknown_faces"]
-        self.recognition_logs_collection = self.db["recognition_logs"]
+        self.recognition_logs_collection = self.db["logs"]
 
     def init_log_file(self):
         # Initialize the log file with headers if it doesn't exist
@@ -96,31 +96,31 @@ class CameraProcessor:
             df = pd.DataFrame(columns=["Timestamp", "Label", "Similarity", "Emotion"])
             df.to_csv(self.log_file, index=False)
 
-    def log_recognition(self, label, similarity, emotion, image_path):
-        # Log the recognized face with the current timestamp
-        now = datetime.datetime.now()
-        timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+    # def log_recognition(self, label, similarity, emotion, image_path):
+    #     # Log the recognized face with the current timestamp
+    #     now = datetime.datetime.now()
+    #     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
 
-        # Check if this face was recognized recently
-        if label in self.last_recognitions:
-            last_recognition_time = self.last_recognitions[label]
-            time_diff = (now - last_recognition_time).total_seconds()
-            # Skip logging if recognized within the last 60 seconds
-            if time_diff < 60:
-                return
+    #     # Check if this face was recognized recently
+    #     if label in self.last_recognitions:
+    #         last_recognition_time = self.last_recognitions[label]
+    #         time_diff = (now - last_recognition_time).total_seconds()
+    #         # Skip logging if recognized within the last 60 seconds
+    #         if time_diff < 60:
+    #             return
 
-        # Update the last recognition time
-        self.last_recognitions[label] = now
+    #     # Update the last recognition time
+    #     self.last_recognitions[label] = now
 
-        # Save the log to MongoDB
-        log_record = {
-            "timestamp": timestamp,
-            "label": label,
-            "similarity": round(float(similarity), 2),
-            "emotion": emotion,
-            "image_path": image_path,
-        }
-        self.recognition_logs_collection.insert_one(log_record)
+    #     # Save the log to MongoDB
+    #     log_record = {
+    #         "timestamp": timestamp,
+    #         "label": label,
+    #         "similarity": round(float(similarity), 2),
+    #         "emotion": emotion,
+    #         "image_path": image_path,
+    #     }
+    #     self.recognition_logs_collection.insert_one(log_record)
 
     def compare_similarity(self, image1: MatLike, image2: MatLike):
         if image1 is None or image2 is None:
@@ -198,18 +198,88 @@ class CameraProcessor:
             emotion = self.id_to_label[predicted_class]
         return emotion
 
-    def save_face_image(self, face_image, label, is_known):
-        """Save the face image with a unique ID under the appropriate directory"""
+    # def save_face_image(self, face_image, label, is_known):
+    #     """Save the face image with a unique ID under the appropriate directory"""
+    #     if face_image is None or face_image.size == 0:
+    #         print("Error: The face image is empty and cannot be saved.")
+    #         return "Error: Empty face image"
+
+    #     # Get the current date and time
+    #     now = datetime.datetime.now()
+
+    #     # Check if this face was recognized recently
+    #     if label in self.last_recognitions:
+    #         last_recognition_time = self.last_recognitions[label]
+    #         time_diff = (now - last_recognition_time).total_seconds()
+    #         # Skip saving if recognized within the last 60 seconds
+    #         if time_diff < 60:
+    #             return
+
+    #     # Update the last recognition time
+    #     self.last_recognitions[label] = now
+
+    #     # Format the date and time as a string
+    #     timestamp = now.strftime("%Y%m%d-%H%M%S")
+    #     # Create the filename
+    #     filename = f"{label}-{timestamp}.jpg"
+
+    #     # Determine the base directory based on whether the face is known or unknown
+    #     base_dir = self.known_faces_dir if is_known else self.unknown_faces_dir
+
+    #     # Create a new directory for the person
+    #     person_dir = os.path.join(base_dir, label)
+    #     os.makedirs(person_dir, exist_ok=True)
+
+    #     # Create the full file path
+    #     file_path = os.path.join(person_dir, filename)
+
+    #     print(f"Saving face image to: {file_path}")
+    #     try:
+    #         # Save the image
+    #         success = cv2.imwrite(file_path, face_image)
+    #         if not success:
+    #             print("Error: Failed to save the image.")
+    #             return "Error: Failed to save image"
+    #     except cv2.error as e:
+    #         print(f"OpenCV error: {e}")
+    #         return f"Error: OpenCV error - {e}"
+    #     except PermissionError as e:
+    #         print(f"Permission error: {e}")
+    #         return f"Error: Permission error - {e}"
+    #     except FileNotFoundError as e:
+    #         print(f"File not found error: {e}")
+    #         return f"Error: File not found error - {e}"
+    #     except Exception as e:
+    #         print(f"Unexpected error: {e}")
+    #         return f"Error: Unexpected error - {e}"
+
+    #     return file_path
+
+    def save_and_log_face(self, face_image, label, similarity, emotion, is_known):
+        """Save the face image and log the recognition with a unique ID under the appropriate directory."""
         if face_image is None or face_image.size == 0:
             print("Error: The face image is empty and cannot be saved.")
             return "Error: Empty face image"
 
         # Get the current date and time
         now = datetime.datetime.now()
-        # Format the date and time as a string
-        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        timestamp = now.strftime("%H:%M:%S %d.%m.%Y")
+
+        # Check if this face was recognized recently
+        if label in self.last_recognitions:
+            last_recognition_time = self.last_recognitions[label]
+            time_diff = (now - last_recognition_time).total_seconds()
+            # Skip saving and logging if recognized within the last 60 seconds
+            if time_diff < 60:
+                return
+
+        # Update the last recognition time
+        self.last_recognitions[label] = now
+
+        # Format the date and time as a string for the filename
+        filename_timestamp = now.strftime("%Y%m%d-%H%M%S")
         # Create the filename
-        filename = f"{label}-{timestamp}.jpg"
+        filename = f"{label}-{filename_timestamp}.jpg"
 
         # Determine the base directory based on whether the face is known or unknown
         base_dir = self.known_faces_dir if is_known else self.unknown_faces_dir
@@ -221,6 +291,7 @@ class CameraProcessor:
         # Create the full file path
         file_path = os.path.join(person_dir, filename)
 
+        print(f"Saving face image to: {file_path}")
         try:
             # Save the image
             success = cv2.imwrite(file_path, face_image)
@@ -239,6 +310,16 @@ class CameraProcessor:
         except Exception as e:
             print(f"Unexpected error: {e}")
             return f"Error: Unexpected error - {e}"
+
+        # Log the recognition in MongoDB
+        log_record = {
+            "timestamp": timestamp,
+            "label": label,
+            "similarity": round(float(similarity), 2),
+            "emotion": emotion,
+            "image_path": file_path,
+        }
+        self.recognition_logs_collection.insert_one(log_record)
 
         return file_path
 
@@ -262,7 +343,7 @@ class CameraProcessor:
         for idx, embedding in enumerate(embeddings):
             min_dist = float("inf")
             best_match = None
-            label = "Unknown"
+            label = "Bilinmeyen"
             is_known = False
             for name, db_embedding in self.database.items():
                 dist = np.linalg.norm(db_embedding - embedding)
@@ -280,13 +361,11 @@ class CameraProcessor:
             face_image = image[y1:y2, x1:x2]
 
             # Save the face image using the save_face_image function
-            image_path = self.save_face_image(face_image, label, is_known)
             if not is_known:
-                label = (
-                    f"bilinmeyen-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
-                )
+                label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
                 self.database[label] = embedding
 
+            # image_path = self.save_face_image(face_image, label, is_known)
             labels.append(label)
             sims.append(sim)
             # Extract face region and recognize emotion
@@ -300,7 +379,7 @@ class CameraProcessor:
             emotions.append(emotion)
 
             # Log the recognition
-            self.log_recognition(label, sim, emotion, image_path)
+            self.save_and_log_face(face_image, label, sim, emotion, is_known)
 
         return bboxes, labels, sims, emotions
 

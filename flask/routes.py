@@ -11,7 +11,12 @@ from flask_jwt_extended import jwt_required, JWTManager
 import os
 from datetime import timedelta
 from bson.objectid import ObjectId
+from PIL import Image
+import io
+import binascii
+import cv2
 
+from config import BINARY_MATCH
 app = Flask(__name__)
 CORS(app, origins="*")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
@@ -41,7 +46,42 @@ recognition_bp = Blueprint("recognition_bp", __name__)
 
 # Register Auth Provider
 auth_provider = AuthProvider()
+users_bp = Blueprint("users_bp", __name__)
 
+
+import numpy as np
+
+# Assuming BINARY_MATCH is defined in another file and imported
+
+@users_bp.route("/users/images", methods=["GET"])
+def get_user_images():
+    personel = list(db.get_collection("Personel").find({}, {"FOTO_BINARY_DATA": 1, "ADI": 1, "SOYADI": 1}))
+    for i, person in enumerate(personel):
+        try:
+            if person.get("FOTO_BINARY_DATA") and person.get("FOTO_BINARY_DATA") != BINARY_MATCH:
+                hex_data = person.get("FOTO_BINARY_DATA")
+                binary_data = binascii.unhexlify(hex_data)
+                nparr = np.frombuffer(binary_data, np.uint8)
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if not os.path.exists('images'):
+                    os.makedirs('images')
+                adi = person.get("ADI", "unknown")
+                soyadi = person.get("SOYADI", "unknown")
+                cv2.imwrite(f'images/{adi}{soyadi}.jpeg', image)
+        except Exception as e:
+            print(f"Image {i} is corrupted, skipping... Error: {str(e)}")
+            continue
+    return "Images saved", 200
+
+
+
+@users_bp.route("/users", methods=["GET"])
+def get_users():
+    personel = list(db.get_collection("Personel").find())
+    for person in personel:
+        person.pop("_id", None)  # Remove _id from the dictionary
+    return jsonify(personel),200
+app.register_blueprint(users_bp)
 
 @auth_bp.route("/token/refresh", methods=["POST"])
 @jwt_required(refresh=True)

@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Flask App",
+            "type": "shell",
+            "command": "cd /Users/gorkemkaramolla/Documents/python2/oracle/ && source bin/activate && cd flask && python3 app.py",
+            "presentation": {
+                "panel": "dedicated",
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Frontend",
+            "type": "shell",
+            "command": "cd /Users/gorkemkaramolla/Documents/python2/oracle/iso-electron && npm run isoai",
+            "presentation": {
+                "panel": "dedicated",
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run All",
+            "dependsOrder": "parallel",
+            "dependsOn": ["Run Flask App", "Run Frontend"]
+        }
+    ]
+}

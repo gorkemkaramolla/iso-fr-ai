@@ -31,7 +31,5 @@ insightface/cuda_11.8.0_520.61.05_linux.run
 flask/records
 flask/temp
 flask/logs
-flask/unknown_faces
+flask/recog
 flask/recognized_faces_log.csv
-flask/known_faces
-results

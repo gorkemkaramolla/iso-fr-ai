@@ -1,4 +1,6 @@
-from flask import Flask, Blueprint, request, jsonify, Response
+import json
+import bson
+from flask import Flask, Blueprint, request, jsonify, Response, send_file
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
@@ -27,7 +29,7 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
 # Setup MongoDB
 client = MongoClient("mongodb://localhost:27017/")
 db = client["isoai"]
-collection = db["recognition_logs"]
+collection = db["logs"]
 
 # Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cpu")
@@ -42,7 +44,7 @@ camera_bp = Blueprint("camera_bp", __name__)
 system_check = Blueprint("system_check", __name__)
 auth_bp = Blueprint("auth_bp", __name__)
 # Setup Blueprint
-recognition_bp = Blueprint("recognition_bp", __name__)
+
 
 # Register Auth Provider
 auth_provider = AuthProvider()
@@ -177,13 +179,14 @@ def stream(stream_id):
     )
 
 
-@recognition_bp.route("/recognition_logs", methods=["GET"])
+@camera_bp.route("/recog", methods=["GET"])
 def get_all_logs():
-    logs = list(collection.find({}, {"_id": 0}))  # Exclude _id from the results
-    return jsonify(logs)
+    logs = list(collection.find({}, {}))  # Exclude _id from the results
+    return bson.json_util.dumps(logs)
+    # return "Hello"
 
 
-@recognition_bp.route("/recognition_logs/<id>", methods=["GET"])
+@camera_bp.route("/recog/<id>", methods=["GET"])
 def get_log(id):
     log = collection.find_one({"_id": ObjectId(id)})
     if log:
@@ -192,21 +195,27 @@ def get_log(id):
         return jsonify({"error": "Log not found"}), 404
 
 
-@recognition_bp.route("/recognition_logs/<id>", methods=["PUT"])
+@camera_bp.route("/recog/<id>", methods=["PUT"])
 def update_log(id):
     data = request.json
     collection.update_one({"_id": ObjectId(id)}, {"$set": data})
     return jsonify({"message": "Log updated successfully"}), 200
 
 
-@recognition_bp.route("/recognition_logs/<id>", methods=["DELETE"])
+@camera_bp.route("/recog/<id>", methods=["DELETE"])
 def delete_log(id):
     collection.delete_one({"_id": ObjectId(id)})
     return jsonify({"message": "Log deleted successfully"}), 200
 
 
-# Register the blueprint
-app.register_blueprint(recognition_bp)
+@camera_bp.route("/images/<path:image_path>", methods=["GET"])
+def get_image(image_path):
+    full_path = os.path.join(os.getcwd(), image_path)
+    try:
+        return send_file(full_path, mimetype="image/jpeg")
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
 
 # @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
 # # @jwt_required()

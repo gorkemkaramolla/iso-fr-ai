@@ -8,6 +8,7 @@ import CameraDropdown from '@/components/camera/CameraDropdown';
 import { Resizable } from 're-resizable';
 import Draggable from 'react-draggable';
 import api from '@/utils/axios_instance';
+import RecogFaces from '@/components/camera/RecogFace';
 
 const VideoStream: React.FC = () => {
   const [showAddCamera, setShowAddCamera] = useState(false);
@@ -200,6 +201,7 @@ const VideoStream: React.FC = () => {
                 </Draggable>
               );
             })}
+          <RecogFaces />
         </div>
       </div>
     </div>

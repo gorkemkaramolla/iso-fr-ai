@@ -58,7 +58,7 @@ class CameraProcessor:
             6: "surprise",
         }
         # Similarity threshold for face recognition
-        self.similarity_threshold = 0.25
+        self.similarity_threshold = 0.2
         # Load or create face database
         self.database = self.create_face_database(
             self.rec,
@@ -257,7 +257,7 @@ class CameraProcessor:
 
     def save_and_log_face(self, face_image, label, similarity, emotion, is_known):
         """Save the face image and log the recognition with a unique ID under the appropriate directory."""
-        if face_image is None or face_image.size == 0:
+        if face_image is None:
             print("Error: The face image is empty and cannot be saved.")
             return "Error: Empty face image"
 
@@ -372,10 +372,9 @@ class CameraProcessor:
             bbox = bboxes[idx]
             x1, y1, x2, y2 = map(int, bbox[:4])
             face = image[y1:y2, x1:x2]
-            if face.size > 0:
-                emotion = self.get_emotion(face)
-            else:
-                emotion = "No Face Detected"
+
+            emotion = self.get_emotion(face)
+
             emotions.append(emotion)
 
             # Log the recognition
@@ -383,7 +382,13 @@ class CameraProcessor:
 
         return bboxes, labels, sims, emotions
 
-    def generate(self, stream_id, camera_label, quality="Quality", is_recording=False):
+    def generate(
+        self,
+        stream_id,
+        camera_label,
+        quality="Quality",
+        is_recording=False,
+    ):
         camera = self.read_camera_urls()[camera_label]
         # camera = self.read_camera_urls()[camera_label] + quality
         logging.info(f"Opening camera stream: {camera}")

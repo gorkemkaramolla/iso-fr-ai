@@ -66,3 +66,19 @@ interface Personel {
   TELEFON2: string;
   UNVANI: string;
 }
+interface RecogFace {
+  _id: {
+    $oid: string;
+  };
+  emotion: string;
+  image_path: string;
+  label: string;
+  similarity: number;
+  timestamp: string;
+}
+
+interface GroupedRecogFaces {
+  name: string;
+  faces: RecogFace[];
+  isCollapsed: boolean;
+}

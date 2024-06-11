@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import NavigationBar from '@/components/ui/NavigationBar';
 const inter = Inter({ subsets: ['latin'] });
+
 export const metadata: Metadata = {
   title: 'ISOAI',
   description: 'ISOAI Electron App',

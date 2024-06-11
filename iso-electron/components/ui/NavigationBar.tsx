@@ -48,7 +48,7 @@ const NavigationBar: React.FC<Props> = () => {
           <Image
             width={100}
             height={100}
-            src='iso_logo.jpg'
+            src='logo.svg'
             alt=''
             className='w-full  h-full'
           />

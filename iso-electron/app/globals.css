@@ -102,3 +102,35 @@ code {
   padding: 0 !important;
   margin: 0 !important;
 }
+
+.truncate {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p-column {
+  max-width: 200px; /* Adjust as needed */
+}
+th {
+  background-color: hsl(210, 17%, 98%);
+  color: black;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+td {
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  padding: 36px !important;
+}
+.truncate {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

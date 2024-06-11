@@ -48,3 +48,21 @@ interface UsageChartProps {
   cpuData: UsageData[];
   gpuData: UsageData[];
 }
+
+interface Personel {
+  PERSONEL_ID: string;
+  ADI: string;
+  SOYADI: string;
+  DOGUM_TARIHI: string;
+  EPOSTA: string;
+  FOTO_BINARY_DATA: string;
+  FOTO_DOSYA_ADI: string;
+  FOTO_DOSYA_TIPI: string;
+  GSM: string;
+  ISO_TELEFON1: string;
+  ISO_TELEFON2: string;
+  OZGECMIS: string;
+  TELEFON1: string;
+  TELEFON2: string;
+  UNVANI: string;
+}

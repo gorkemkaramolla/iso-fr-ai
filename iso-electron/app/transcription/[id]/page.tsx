@@ -48,7 +48,7 @@ const RenameSpeakerModal: React.FC<{
   return open ? (
     <div>
       <div className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center'>
-        <div className='bg-white p-5 rounded'>
+        <div className=' p-5 rounded'>
           <h3 className='font-bold text-lg'>Rename Speaker</h3>
           <input
             type='text'
@@ -123,7 +123,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   return (
     <div>
       <Heading level='h1' text={transcription.created_at} />
-      <div className='overflow-y-scroll w-full h-screen p-5 bg-gray-100 flex items-start'>
+      <div className='overflow-y-scroll w-full h-screen p-5  flex items-start'>
         <RenameSpeakerModal
           open={showModal}
           onClose={() => setShowModal(false)}

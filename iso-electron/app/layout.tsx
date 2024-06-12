@@ -17,7 +17,7 @@ export default function RootLayout({
   return (
     <html lang='tr' className='w-screen overflow-x-hidden  '>
       <body
-        data-theme='light'
+        data-theme='dark'
         className={inter.className + 'light flex justify-center'}
       >
         <div className='w-full h-[100dvh]'>

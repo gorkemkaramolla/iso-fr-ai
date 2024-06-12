@@ -37,8 +37,13 @@ function MonitorWidget() {
           <li>
             <span>Usage: {systemInfo.memory_usage}</span>
           </li>
+        </ul>
+      </li>
+      <li>
+        <span>GPU Memory Usage</span>
+        <ul>
           <li>
-            <span>Total: {}</span>
+            <span>Usage: {systemInfo.gpu_memory_usage}</span>
           </li>
         </ul>
       </li>

@@ -18,7 +18,7 @@ interface CameraStreamProps {
   stopStream?: (id: number) => void;
   startStream?: (id: number) => void;
   onRemoveStream?: (id: number) => void;
-  cameraUrls: { [key: string]: string };
+
   addCameraStream?: () => void;
   cameraStreams: CameraStream[];
   setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;

@@ -1,5 +1,6 @@
 import json
 import bson
+import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
@@ -30,8 +31,8 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
 # Setup MongoDB
 client = MongoClient("mongodb://localhost:27017/")
 db = client["isoai"]
-collection = db["logs"]
-
+logs_collection = db["logs"]
+camera_collection = db["cameras"]
 # Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cuda")
 camera_processor = CameraProcessor(device="cuda")
@@ -146,8 +147,7 @@ def add_camera_url():
     if not label or not url:
         return jsonify({"error": "Label and URL are required"}), 400
 
-    camera_urls[label] = url
-    camera_processor.write_camera_urls(camera_urls)
+    camera_collection.insert_one({"label": label, "url": url})
 
     return jsonify({"message": "Camera URL added successfully"}), 200
 
@@ -155,17 +155,18 @@ def add_camera_url():
 @camera_bp.route("/camera-urls", methods=["GET"])
 # @jwt_required()
 def get_camera_urls():
-    return jsonify(camera_urls), 200
+    cameras = list(camera_collection.find({}))
+    print(cameras)
+    return bson.json_util.dumps(cameras), 200
 
 
 @camera_bp.route("/camera-url/<label>", methods=["DELETE"])
 # @jwt_required()
 def delete_camera_url(label):
-    if label not in camera_urls:
-        return jsonify({"error": "Camera label not found"}), 404
+    result = camera_collection.delete_one({"label": label})
 
-    del camera_urls[label]
-    camera_processor.write_camera_urls(camera_urls)
+    if result.deleted_count == 0:
+        return jsonify({"error": "Camera label not found"}), 404
 
     return jsonify({"message": "Camera URL deleted successfully"}), 200
 
@@ -192,14 +193,14 @@ def stream(stream_id):
 
 @camera_bp.route("/recog", methods=["GET"])
 def get_all_logs():
-    logs = list(collection.find({}, {}))  # Exclude _id from the results
+    logs = list(logs_collection.find({}, {}))  # Exclude _id from the results
     return bson.json_util.dumps(logs)
     # return "Hello"
 
 
 @camera_bp.route("/recog/<id>", methods=["GET"])
 def get_log(id):
-    log = collection.find_one({"_id": ObjectId(id)})
+    log = logs_collection.find_one({"_id": ObjectId(id)})
     if log:
         return jsonify(log)
     else:
@@ -209,13 +210,13 @@ def get_log(id):
 @camera_bp.route("/recog/<id>", methods=["PUT"])
 def update_log(id):
     data = request.json
-    collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+    logs_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
     return jsonify({"message": "Log updated successfully"}), 200
 
 
 @camera_bp.route("/recog/<id>", methods=["DELETE"])
 def delete_log(id):
-    collection.delete_one({"_id": ObjectId(id)})
+    logs_collection.delete_one({"_id": ObjectId(id)})
     return jsonify({"message": "Log deleted successfully"}), 200
 
 

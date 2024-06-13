@@ -4,7 +4,7 @@ interface CameraDropdownProps {
   selectedCamera: string;
   setSelectedCamera: React.Dispatch<React.SetStateAction<string>>;
   cameraStreams: CameraStream[];
-  cameraUrls: { [key: string]: string };
+  cameraUrls: { [key: string]: string }[];
   addCameraStream: (cameraLabel: string) => void;
   showAddCamera: boolean;
 }
@@ -31,16 +31,23 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
         <option disabled value='' className='select-option'>
           Kamera Seçiniz
         </option>
-        {Object.keys(cameraUrls)
-          .filter(
-            (label) =>
-              !cameraStreams.find((stream) => stream.selectedCamera === label)
-          )
-          .map((label) => (
-            <option key={label} value={label} className='select-option'>
-              {label}
-            </option>
-          ))}
+        {cameraUrls.length !== 0 &&
+          cameraUrls
+            ?.filter(
+              (camera) =>
+                !cameraStreams.find(
+                  (stream) => stream.selectedCamera === camera.label
+                )
+            )
+            .map((camera) => (
+              <option
+                key={camera.label}
+                value={camera.label}
+                className='select-option'
+              >
+                {camera.label}
+              </option>
+            ))}
       </select>
       <div
         className='tooltip tooltip-bottom'

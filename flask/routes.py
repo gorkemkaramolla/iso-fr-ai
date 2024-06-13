@@ -171,6 +171,25 @@ def delete_camera_url(label):
     return jsonify({"message": "Camera URL deleted successfully"}), 200
 
 
+@camera_bp.route("/camera-url/<label>", methods=["PUT"])
+# @jwt_required()
+def update_camera_url(label):
+    data = request.json
+    new_label = data.get("label")
+    new_url = data.get("url")
+    if not new_label or not new_url:
+        return jsonify({"error": "Label and URL are required"}), 400
+
+    result = camera_collection.update_one(
+        {"label": label}, {"$set": {"label": new_label, "url": new_url}}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Camera label not found"}), 404
+
+    return jsonify({"message": "Camera URL updated successfully"}), 200
+
+
 # ****************************************************************************
 @camera_bp.route("/stream/<int:stream_id>", methods=["GET"])
 # @jwt_required()

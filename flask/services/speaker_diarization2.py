@@ -4,7 +4,6 @@ from pyannote.audio import Pipeline
 import whisper
 from pydub import AudioSegment
 import torch
-
 import os
 from datetime import datetime
 import json

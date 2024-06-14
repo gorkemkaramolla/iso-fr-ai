@@ -6,6 +6,7 @@ from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
 from services.camera_processor.camera_processor import CameraProcessor
 from services.camera_processor.enums.camera import Camera
+from services.elastic_search import ElasticSearcher
 from logger import configure_logging
 from flask_cors import CORS
 from auth.auth_provider import AuthProvider
@@ -17,6 +18,7 @@ from PIL import Image
 import io
 import binascii
 import cv2
+import numpy as np
 
 from config import BINARY_MATCH
 app = Flask(__name__)
@@ -26,12 +28,15 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
 # jwt = JWTManager(app)
 
-# Setup MongoDB
-client = MongoClient("mongodb://localhost:27017/")
-db = client["isoai"]
+###################################################### Setup MongoDB
+client = MongoClient(os.environ.get("MONGO_DB_URI"))
+db = client[os.environ.get("MONGO_DB_NAME")]
 collection = db["logs"]
+#######################################################Setup ElasticSearch
+es_host = os.environ.get("ES_HOST")
+searcher = ElasticSearcher(client, db, es_host)
 
-# Create an instance of your class
+###################################################### Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cpu")
 camera_processor = CameraProcessor(device="cpu")
 logger = configure_logging()
@@ -43,18 +48,21 @@ audio_bp = Blueprint("audio_bp", __name__)
 camera_bp = Blueprint("camera_bp", __name__)
 system_check = Blueprint("system_check", __name__)
 auth_bp = Blueprint("auth_bp", __name__)
-# Setup Blueprint
-
-
-# Register Auth Provider
-auth_provider = AuthProvider()
+elastic_search_bp = Blueprint("elastic_search_bp", __name__)
 users_bp = Blueprint("users_bp", __name__)
+####################################################### Setup Blueprint
+@elastic_search_bp.route("/search", methods=["GET"])
+def search():
+    query = request.args.get("query")
+    results = searcher.search(query)
+    if isinstance(results, tuple): 
+        return jsonify({"error": results[0]["error"]}), results[1]
+    return jsonify(results), 200
 
 
-import numpy as np
 
-# Assuming BINARY_MATCH is defined in another file and imported
-
+app.register_blueprint(elastic_search_bp, url_prefix='/api')
+#########################################################
 @users_bp.route("/users/images", methods=["GET"])
 def get_user_images():
     personel = list(db.get_collection("Personel").find({}, {"FOTO_BINARY_DATA": 1, "ADI": 1, "SOYADI": 1}))
@@ -85,6 +93,8 @@ def get_users():
     return jsonify(personel),200
 app.register_blueprint(users_bp)
 
+
+auth_provider = AuthProvider()
 @auth_bp.route("/token/refresh", methods=["POST"])
 @jwt_required(refresh=True)
 def refresh():
@@ -291,5 +301,5 @@ def rename_segments_route(transcription_id, old_name, new_name):
 app.register_blueprint(audio_bp)
 
 # ----------------------------Run the app
-if __name__ == "__main__":
-    app.run(debug=True, threaded=True, port=5004)
+# if __name__ == "__main__":
+#     app.run(debug=True, threaded=True, port=5004)

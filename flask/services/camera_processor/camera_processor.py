@@ -385,11 +385,11 @@ class CameraProcessor:
     def generate(
         self,
         stream_id,
-        camera_label,
+        camera,
         quality="Quality",
         is_recording=False,
     ):
-        camera = self.read_camera_urls()[camera_label]
+
         # camera = self.read_camera_urls()[camera_label] + quality
         logging.info(f"Opening camera stream: {camera}")
 

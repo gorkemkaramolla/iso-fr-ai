@@ -12,10 +12,6 @@ import 'primereact/resources/primereact.min.css'; //core css
 import 'primeicons/primeicons.css'; //icons
 
 // Define the types for the camera data and the component state
-interface Camera {
-  label: string;
-  url: string;
-}
 
 const CameraManager: React.FC = () => {
   const [cameraUrls, setCameraUrls] = useState<Camera[]>([]);
@@ -23,7 +19,7 @@ const CameraManager: React.FC = () => {
   const [editData, setEditData] = useState<Camera>({ label: '', url: '' });
   const [newCamera, setNewCamera] = useState<Camera>({ label: '', url: '' });
   const [displayDialog, setDisplayDialog] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -73,7 +69,10 @@ const CameraManager: React.FC = () => {
   };
 
   const handleUpdate = (label: string) => {
-    if (!newCamera.label || !newCamera.url) {
+    const trimmedLabel = editData.label.trim();
+    const trimmedUrl = editData.url.trim();
+
+    if (!trimmedLabel || !trimmedUrl) {
       alert('Both label and URL are required.');
       return;
     }
@@ -86,13 +85,19 @@ const CameraManager: React.FC = () => {
         fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/camera-url/${label}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(editData),
+          body: JSON.stringify({
+            ...editData,
+            label: trimmedLabel,
+            url: trimmedUrl,
+          }),
         })
           .then((response) => response.json())
           .then(() => {
             setCameraUrls(
               cameraUrls.map((camera) =>
-                camera.label === label ? editData : camera
+                camera.label === label
+                  ? { ...editData, label: trimmedLabel, url: trimmedUrl }
+                  : camera
               )
             );
             setEditMode(null);
@@ -109,13 +114,15 @@ const CameraManager: React.FC = () => {
 
   const handleAddNewCamera = () => {
     const hasWhitespace = (str: string) => /\s/.test(str);
+    const trimmedLabel = newCamera.label.trim();
+    const trimmedUrl = newCamera.url.trim();
 
-    if (!newCamera.label || !newCamera.url) {
+    if (!trimmedLabel || !trimmedUrl) {
       alert('Both label and URL are required.');
       return;
     }
 
-    if (hasWhitespace(newCamera.label) || hasWhitespace(newCamera.url)) {
+    if (hasWhitespace(trimmedLabel) || hasWhitespace(trimmedUrl)) {
       alert('Label and URL cannot contain spaces.');
       return;
     }
@@ -123,11 +130,18 @@ const CameraManager: React.FC = () => {
     fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/camera-url`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newCamera),
+      body: JSON.stringify({
+        ...newCamera,
+        label: trimmedLabel,
+        url: trimmedUrl,
+      }),
     })
       .then((response) => response.json())
       .then(() => {
-        setCameraUrls([...cameraUrls, newCamera]);
+        setCameraUrls([
+          ...cameraUrls,
+          { ...newCamera, label: trimmedLabel, url: trimmedUrl },
+        ]);
         setNewCamera({ label: '', url: '' });
         setDisplayDialog(false);
         setLoading(false);
@@ -137,7 +151,6 @@ const CameraManager: React.FC = () => {
         setLoading(false);
       });
   };
-
   return (
     <div className='container mx-auto'>
       {loading && (

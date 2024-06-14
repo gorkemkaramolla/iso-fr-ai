@@ -7,7 +7,7 @@ import { Quality } from '@/utils/enums';
 import axios from 'axios';
 interface CameraStreamProps {
   id: number;
-  selectedCamera: string;
+  selectedCamera: Camera | undefined;
   selectedQuality: Quality;
   isPlaying: boolean;
   isLoading: boolean;
@@ -18,7 +18,7 @@ interface CameraStreamProps {
   stopStream?: (id: number) => void;
   startStream?: (id: number) => void;
   onRemoveStream?: (id: number) => void;
-
+  cameraUrls: Camera[];
   addCameraStream?: () => void;
   cameraStreams: CameraStream[];
   setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;
@@ -36,6 +36,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   availableIds,
   setCameraStreams,
   setAvailableIds,
+  cameraUrls,
 }) => {
   const startRecording = () => {
     setCameraStreams(
@@ -48,7 +49,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isRecording: true,
               streamSrc: `${
                 process.env.NEXT_PUBLIC_FLASK_URL
-              }/stream/${id}?camera=${selectedCamera}&quality=${
+              }/stream/${id}?camera=${selectedCamera?.url}&quality=${
                 camera.selectedQuality
               }&is_recording=${true}`,
             }
@@ -68,7 +69,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isRecording: false,
               streamSrc: `${
                 process.env.NEXT_PUBLIC_FLASK_URL
-              }/stream/${id}?camera=${selectedCamera}&quality=${
+              }/stream/${id}?camera=${selectedCamera?.url}&quality=${
                 camera.selectedQuality
               }&is_recording=${false}`,
             }
@@ -103,7 +104,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isRecording: false,
               streamSrc: `${
                 process.env.NEXT_PUBLIC_FLASK_URL
-              }/stream/${id}?camera=${selectedCamera}&quality=${
+              }/stream/${id}?camera=${selectedCamera?.url}&quality=${
                 camera.selectedQuality
               }&is_recording=${false}`,
             }
@@ -112,25 +113,19 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
   const removeStream = () => {
-    stopStream();
-    setAvailableIds([...availableIds, id].sort((a, b) => a - b));
-    setCameraStreams(cameraStreams.filter((camera) => camera.id !== id));
+    // stopStream();
+    setAvailableIds((prevIds) => [...prevIds, id].sort((a, b) => a - b));
 
-    if (typeof window !== 'undefined') {
-      // Retrieve the existing list of cameraStreams from localStorage
-      const savedStreams = localStorage.getItem('cameraStreams');
-      let cameraStreamsList: CameraStream[] = savedStreams
-        ? JSON.parse(savedStreams)
-        : [];
+    setCameraStreams((prevStreams) => {
+      const updatedStreams = prevStreams.filter((camera) => camera.id !== id);
 
-      // Filter out the cameraStream with the specified id
-      cameraStreamsList = cameraStreamsList.filter(
-        (camera) => camera.id !== id
-      );
+      if (typeof window !== 'undefined') {
+        // Save the updated list to localStorage
+        localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+      }
 
-      // Save the updated list back to localStorage
-      localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
-    }
+      return updatedStreams;
+    });
   };
   const handleQualityChange = (id: number, selectedQuality: string | null) => {
     setCameraStreams(
@@ -139,7 +134,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
           ? {
               ...camera,
               selectedQuality: selectedQuality,
-              streamSrc: `${process.env.NEXT_PUBLIC_FLASK_URL}/stream/${id}?camera=${selectedCamera}&quality=${selectedQuality}&is_recording=${camera.isRecording}`,
+              streamSrc: `${process.env.NEXT_PUBLIC_FLASK_URL}/stream/${id}?camera=${selectedCamera?.url}&quality=${selectedQuality}&is_recording=${camera.isRecording}`,
             }
           : camera
       )
@@ -172,11 +167,12 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
             />
           </div>
           <div className='text-black'>
-            Yayın {id} - <span className='text-red-500'>{selectedCamera}</span>
+            Yayın {id} -{' '}
+            <span className='text-red-500'>{selectedCamera?.label}</span>
           </div>
         </div>
       </div>
-      {/* <div>{streamSrc}</div>  */}
+      {/* <div>{streamSrc}</div> */}
       <CameraStream
         id={id}
         streamSrc={streamSrc}

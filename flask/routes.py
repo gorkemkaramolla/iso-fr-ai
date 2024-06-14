@@ -143,10 +143,6 @@ def login():
 app.register_blueprint(auth_bp)
 
 
-# camera url routes
-camera_urls = camera_processor.read_camera_urls()
-
-
 @camera_bp.route("/camera-url", methods=["POST"])
 # @jwt_required()
 def add_camera_url():
@@ -204,14 +200,14 @@ def update_camera_url(label):
 # @jwt_required()
 def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
-    camera_label = request.args.get("camera")
+    camera = request.args.get("camera")
     quality = request.args.get("quality")
     # print("Camera: ", camera)
     # print("Quality: ", quality)
     return Response(
         camera_processor.generate(
             stream_id,
-            camera_label=camera_label,
+            camera=camera,
             quality=quality,
             is_recording=is_recording,
         ),

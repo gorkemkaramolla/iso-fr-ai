@@ -19,7 +19,7 @@ interface ApiResponse {
 
 interface CameraStream {
   id: number;
-  selectedCamera: string;
+  selectedCamera: Camera;
   streamSrc?: string;
   selectedQuality: Quality;
   isPlaying: boolean;
@@ -81,4 +81,9 @@ interface GroupedRecogFaces {
   name: string;
   faces: RecogFace[];
   isCollapsed: boolean;
+}
+
+interface Camera {
+  label: string;
+  url: string;
 }

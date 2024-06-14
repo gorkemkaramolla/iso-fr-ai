@@ -12,8 +12,8 @@ import RecogFaces from '@/components/camera/RecogFace';
 
 const VideoStream: React.FC = () => {
   const [showAddCamera, setShowAddCamera] = useState(false);
-  const [cameraUrls, setCameraUrls] = useState<{ [key: string]: string }[]>([]);
-  const [selectedCamera, setSelectedCamera] = useState<string>('');
+  const [cameraUrls, setCameraUrls] = useState<Camera[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState<Camera>();
   const [availableIds, setAvailableIds] = useState([1, 2, 3, 4, 5, 6]);
   const [cameraStreams, setCameraStreams] = useState<CameraStream[]>([]);
 
@@ -48,16 +48,16 @@ const VideoStream: React.FC = () => {
     fetchCameraUrls();
   }, []);
 
-  const addCameraStream = (cameraLabel: string) => {
+  const addCameraStream = (camera: Camera) => {
     if (availableIds.length > 0) {
       const newId = availableIds[0]; // Take the smallest available ID
       setAvailableIds(availableIds.slice(1)); // Remove the new ID from the available IDs
       const newCameraStream = {
         id: newId,
-        selectedCamera: cameraLabel,
+        selectedCamera: camera,
         streamSrc: `${
           process.env.NEXT_PUBLIC_FLASK_URL
-        }/stream/${newId}?camera=${selectedCamera}&quality=${
+        }/stream/${newId}?camera=${selectedCamera?.url}&quality=${
           Object.keys(Quality)[0]
         }&is_recording=${false}`,
         selectedQuality: Object.keys(Quality)[0],
@@ -84,7 +84,7 @@ const VideoStream: React.FC = () => {
           JSON.stringify(cameraStreamsList)
         );
       }
-      setSelectedCamera('');
+      setSelectedCamera(undefined);
     }
   };
 
@@ -92,115 +92,161 @@ const VideoStream: React.FC = () => {
     id: number,
     position: { x: number; y: number }
   ) => {
-    if (typeof window !== 'undefined') {
-      const savedStreams = localStorage.getItem('cameraStreams');
-      let cameraStreamsList: CameraStream[] = savedStreams
-        ? JSON.parse(savedStreams)
-        : [];
-
-      // Update the position of the cameraStream with the specified id
-      cameraStreamsList = cameraStreamsList.map((camera) =>
+    // Update the cameraStreams state
+    setCameraStreams((prevStreams) => {
+      const updatedStreams = prevStreams.map((camera) =>
         camera.id === id ? { ...camera, position } : camera
       );
 
-      // Save the updated list back to localStorage
-      localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
-    }
+      // Save the updated streams to localStorage
+      localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+
+      return updatedStreams;
+    });
   };
 
   const saveCameraStreamSize = (
     id: number,
     size: { width: string | number; height: string | number }
   ) => {
-    if (typeof window !== 'undefined') {
-      const savedStreams = localStorage.getItem('cameraStreams');
-      let cameraStreamsList: CameraStream[] = savedStreams
-        ? JSON.parse(savedStreams)
-        : [];
-
-      // Update the size of the cameraStream with the specified id
-      cameraStreamsList = cameraStreamsList.map((camera) =>
+    // Update the cameraStreams state
+    setCameraStreams((prevStreams) => {
+      const updatedStreams = prevStreams.map((camera) =>
         camera.id === id ? { ...camera, size } : camera
       );
 
-      // Save the updated list back to localStorage
-      localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
-    }
+      // Save the updated streams to localStorage
+      localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+
+      return updatedStreams;
+    });
+  };
+  const deleteAllCameraStreams = () => {
+    // Clear local storage
+    localStorage.removeItem('cameraStreams');
+    // Clear the state
+    setCameraStreams([]);
+  };
+  const resetCameraStreams = () => {
+    // Get the current cameraStreams state
+    setCameraStreams((currentStreams) => {
+      // Map through the camera streams and reset the position and size properties
+      const resetStreams = currentStreams.map((stream) => ({
+        ...stream,
+        position: { x: 0, y: 0 }, // Set the default position
+        size: { width: '100%', height: '100%' }, // Set the default size
+      }));
+
+      // Update local storage
+      localStorage.setItem('cameraStreams', JSON.stringify(resetStreams));
+
+      // Return the updated streams
+      return resetStreams;
+    });
   };
 
   return (
     <div className='h-full w-full overflow-auto'>
       <div className='container mx-auto mb-20'>
-        <div className='flex justify-center items-center'>
-          <AddCameraButton
-            showAddCamera={showAddCamera}
-            setShowAddCamera={setShowAddCamera}
-            disabled={false}
-          />
-          <CameraDropdown
-            selectedCamera={selectedCamera}
-            setSelectedCamera={setSelectedCamera}
-            cameraStreams={cameraStreams}
-            cameraUrls={cameraUrls}
-            addCameraStream={addCameraStream}
-            showAddCamera={showAddCamera}
-          />
+        <div className='flex items-center'>
+          <div className='flex-grow flex justify-center'>
+            <AddCameraButton
+              showAddCamera={showAddCamera}
+              setShowAddCamera={setShowAddCamera}
+              disabled={false}
+            />
+            <CameraDropdown
+              selectedCamera={selectedCamera}
+              setSelectedCamera={setSelectedCamera}
+              cameraStreams={cameraStreams}
+              cameraUrls={cameraUrls}
+              addCameraStream={addCameraStream}
+              showAddCamera={showAddCamera}
+            />
+          </div>
+
+          {cameraStreams.length > 0 && (
+            <div className='flex gap-4'>
+              <button
+                onClick={resetCameraStreams}
+                id='resetAllStreams'
+                className='btn btn-ghost text-blue-600 hover:text-blue-700'
+              >
+                Düzeni Sıfırla
+              </button>
+              <button
+                onClick={deleteAllCameraStreams}
+                id='closeAllStreams'
+                className='btn btn-ghost text-red-600 hover:text-red-700'
+              >
+                Tüm Yayınları Kapat
+              </button>
+            </div>
+          )}
         </div>
-        <div className='relative flex justify-center items-start mx-auto gap-4 min-h-screen'>
-          {cameraStreams
-            .sort((a, b) => a.id - b.id)
-            .map((camera) => {
-              return (
-                <Draggable
-                  key={camera.id}
-                  defaultPosition={camera.position || { x: 0, y: 0 }} // Set the initial position from the saved position
-                  handle='.drag-handle'
-                  bounds='parent'
-                  onStop={(e, data) =>
-                    saveCameraStreamPosition(camera.id, {
-                      x: data.x,
-                      y: data.y,
-                    })
-                  }
-                >
-                  <Resizable
-                    key={camera.id}
-                    defaultSize={
-                      camera.size || {
-                        width: '100%',
-                        height: '100%',
+        <div className='flex justify-center items-start mx-auto gap-4 min-h-screen '>
+          <div className='relative grid-cols-10 gap-4'>
+            {cameraStreams.length > 0 &&
+              cameraStreams
+                ?.sort((a, b) => a.id - b.id)
+                ?.map((camera) => {
+                  return (
+                    <Draggable
+                      key={camera.id}
+                      // defaultPosition={camera.position || { x: 0, y: 0 }} // Set the initial position from the saved position
+                      position={camera.position || { x: 0, y: 0 }} // Set the position from the saved position
+                      handle='.drag-handle'
+                      bounds='parent'
+                      onStop={(e, data) =>
+                        saveCameraStreamPosition(camera.id, {
+                          x: data.x,
+                          y: data.y,
+                        })
                       }
-                    }
-                    minHeight={400}
-                    minWidth={600}
-                    maxWidth='100%'
-                    maxHeight='100%'
-                    className='bg-slate-100 rounded-lg border border-slate-400 shadow-lg'
-                    onResizeStop={(e, direction, ref) =>
-                      saveCameraStreamSize(camera.id, {
-                        width: ref.style.width,
-                        height: ref.style.height,
-                      })
-                    }
-                  >
-                    <CameraStreamControl
-                      id={camera.id}
-                      selectedCamera={camera.selectedCamera}
-                      selectedQuality={camera.selectedQuality}
-                      isPlaying={camera.isPlaying}
-                      isLoading={camera.isLoading}
-                      isRecording={camera.isRecording}
-                      streamSrc={camera.streamSrc}
-                      availableIds={availableIds}
-                      setAvailableIds={setAvailableIds}
-                      cameraStreams={cameraStreams}
-                      setCameraStreams={setCameraStreams}
-                    />
-                  </Resizable>
-                </Draggable>
-              );
-            })}
-          <RecogFaces />
+                    >
+                      <Resizable
+                        key={camera.id}
+                        // defaultSize={
+                        //   camera.size || {
+                        //     width: '100%',
+                        //     height: '100%',
+                        //   }
+                        // }
+                        size={camera.size || { width: '100%', height: '100%' }}
+                        minHeight={380}
+                        minWidth={620}
+                        maxWidth={'100%'}
+                        maxHeight={'100%'}
+                        className='bg-slate-100 rounded-lg border border-slate-400 shadow-lg'
+                        onResizeStop={(e, direction, ref) =>
+                          saveCameraStreamSize(camera.id, {
+                            width: ref.style.width,
+                            height: ref.style.height,
+                          })
+                        }
+                      >
+                        <CameraStreamControl
+                          id={camera.id}
+                          cameraUrls={cameraUrls}
+                          selectedCamera={camera.selectedCamera}
+                          selectedQuality={camera.selectedQuality}
+                          isPlaying={camera.isPlaying}
+                          isLoading={camera.isLoading}
+                          isRecording={camera.isRecording}
+                          streamSrc={camera.streamSrc}
+                          availableIds={availableIds}
+                          setAvailableIds={setAvailableIds}
+                          cameraStreams={cameraStreams}
+                          setCameraStreams={setCameraStreams}
+                        />
+                      </Resizable>
+                    </Draggable>
+                  );
+                })}
+          </div>
+          <div className='grid-cols-2'>
+            <RecogFaces />
+          </div>
         </div>
       </div>
     </div>

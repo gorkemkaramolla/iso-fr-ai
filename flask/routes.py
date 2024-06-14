@@ -1,5 +1,6 @@
 import json
 import bson
+import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
@@ -21,6 +22,7 @@ import cv2
 import numpy as np
 
 from config import BINARY_MATCH
+
 app = Flask(__name__)
 CORS(app, origins="*")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
@@ -65,24 +67,30 @@ app.register_blueprint(elastic_search_bp, url_prefix='/api')
 #########################################################
 @users_bp.route("/users/images", methods=["GET"])
 def get_user_images():
-    personel = list(db.get_collection("Personel").find({}, {"FOTO_BINARY_DATA": 1, "ADI": 1, "SOYADI": 1}))
+    personel = list(
+        db.get_collection("Personel").find(
+            {}, {"FOTO_BINARY_DATA": 1, "ADI": 1, "SOYADI": 1}
+        )
+    )
     for i, person in enumerate(personel):
         try:
-            if person.get("FOTO_BINARY_DATA") and person.get("FOTO_BINARY_DATA") != BINARY_MATCH:
+            if (
+                person.get("FOTO_BINARY_DATA")
+                and person.get("FOTO_BINARY_DATA") != BINARY_MATCH
+            ):
                 hex_data = person.get("FOTO_BINARY_DATA")
                 binary_data = binascii.unhexlify(hex_data)
                 nparr = np.frombuffer(binary_data, np.uint8)
                 image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                if not os.path.exists('images'):
-                    os.makedirs('images')
+                if not os.path.exists("images"):
+                    os.makedirs("images")
                 adi = person.get("ADI", "unknown")
                 soyadi = person.get("SOYADI", "unknown")
-                cv2.imwrite(f'images/{adi}{soyadi}.jpeg', image)
+                cv2.imwrite(f"images/{adi}{soyadi}.jpeg", image)
         except Exception as e:
             print(f"Image {i} is corrupted, skipping... Error: {str(e)}")
             continue
     return "Images saved", 200
-
 
 
 @users_bp.route("/users", methods=["GET"])
@@ -90,8 +98,11 @@ def get_users():
     personel = list(db.get_collection("Personel").find())
     for person in personel:
         person.pop("_id", None)  # Remove _id from the dictionary
-    return jsonify(personel),200
+    return jsonify(personel), 200
+
+
 app.register_blueprint(users_bp)
+
 
 
 auth_provider = AuthProvider()
@@ -145,8 +156,7 @@ def add_camera_url():
     if not label or not url:
         return jsonify({"error": "Label and URL are required"}), 400
 
-    camera_urls[label] = url
-    camera_processor.write_camera_urls(camera_urls)
+    camera_collection.insert_one({"label": label, "url": url})
 
     return jsonify({"message": "Camera URL added successfully"}), 200
 
@@ -154,19 +164,39 @@ def add_camera_url():
 @camera_bp.route("/camera-urls", methods=["GET"])
 # @jwt_required()
 def get_camera_urls():
-    return jsonify(camera_urls), 200
+    cameras = list(camera_collection.find({}))
+    print(cameras)
+    return bson.json_util.dumps(cameras), 200
 
 
 @camera_bp.route("/camera-url/<label>", methods=["DELETE"])
 # @jwt_required()
 def delete_camera_url(label):
-    if label not in camera_urls:
+    result = camera_collection.delete_one({"label": label})
+
+    if result.deleted_count == 0:
         return jsonify({"error": "Camera label not found"}), 404
 
-    del camera_urls[label]
-    camera_processor.write_camera_urls(camera_urls)
-
     return jsonify({"message": "Camera URL deleted successfully"}), 200
+
+
+@camera_bp.route("/camera-url/<label>", methods=["PUT"])
+# @jwt_required()
+def update_camera_url(label):
+    data = request.json
+    new_label = data.get("label")
+    new_url = data.get("url")
+    if not new_label or not new_url:
+        return jsonify({"error": "Label and URL are required"}), 400
+
+    result = camera_collection.update_one(
+        {"label": label}, {"$set": {"label": new_label, "url": new_url}}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Camera label not found"}), 404
+
+    return jsonify({"message": "Camera URL updated successfully"}), 200
 
 
 # ****************************************************************************
@@ -191,14 +221,14 @@ def stream(stream_id):
 
 @camera_bp.route("/recog", methods=["GET"])
 def get_all_logs():
-    logs = list(collection.find({}, {}))  # Exclude _id from the results
+    logs = list(logs_collection.find({}, {}))  # Exclude _id from the results
     return bson.json_util.dumps(logs)
     # return "Hello"
 
 
 @camera_bp.route("/recog/<id>", methods=["GET"])
 def get_log(id):
-    log = collection.find_one({"_id": ObjectId(id)})
+    log = logs_collection.find_one({"_id": ObjectId(id)})
     if log:
         return jsonify(log)
     else:
@@ -208,13 +238,13 @@ def get_log(id):
 @camera_bp.route("/recog/<id>", methods=["PUT"])
 def update_log(id):
     data = request.json
-    collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+    logs_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
     return jsonify({"message": "Log updated successfully"}), 200
 
 
 @camera_bp.route("/recog/<id>", methods=["DELETE"])
 def delete_log(id):
-    collection.delete_one({"_id": ObjectId(id)})
+    logs_collection.delete_one({"_id": ObjectId(id)})
     return jsonify({"message": "Log deleted successfully"}), 200
 
 

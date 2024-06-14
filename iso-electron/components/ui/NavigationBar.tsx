@@ -2,6 +2,8 @@ import Link from 'next/link';
 import React from 'react';
 import Image from 'next/image';
 import ElasticSearch from '../utility/ElasticSearch';
+import { Button } from 'primereact/button';
+import { Settings } from 'lucide-react';
 interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
@@ -88,6 +90,11 @@ const NavigationBar: React.FC<Props> = () => {
           Bildirim
         </ul>
       </div>
+      <Link href={'/camera_settings'}>
+        <button className='btn btn-ghost btn-circle'>
+          <Settings className='w-6 h-6' />
+        </button>
+      </Link>
     </nav>
   );
 };

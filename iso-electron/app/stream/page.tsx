@@ -12,7 +12,7 @@ import RecogFaces from '@/components/camera/RecogFace';
 
 const VideoStream: React.FC = () => {
   const [showAddCamera, setShowAddCamera] = useState(false);
-  const [cameraUrls, setCameraUrls] = useState<{ [key: string]: string }>({});
+  const [cameraUrls, setCameraUrls] = useState<{ [key: string]: string }[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
   const [availableIds, setAvailableIds] = useState([1, 2, 3, 4, 5, 6]);
   const [cameraStreams, setCameraStreams] = useState<CameraStream[]>([]);
@@ -184,7 +184,6 @@ const VideoStream: React.FC = () => {
                     }
                   >
                     <CameraStreamControl
-                      cameraUrls={cameraUrls}
                       id={camera.id}
                       selectedCamera={camera.selectedCamera}
                       selectedQuality={camera.selectedQuality}

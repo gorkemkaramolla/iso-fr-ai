@@ -1,11 +1,11 @@
-import React, { useEffect } from "react";
-import { Quality } from "@/utils/enums";
-import Image from "next/image";
+import React, { useEffect } from 'react';
+import { Quality } from '@/utils/enums';
+import Image from 'next/image';
 
 interface CameraStreamProps {
   id: number;
   streamSrc?: string;
-  selectedCamera: string;
+  selectedCamera: Camera | undefined;
   selectedQuality: Quality;
   isPlaying: boolean;
   isLoading: boolean;
@@ -26,12 +26,12 @@ const CameraStream: React.FC<CameraStreamProps> = ({
     <div>
       {isPlaying && (
         <Image
-          className="h-fit rounded-b-lg aspect-w-16 aspect-h-9"
-          src={streamSrc || ""}
+          className='h-fit rounded-b-lg aspect-video'
+          src={streamSrc || ''}
           alt={`Video Stream ${id}`}
           width={1920}
           height={1080}
-          objectFit="cover"
+          objectFit='cover'
           onLoad={() => {
             setCameraStreams((prevStreams) =>
               prevStreams.map((stream) =>
@@ -40,7 +40,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
             );
           }}
           onError={() => {
-            console.log("Error loading stream");
+            console.log('Error loading stream');
             setCameraStreams((prevStreams) =>
               prevStreams.map((stream) =>
                 stream.id === id ? { ...stream, isLoading: true } : stream

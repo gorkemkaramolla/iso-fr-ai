@@ -70,61 +70,63 @@ const RecogFaces: React.FC = () => {
 
   return (
     <div>
-      <h1 className='text-3xl font-bold'>Tanınan Yüzler</h1>
-      {groupedRecogFaces.map((group) => (
-        <div key={group.name} style={{ marginBottom: '20px' }}>
-          <div
-            onClick={() => handleToggle(group.name)}
-            style={{
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              marginBottom: '10px',
-              background: '#f0f0f0',
-              padding: '10px',
-              borderRadius: '5px',
-            }}
-          >
-            <img
-              src={`${BASE_URL}/images/${group.faces[0].image_path}`}
-              alt='avatar'
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                marginRight: '10px',
-              }}
-              className='avatar'
-            />
-            <span>{group.name}</span>
-          </div>
-          {!group.isCollapsed && (
+      <h1 className='text-3xl font-bold mb-8'>Tanınan Yüzler</h1>
+      <div className='max-h-[60vh] overflow-scroll w-fit'>
+        {groupedRecogFaces.map((group) => (
+          <div key={group.name} style={{ marginBottom: '20px' }}>
             <div
+              onClick={() => handleToggle(group.name)}
               style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row-reverse',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                marginBottom: '10px',
+                background: '#f0f0f0',
+                padding: '8px',
+                borderRadius: '4px',
               }}
+              className='flex items-center justify-center'
             >
-              {group.faces.map((face, index) => (
-                <div key={index} style={{ margin: '4px' }}>
-                  <div className='text-xs text-center'>{face.timestamp}</div>
-                  <img
-                    src={`${BASE_URL}/images/${face.image_path}`}
-                    alt={`Known Face ${index}`}
-                    style={{
-                      width: '150px',
-                      height: '150px',
-                      objectFit: 'contain',
-                    }}
-                  />
-                </div>
-              ))}
+              <img
+                src={`${BASE_URL}/images/${group.faces[0].image_path}`}
+                alt='avatar'
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  marginRight: '4px',
+                }}
+              />
+              <span className='text-xs'>{group.name}</span>
             </div>
-          )}
-        </div>
-      ))}
+            {!group.isCollapsed && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'row-reverse',
+                }}
+              >
+                {group.faces.map((face, index) => (
+                  <div key={index} style={{ margin: '4px' }}>
+                    <div className='text-xs text-center'>{face.timestamp}</div>
+                    <img
+                      src={`${BASE_URL}/images/${face.image_path}`}
+                      alt={`Known Face ${index}`}
+                      style={{
+                        width: '150px',
+                        height: '150px',
+                        objectFit: 'contain',
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

@@ -93,14 +93,14 @@ def get_user_images():
     return "Images saved", 200
 
 
-@users_bp.route("/users", methods=["GET"])
-def get_users():
-    personel = list(db.get_collection("Personel").find())
-    for person in personel:
-        person.pop("_id", None)  # Remove _id from the dictionary
-    return jsonify(personel), 200
-
-
+@users_bp.route("/personel/<personel_id>", methods=["GET"])
+def get_user(personel_id):
+    personel = db.get_collection("Personel").find_one({"PERSONEL_ID": personel_id})
+    if personel:
+        personel.pop("_id", None)  # Remove _id from the dictionary
+        return jsonify(personel), 200
+    else:
+        return jsonify({"error": "User not found"}), 404
 app.register_blueprint(users_bp)
 
 

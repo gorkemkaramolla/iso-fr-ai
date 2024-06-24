@@ -33,4 +33,3 @@ flask/temp
 flask/logs
 flask/recog
 flask/recognized_faces_log.csv
-iso-fr/

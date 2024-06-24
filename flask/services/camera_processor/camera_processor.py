@@ -30,11 +30,27 @@ class CameraProcessor:
         rec_path = os.path.join(self.assets_dir, "buffalo_l/w600k_r50.onnx")
         self.rec = ArcFaceONNX(rec_path)
         self.rec.prepare(0 if device == "cuda" else -1)
-        self.processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-        self.emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to(self.device)
-        self.id_to_label = {0: "angry", 1: "disgust", 2: "fear", 3: "happy", 4: "neutral", 5: "sad", 6: "surprise"}
+        self.processor = AutoImageProcessor.from_pretrained(
+            "trpakov/vit-face-expression"
+        )
+        self.emotion_model = AutoModelForImageClassification.from_pretrained(
+            "trpakov/vit-face-expression"
+        ).to(self.device)
+        self.id_to_label = {
+            0: "angry",
+            1: "disgust",
+            2: "fear",
+            3: "happy",
+            4: "neutral",
+            5: "sad",
+            6: "surprise",
+        }
         self.similarity_threshold = 0.2
-        self.database = self.create_face_database(self.rec, self.detector, os.path.join(os.path.dirname(os.getcwd()), "face-images"))
+        self.database = self.create_face_database(
+            self.rec,
+            self.detector,
+            os.path.join(os.path.dirname(os.getcwd()), "face-images"),
+        )
         self.camera_urls_file = "camera_urls.csv"
         self.log_file = "recognized_faces_log.csv"
         self.init_log_file()
@@ -45,7 +61,7 @@ class CameraProcessor:
         self.unknown_faces_dir = "recog/unknown_faces"
         if not os.path.exists(self.unknown_faces_dir):
             os.makedirs(self.unknown_faces_dir)
-        self.client = MongoClient("mongodb://localhost:27017/")
+        self.client = MongoClient(os.getenv("MONGO_DB_URI"))
         self.db = self.client["isoai"]
         self.recognition_logs_collection = self.db["logs"]
         self.stop_flag = threading.Event()  # Initialize the stop flag
@@ -63,10 +79,14 @@ class CameraProcessor:
             return -1.0, "One or both images are None"
         if len(image1.shape) < 2 or len(image2.shape) < 2:
             return -1.0, "One or both images are not valid"
-        bboxes1, kpss1 = self.detector.detect(image1, max_num=1, input_size=(128, 128), thresh=0.5, metric="max")
+        bboxes1, kpss1 = self.detector.detect(
+            image1, max_num=1, input_size=(128, 128), thresh=0.5, metric="max"
+        )
         if len(bboxes1) == 0 or bboxes1.shape[0] == 0:
             return -1.0, "Face not found in Image-1"
-        bboxes2, kpss2 = self.detector.detect(image2, max_num=1, input_size=(128, 128), thresh=0.5, metric="max")
+        bboxes2, kpss2 = self.detector.detect(
+            image2, max_num=1, input_size=(128, 128), thresh=0.5, metric="max"
+        )
         if len(bboxes2) == 0 or bboxes2.shape[0] == 0:
             return -1.0, "Face not found in Image-2"
         kps1 = kpss1[0]
@@ -229,7 +249,9 @@ class CameraProcessor:
             if is_recording and writer is None:
                 frame_height, frame_width = frame.shape[:2]
                 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+                writer = cv2.VideoWriter(
+                    filename, fourcc, 20.0, (frame_width, frame_height)
+                )
                 if not writer.isOpened():
                     logging.error("Error initializing video writer")
                     break
@@ -238,11 +260,22 @@ class CameraProcessor:
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
                 text_label = f"{label} ({sim * 100:.2f}%): {emotion}"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    text_label,
+                    (x1 + 5, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2,
+                )
             if writer:
                 writer.write(frame)
             _, buffer = cv2.imencode(".jpg", frame)
-            yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n")
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
+            )
         cap.release()
         if writer:
             writer.release()

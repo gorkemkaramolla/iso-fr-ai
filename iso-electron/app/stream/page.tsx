@@ -183,8 +183,8 @@ const VideoStream: React.FC = () => {
             </div>
           )}
         </div>
-        <div className='flex justify-center items-start mx-auto gap-4 min-h-screen '>
-          <div className='relative grid-cols-10 gap-4'>
+        <div className='grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen '>
+          <div className='relative col-span-10 gap-4'>
             {cameraStreams.length > 0 &&
               cameraStreams
                 ?.sort((a, b) => a.id - b.id)
@@ -243,7 +243,7 @@ const VideoStream: React.FC = () => {
                   );
                 })}
           </div>
-          <div className='grid-cols-2'>
+          <div className='col-span-2'>
             <RecogFaces />
           </div>
         </div>

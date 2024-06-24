@@ -1,13 +1,23 @@
 import api from '@/utils/axios_instance';
 import Image from 'next/image';
 import Link from 'next/link';
+
 export default async function Page() {
-  const detections: DetectionLog[] = (await api.get('/get-detections')).data;
-  console.log(detections);
+  let detections: DetectionLog[] = [];
+
+  try {
+    detections = (await api.get('/get-detections')).data || [];
+  } catch (error) {
+    console.error('Error fetching detections:', error);
+    // Handle the error appropriately
+  }
 
   // Group detections by label
   const groupedDetections = detections.reduce<Record<string, DetectionLog[]>>(
     (acc, detection) => {
+      if (!detection || !detection.label) {
+        return acc; // Skip undefined or invalid detections
+      }
       if (!acc[detection.label]) {
         acc[detection.label] = [];
       }

@@ -71,9 +71,9 @@ const RecogFaces: React.FC = () => {
   return (
     <div>
       <h1 className='text-3xl font-bold mb-8'>Tanınan Yüzler</h1>
-      <div className='max-h-[60vh] overflow-scroll w-fit'>
+      <div className='max-h-[60vh] overflow-scroll w-full pr-2'>
         {groupedRecogFaces.map((group) => (
-          <div key={group.name} style={{ marginBottom: '20px' }}>
+          <div key={group.name} className='mb-2 shadow-sm'>
             <div
               onClick={() => handleToggle(group.name)}
               style={{
@@ -84,7 +84,7 @@ const RecogFaces: React.FC = () => {
                 padding: '8px',
                 borderRadius: '4px',
               }}
-              className='flex items-center justify-center'
+              className='flex items-center justify-start gap-2'
             >
               <img
                 src={`${BASE_URL}/images/${group.faces[0].image_path}`}
@@ -104,20 +104,21 @@ const RecogFaces: React.FC = () => {
                   display: 'flex',
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  justifyContent: 'start',
                   flexDirection: 'row-reverse',
                 }}
               >
                 {group.faces.map((face, index) => (
-                  <div key={index} style={{ margin: '4px' }}>
-                    <div className='text-xs text-center'>{face.timestamp}</div>
+                  <div key={index} className='m-1 w-16'>
+                    <div className='text-xs text-balance'>{face.timestamp}</div>
                     <img
                       src={`${BASE_URL}/images/${face.image_path}`}
                       alt={`Known Face ${index}`}
                       style={{
-                        width: '150px',
-                        height: '150px',
-                        objectFit: 'contain',
+                        width: '60px',
+                        height: '60px',
+                        objectFit: 'cover',
+                        borderRadius: '5%',
                       }}
                     />
                   </div>

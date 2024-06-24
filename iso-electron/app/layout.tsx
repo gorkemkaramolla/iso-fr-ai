@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='tr' data-theme='dark' className={'w-screen overflow-hidden  '}>
+    <html lang='tr' data-theme='light' className={'w-screen overflow-hidden  '}>
       <body className={inter.className + ' light flex justify-center'}>
         <PrimeReactProvider>
           <div className='w-full h-[100dvh]'>

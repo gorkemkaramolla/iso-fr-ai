@@ -4,7 +4,6 @@ import pandas as pd
 import datetime
 import os
 import os.path as osp
-
 from pymongo import MongoClient
 from services.camera_processor.scrfd import SCRFD
 from services.camera_processor.arcface_onnx import ArcFaceONNX
@@ -16,139 +15,60 @@ from services.camera_processor.enums.camera import Camera
 import uuid
 from cv2.typing import MatLike
 import logging
+import threading  # For handling the stop flag in a thread-safe manner
 
 
 class CameraProcessor:
     def __init__(self, device="cuda"):
-        # Set the compute device
         self.device = torch.device(device)
         print(f"Using device: {self.device}")
-        # self.model_test = AntiSpoofPredict(0)
-
-        # Initialize ONNX Runtime settings
         onnxruntime.set_default_logger_severity(3)
-
-        # Set the directory path for the models
         self.assets_dir = os.path.expanduser("~/.insightface/models/")
-
-        # Initialize the SCRFD detector with the model file
         detector_path = os.path.join(self.assets_dir, "buffalo_l/det_10g.onnx")
         self.detector = SCRFD(detector_path)
         self.detector.prepare(0 if device == "cuda" else -1)
-
-        # Initialize the ArcFace recognizer with the model file
         rec_path = os.path.join(self.assets_dir, "buffalo_l/w600k_r50.onnx")
         self.rec = ArcFaceONNX(rec_path)
         self.rec.prepare(0 if device == "cuda" else -1)
-
-        # Initialize emotion classification model
-        self.processor = AutoImageProcessor.from_pretrained(
-            "trpakov/vit-face-expression"
-        )
-        self.emotion_model = AutoModelForImageClassification.from_pretrained(
-            "trpakov/vit-face-expression"
-        ).to(self.device)
-        self.id_to_label = {
-            0: "angry",
-            1: "disgust",
-            2: "fear",
-            3: "happy",
-            4: "neutral",
-            5: "sad",
-            6: "surprise",
-        }
-        # Similarity threshold for face recognition
+        self.processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
+        self.emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to(self.device)
+        self.id_to_label = {0: "angry", 1: "disgust", 2: "fear", 3: "happy", 4: "neutral", 5: "sad", 6: "surprise"}
         self.similarity_threshold = 0.2
-        # Load or create face database
-        self.database = self.create_face_database(
-            self.rec,
-            self.detector,
-            os.path.join(os.path.dirname(os.getcwd()), "face-images"),
-        )
-
-        # Camera URLs file
+        self.database = self.create_face_database(self.rec, self.detector, os.path.join(os.path.dirname(os.getcwd()), "face-images"))
         self.camera_urls_file = "camera_urls.csv"
-
-        # Initialize log file
         self.log_file = "recognized_faces_log.csv"
         self.init_log_file()
-
-        # Dictionary to track last recognition times
         self.last_recognitions = {}
-
-        # Directory for known faces
         self.known_faces_dir = "recog/known_faces"
         if not os.path.exists(self.known_faces_dir):
             os.makedirs(self.known_faces_dir)
-        # Directory for unknown faces
         self.unknown_faces_dir = "recog/unknown_faces"
         if not os.path.exists(self.unknown_faces_dir):
             os.makedirs(self.unknown_faces_dir)
-
-        # Initialize MongoDB client
         self.client = MongoClient("mongodb://localhost:27017/")
         self.db = self.client["isoai"]
         self.recognition_logs_collection = self.db["logs"]
+        self.stop_flag = threading.Event()  # Initialize the stop flag
 
     def init_log_file(self):
-        # Initialize the log file with headers if it doesn't exist
         if not os.path.exists(self.log_file):
             df = pd.DataFrame(columns=["Timestamp", "Label", "Similarity", "Emotion"])
             df.to_csv(self.log_file, index=False)
 
-    # def log_recognition(self, label, similarity, emotion, image_path):
-    #     # Log the recognized face with the current timestamp
-    #     now = datetime.datetime.now()
-    #     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-
-    #     # Check if this face was recognized recently
-    #     if label in self.last_recognitions:
-    #         last_recognition_time = self.last_recognitions[label]
-    #         time_diff = (now - last_recognition_time).total_seconds()
-    #         # Skip logging if recognized within the last 60 seconds
-    #         if time_diff < 60:
-    #             return
-
-    #     # Update the last recognition time
-    #     self.last_recognitions[label] = now
-
-    #     # Save the log to MongoDB
-    #     log_record = {
-    #         "timestamp": timestamp,
-    #         "label": label,
-    #         "similarity": round(float(similarity), 2),
-    #         "emotion": emotion,
-    #         "image_path": image_path,
-    #     }
-    #     self.recognition_logs_collection.insert_one(log_record)
+    def stop_camera(self):
+        self.stop_flag.set()  # Set the stop flag to stop the camera loop
 
     def compare_similarity(self, image1: MatLike, image2: MatLike):
         if image1 is None or image2 is None:
             return -1.0, "One or both images are None"
-
         if len(image1.shape) < 2 or len(image2.shape) < 2:
             return -1.0, "One or both images are not valid"
-
-        bboxes1, kpss1 = self.detector.detect(
-            image1,
-            max_num=1,
-            input_size=(128, 128),
-            thresh=0.5,
-            metric="max",
-        )
+        bboxes1, kpss1 = self.detector.detect(image1, max_num=1, input_size=(128, 128), thresh=0.5, metric="max")
         if len(bboxes1) == 0 or bboxes1.shape[0] == 0:
             return -1.0, "Face not found in Image-1"
-
-        bboxes2, kpss2 = self.detector.detect(
-            image2,
-            max_num=1,
-            input_size=(128, 128),
-            thresh=0.5,
-            metric="max",
-        )
+        bboxes2, kpss2 = self.detector.detect(image2, max_num=1, input_size=(128, 128), thresh=0.5, metric="max")
         if len(bboxes2) == 0 or bboxes2.shape[0] == 0:
             return -1.0, "Face not found in Image-2"
-
         kps1 = kpss1[0]
         kps2 = kpss2[0]
         feat1 = self.rec.get(image1, kps1)
@@ -165,7 +85,6 @@ class CameraProcessor:
     def read_camera_urls(self):
         if not os.path.exists(self.camera_urls_file):
             return {}
-
         df = pd.read_csv(self.camera_urls_file, index_col=0)
         return df.to_dict()["url"]
 
@@ -188,7 +107,6 @@ class CameraProcessor:
         return database
 
     def get_emotion(self, face_image):
-        """Process the cropped face image to classify emotion"""
         pil_image = Image.fromarray(face_image)
         processed_image = self.processor(pil_image, return_tensors="pt").to(self.device)
         with torch.no_grad():
@@ -198,102 +116,26 @@ class CameraProcessor:
             emotion = self.id_to_label[predicted_class]
         return emotion
 
-    # def save_face_image(self, face_image, label, is_known):
-    #     """Save the face image with a unique ID under the appropriate directory"""
-    #     if face_image is None or face_image.size == 0:
-    #         print("Error: The face image is empty and cannot be saved.")
-    #         return "Error: Empty face image"
-
-    #     # Get the current date and time
-    #     now = datetime.datetime.now()
-
-    #     # Check if this face was recognized recently
-    #     if label in self.last_recognitions:
-    #         last_recognition_time = self.last_recognitions[label]
-    #         time_diff = (now - last_recognition_time).total_seconds()
-    #         # Skip saving if recognized within the last 60 seconds
-    #         if time_diff < 60:
-    #             return
-
-    #     # Update the last recognition time
-    #     self.last_recognitions[label] = now
-
-    #     # Format the date and time as a string
-    #     timestamp = now.strftime("%Y%m%d-%H%M%S")
-    #     # Create the filename
-    #     filename = f"{label}-{timestamp}.jpg"
-
-    #     # Determine the base directory based on whether the face is known or unknown
-    #     base_dir = self.known_faces_dir if is_known else self.unknown_faces_dir
-
-    #     # Create a new directory for the person
-    #     person_dir = os.path.join(base_dir, label)
-    #     os.makedirs(person_dir, exist_ok=True)
-
-    #     # Create the full file path
-    #     file_path = os.path.join(person_dir, filename)
-
-    #     print(f"Saving face image to: {file_path}")
-    #     try:
-    #         # Save the image
-    #         success = cv2.imwrite(file_path, face_image)
-    #         if not success:
-    #             print("Error: Failed to save the image.")
-    #             return "Error: Failed to save image"
-    #     except cv2.error as e:
-    #         print(f"OpenCV error: {e}")
-    #         return f"Error: OpenCV error - {e}"
-    #     except PermissionError as e:
-    #         print(f"Permission error: {e}")
-    #         return f"Error: Permission error - {e}"
-    #     except FileNotFoundError as e:
-    #         print(f"File not found error: {e}")
-    #         return f"Error: File not found error - {e}"
-    #     except Exception as e:
-    #         print(f"Unexpected error: {e}")
-    #         return f"Error: Unexpected error - {e}"
-
-    #     return file_path
-
     def save_and_log_face(self, face_image, label, similarity, emotion, is_known):
-        """Save the face image and log the recognition with a unique ID under the appropriate directory."""
         if face_image is None:
             print("Error: The face image is empty and cannot be saved.")
             return "Error: Empty face image"
-
-        # Get the current date and time
         now = datetime.datetime.now()
         timestamp = now.strftime("%H:%M:%S %d.%m.%Y")
-
-        # Check if this face was recognized recently
         if label in self.last_recognitions:
             last_recognition_time = self.last_recognitions[label]
             time_diff = (now - last_recognition_time).total_seconds()
-            # Skip saving and logging if recognized within the last 60 seconds
             if time_diff < 60:
                 return
-
-        # Update the last recognition time
         self.last_recognitions[label] = now
-
-        # Format the date and time as a string for the filename
         filename_timestamp = now.strftime("%Y%m%d-%H%M%S")
-        # Create the filename
         filename = f"{label}-{filename_timestamp}.jpg"
-
-        # Determine the base directory based on whether the face is known or unknown
         base_dir = self.known_faces_dir if is_known else self.unknown_faces_dir
-
-        # Create a new directory for the person
         person_dir = os.path.join(base_dir, label)
         os.makedirs(person_dir, exist_ok=True)
-
-        # Create the full file path
         file_path = os.path.join(person_dir, filename)
-
         print(f"Saving face image to: {file_path}")
         try:
-            # Save the image
             success = cv2.imwrite(file_path, face_image)
             if not success:
                 print("Error: Failed to save the image.")
@@ -310,8 +152,6 @@ class CameraProcessor:
         except Exception as e:
             print(f"Unexpected error: {e}")
             return f"Error: Unexpected error - {e}"
-
-        # Log the recognition in MongoDB
         log_record = {
             "timestamp": timestamp,
             "label": label,
@@ -320,19 +160,14 @@ class CameraProcessor:
             "image_path": file_path,
         }
         self.recognition_logs_collection.insert_one(log_record)
-
         return file_path
 
     def recog_face_and_emotion(self, image: MatLike):
-        """Recognize faces and emotions in the given image"""
         if image is None or len(image.shape) < 2:
             return [], [], [], []
-
         bboxes, kpss = self.detector.autodetect(image, max_num=49)
-
         if len(bboxes) == 0:
             return [], [], [], []
-
         labels = []
         sims = []
         emotions = []
@@ -354,113 +189,60 @@ class CameraProcessor:
             if sim >= self.similarity_threshold:
                 label = best_match
                 is_known = True
-
-            # Save the face and assign a unique ID
             bbox = bboxes[idx]
             x1, y1, x2, y2 = map(int, bbox[:4])
             face_image = image[y1:y2, x1:x2]
-
-            # Save the face image using the save_face_image function
             if not is_known:
                 label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
                 self.database[label] = embedding
-
-            # image_path = self.save_face_image(face_image, label, is_known)
             labels.append(label)
             sims.append(sim)
-            # Extract face region and recognize emotion
             bbox = bboxes[idx]
             x1, y1, x2, y2 = map(int, bbox[:4])
             face = image[y1:y2, x1:x2]
-
             emotion = self.get_emotion(face)
-
             emotions.append(emotion)
-
-            # Log the recognition
             self.save_and_log_face(face_image, label, sim, emotion, is_known)
-
         return bboxes, labels, sims, emotions
 
-    def generate(
-        self,
-        stream_id,
-        camera,
-        quality="Quality",
-        is_recording=False,
-    ):
-
-        # camera = self.read_camera_urls()[camera_label] + quality
+    def generate(self, stream_id, camera, quality="Quality", is_recording=False):
+        self.stop_flag.clear()  # Clear the stop flag at the beginning
         logging.info(f"Opening camera stream: {camera}")
-
         try:
-            # Try to convert the camera variable to an integer
             camera_int = int(camera)
             cap = cv2.VideoCapture(camera_int)
         except ValueError:
-            # If the conversion fails, append the quality to the camera string
             cap = cv2.VideoCapture(camera + quality)
-
         print("Camera Opened:  " + str(cap.isOpened()))
-
-        # Initialize video writer if recording is enabled
         writer = None
-
         if is_recording:
-            # Get current date and time
             now = datetime.datetime.now()
-
-            # Define the directory
             directory = "./records/"
-
-            # Check if the directory exists, create it if it doesn't
             if not os.path.exists(directory):
                 os.makedirs(directory)
-
-            # Format as a string
             filename = directory + now.strftime("%H:%M:%S_%d.%m.%Y") + ".mp4"
-
-        while True:
+        while not self.stop_flag.is_set():
             ret, frame = cap.read()
             if not ret:
                 logging.error("Error reading frame")
                 break
             if is_recording and writer is None:
-                # Initialize writer with the frame size of the first frame
                 frame_height, frame_width = frame.shape[:2]
                 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                writer = cv2.VideoWriter(
-                    filename, fourcc, 20.0, (frame_width, frame_height)
-                )
+                writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
                 if not writer.isOpened():
                     logging.error("Error initializing video writer")
                     break
-
             bboxes, labels, sims, emotions = self.recog_face_and_emotion(frame)
             for bbox, label, sim, emotion in zip(bboxes, labels, sims, emotions):
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
                 text_label = f"{label} ({sim * 100:.2f}%): {emotion}"
-                cv2.putText(
-                    frame,
-                    text_label,
-                    (x1 + 5, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8,
-                    (0, 255, 0),
-                    2,
-                )
-
-            # Write the frame to the video file if recording
+                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             if writer:
                 writer.write(frame)
-
             _, buffer = cv2.imencode(".jpg", frame)
-            yield (
-                b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
-            )
-
+            yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n")
         cap.release()
         if writer:
             writer.release()

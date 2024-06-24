@@ -8,7 +8,7 @@ interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
   return (
-    <nav className='navbar h-[7vh] w-full   justify-between  bg-base-100 flex '>
+    <nav className='navbar h-[7vh] w-full  z-40 justify-between  bg-base-100 flex '>
       <div className=' navbar-start '>
         <div className='dropdown'>
           <div tabIndex={0} role='button' className='btn btn-ghost btn-circle'>
@@ -29,7 +29,7 @@ const NavigationBar: React.FC<Props> = () => {
           </div>
           <ul
             tabIndex={0}
-            className='menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52'
+            className='menu menu-sm dropdown-content mt-3 z-40 p-2 shadow bg-base-100 rounded-box w-52'
           >
             <li>
               <Link href={'/'}>Ana Sayfa</Link>
@@ -90,7 +90,7 @@ const NavigationBar: React.FC<Props> = () => {
           Bildirim
         </ul>
       </div>
-      <Link href={'/camera_settings'}>
+      <Link href={'/settings'}>
         <button className='btn btn-ghost btn-circle'>
           <Settings className='w-6 h-6' />
         </button>

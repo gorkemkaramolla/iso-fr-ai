@@ -8,7 +8,7 @@ function MonitorWidget() {
   const { systemInfo } = useSystemInfo();
 
   return (
-    <ul className='menu w-full rounded-box text-white'>
+    <ul className='menu w-full  '>
       <li>
         <span>CPU</span>
         <ul>

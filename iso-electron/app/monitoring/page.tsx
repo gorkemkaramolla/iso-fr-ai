@@ -1,20 +1,9 @@
 'use client';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Expand } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from 'recharts';
-import ReactSpeedometer from 'react-d3-speedometer';
-import useSystemInfo from '@/hooks/useSystemInfo'; // Adjust the import path as necessary
-import DraggableWrapper from '@/components/utility/DraggableWrapper';
+
+import useSystemInfo from '@/hooks/useSystemInfo';
 import MonitorWidget from '@/components/widgets/MonitorWidget';
-import { useFloating } from '@floating-ui/react';
 import CodeHighlighter from '@/components/utility/Highlight';
 import GaugeWidget from '@/components/widgets/GaugeWidget';
 import UsageChart from '@/components/charts/usage';
@@ -116,7 +105,7 @@ const Dashboard: React.FC = () => {
           </button>{' '}
           <button onClick={goFullScreen}>
             <div className='bg-green-500 flex group justify-center items-center w-3 h-3 rounded-full absolute top-4 left-[5.20rem]'>
-              <Expand className='w-2 h-2 text-black group-hover:opacity-100 opacity-0 transition-opacity ' />
+              <Expand className='w-2 h-2  group-hover:opacity-100 opacity-0 transition-opacity ' />
             </div>
           </button>
           <div ref={elementRef} className=' h-full code-scroll '>
@@ -155,15 +144,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-        {Object.entries(systemInfo.cpu_core_temps || {}).map(([core, temp]) => (
-          <div key={core} className='flex gap-2'>
-            <h2>{core} : </h2>
-            <p>{temp}°C</p>
-          </div>
-        ))}
-      </div> */}
     </div>
   );
 };

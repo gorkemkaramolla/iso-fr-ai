@@ -1,142 +1,69 @@
-'use client';
-import React, { useEffect, useState } from 'react';
 import api from '@/utils/axios_instance';
-import { binaryToMatch } from '@/config/binary';
 import Image from 'next/image';
+import Link from 'next/link';
+export default async function Page() {
+  const detections: DetectionLog[] = (await api.get('/get-detections')).data;
+  console.log(detections);
 
-export default function Home() {
-  const [personels, setPersonels] = useState<Personel[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(8);
-
-  useEffect(() => {
-    const fetchPersonels = async () => {
-      const response = await api.get('/users');
-      setPersonels(response.data);
-    };
-
-    fetchPersonels();
-  }, []);
-
-  // Calculate pagination
-  const indexOfLastPersonel = currentPage * rowsPerPage;
-  const indexOfFirstPersonel = indexOfLastPersonel - rowsPerPage;
-  const currentPersonels = personels.slice(
-    indexOfFirstPersonel,
-    indexOfLastPersonel
+  // Group detections by label
+  const groupedDetections = detections.reduce<Record<string, DetectionLog[]>>(
+    (acc, detection) => {
+      if (!acc[detection.label]) {
+        acc[detection.label] = [];
+      }
+      acc[detection.label].push(detection);
+      return acc;
+    },
+    {}
   );
-  const totalPages = Math.ceil(personels.length / rowsPerPage);
 
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  // Get currently active users
+  const activeUsers = Object.keys(groupedDetections).filter((label) =>
+    groupedDetections[label].some((log) => log.status !== 'Quited')
+  );
 
-  // Create pagination range
-  const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
-
-  const renderPageNumbers = () => {
-    const maxPageButtons = 5;
-    const halfRange = Math.floor(maxPageButtons / 2);
-    let startPage = Math.max(1, currentPage - halfRange);
-    let endPage = Math.min(totalPages, currentPage + halfRange);
-
-    if (currentPage <= halfRange) {
-      endPage = Math.min(totalPages, maxPageButtons);
-    }
-
-    if (currentPage + halfRange >= totalPages) {
-      startPage = Math.max(1, totalPages - maxPageButtons + 1);
-    }
-
-    const pageButtons = [];
-    for (let i = startPage; i <= endPage; i++) {
-      pageButtons.push(
-        <button
-          key={i}
-          onClick={() => paginate(i)}
-          className={`btn ${currentPage === i ? 'btn-active' : ''}`}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    return (
-      <>
-        {startPage > 1 && (
-          <>
-            <button onClick={() => paginate(1)} className='btn'>
-              First
-            </button>
-            {startPage > 2 && <span className='btn'>...</span>}
-          </>
-        )}
-        {pageButtons}
-        {endPage < totalPages && (
-          <>
-            {endPage < totalPages - 1 && <span className='btn'>...</span>}
-            <button onClick={() => paginate(totalPages)} className='btn'>
-              Last
-            </button>
-          </>
-        )}
-      </>
-    );
-  };
+  // Count active users
+  const activeUsersCount = activeUsers.length;
 
   return (
-    <div className='flex w-screen container mx-auto flex-col relative h-[93vh]'>
-      <div className='overflow-x-auto'>
-        <table className='table w-full'>
-          <thead>
-            <tr>
-              {personels[0] &&
-                Object.keys(personels[0]).map((key) => (
-                  <th key={key} className='px-4 py-2'>
-                    {key}
-                  </th>
-                ))}
-            </tr>
-          </thead>
-          <tbody>
-            {currentPersonels.map((personel) =>
-              personel['FOTO_BINARY_DATA'] !== binaryToMatch ? (
-                <tr key={personel.PERSONEL_ID}>
-                  {Object.keys(personel).map((key) => (
-                    <td key={key} className={`px-4 py-2 `}>
-                      {key === 'FOTO_BINARY_DATA' &&
-                      personel[key] !== binaryToMatch ? (
-                        <div className='avatar'>
-                          <div className='w-12 h-12 rounded-full'>
-                            <Image
-                              width={1000}
-                              height={1000}
-                              src={`data:${
-                                personel.FOTO_DOSYA_TIPI
-                              };base64,${Buffer.from(
-                                personel[key],
-                                'hex'
-                              ).toString('base64')}`}
-                              alt='personnel'
-                            />
-                          </div>
-                        </div>
-                      ) : key === 'OZGECMIS' ? (
-                        <span className='truncate'>{personel[key]}</span>
-                      ) : (
-                        personel[key]
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ) : null
-            )}
-          </tbody>
-        </table>
+    <div className='p-4 flex w-screen'>
+      <div className='mb-4 w-1/4'>
+        <strong>Currently Active Users: {activeUsersCount}</strong>
+        <ul>
+          {activeUsers.map((user, i) => (
+            <li key={i}>{user}</li>
+          ))}
+        </ul>
       </div>
-      <div className='flex justify-center mt-4'>
-        <div className='btn-group'>{renderPageNumbers()}</div>
+      <div className='flex flex-col w-3/4 text-sm justify-center overflow-y-scroll h-[93vh] gap-4'>
+        {detections.map((detection, i) => (
+          <Link href={'/'} key={i} className=''>
+            <div
+              className={`${
+                detection.status !== 'Quited'
+                  ? 'border-2 border-green-500 '
+                  : 'border-2 border-red-500'
+              } rounded-lg shadow-lg overflow-hidden flex items-center p-5 gap-4`}
+            >
+              <Image
+                src={`data:image/jpeg;base64,${detection.image_entered}`}
+                width={120}
+                height={120}
+                alt='face image'
+                className='flex-none aspect-square'
+              />
+              <div>
+                <div className='font-bold text-lg mb-2'>{detection.label}</div>
+                <p className=''>Emotion: {detection.emotion_entered}</p>
+                <p className=''>Giriş Zamanı: {detection.time_entered}</p>
+                {detection.status === 'Quited' && (
+                  <p className=''>Çıkış Zamanı: {detection.time_quited}</p>
+                )}
+                <p className=''>Durum: {detection.status}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );

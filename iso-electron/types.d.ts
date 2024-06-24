@@ -87,3 +87,14 @@ interface Camera {
   label: string;
   url: string;
 }
+
+interface DetectionLog {
+  status: string;
+  label: string;
+  time_entered: string;
+  time_quited: string;
+  emotion_entered: string;
+  emotion_quited: string;
+  image_entered: string;
+  image_quited: string;
+}

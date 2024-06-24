@@ -69,7 +69,6 @@ const VideoStream: React.FC = () => {
       };
 
       setCameraStreams([...cameraStreams, newCameraStream]);
-
       if (typeof window !== 'undefined') {
         // Retrieve the existing list of cameraStreams from localStorage
         const savedStreams = localStorage.getItem('cameraStreams');

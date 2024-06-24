@@ -1,13 +1,21 @@
 'use client';
 import api from '@/utils/axios_instance';
-import React, { ChangeEvent, useEffect, useState } from 'react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { XIcon } from 'lucide-react';
 interface Props {}
 
 const ElasticSearch: React.FC<Props> = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchResults, setSearchResults] = useState<Personel[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isSearching) {
+      inputRef.current?.focus();
+    }
+  }, [isSearching]);
   useEffect(() => {
     api
       .get('search', { params: { query: searchValue } })
@@ -19,6 +27,7 @@ const ElasticSearch: React.FC<Props> = () => {
         setSearchResults([]);
       });
   }, [searchValue]);
+
   function handleSearch(event: ChangeEvent<HTMLInputElement>): void {
     setSearchValue(event.target.value);
   }
@@ -31,7 +40,7 @@ const ElasticSearch: React.FC<Props> = () => {
         } input-bordered items-center gap-2`}
       >
         <input
-          onBlur={() => setIsSearching(false)}
+          ref={inputRef}
           type='text'
           className='grow w-full'
           onChange={handleSearch}
@@ -65,20 +74,24 @@ const ElasticSearch: React.FC<Props> = () => {
         }}
         className='btn btn-ghost btn-circle'
       >
-        <svg
-          xmlns='http://www.w3.org/2000/svg'
-          className='h-5 w-5'
-          fill='none'
-          viewBox='0 0 24 24'
-          stroke='currentColor'
-        >
-          <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            strokeWidth='2'
-            d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
-          />
-        </svg>
+        {isSearching ? (
+          <XIcon />
+        ) : (
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            className='h-5 w-5'
+            fill='none'
+            viewBox='0 0 24 24'
+            stroke='currentColor'
+          >
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              strokeWidth='2'
+              d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
+            />
+          </svg>
+        )}
       </button>
     </div>
   );

@@ -2,6 +2,7 @@ import json
 import bson
 import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
+import flask.json.provider as provider
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
@@ -24,16 +25,20 @@ import numpy as np
 from config import BINARY_MATCH
 
 app = Flask(__name__)
+provider.DefaultJSONProvider.sort_keys = False
+
 CORS(app, origins="*")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
+
 # jwt = JWTManager(app)
 
 ###################################################### Setup MongoDB
 client = MongoClient(os.environ.get("MONGO_DB_URI"))
 db = client[os.environ.get("MONGO_DB_NAME")]
 collection = db["logs"]
+camera_collection= db["camera"]
 #######################################################Setup ElasticSearch
 es_host = os.environ.get("ES_HOST")
 searcher = ElasticSearcher(client, db, es_host)
@@ -93,6 +98,20 @@ def get_user_images():
     return "Images saved", 200
 
 
+@users_bp.route("/personel", methods=["GET"])
+def get_all_personel():
+    personel = list(db.get_collection("Personel").find({}, {
+        "PERSONEL_ID": 1,
+        "ADI": 1,
+        "SOYADI": 1,
+        "DOGUM_TARIHI": 1,
+        "EPOSTA": 1,
+        "FOTO_BINARY_DATA": 1
+    }))
+    for p in personel:
+        p.pop("_id", None)  # Remove _id from the dictionary
+    return jsonify(personel), 200
+
 @users_bp.route("/personel/<personel_id>", methods=["GET"])
 def get_user(personel_id):
     personel = db.get_collection("Personel").find_one({"PERSONEL_ID": personel_id})
@@ -101,6 +120,7 @@ def get_user(personel_id):
         return jsonify(personel), 200
     else:
         return jsonify({"error": "User not found"}), 404
+    
 app.register_blueprint(users_bp)
 
 
@@ -142,6 +162,7 @@ def login():
 
 app.register_blueprint(auth_bp)
 
+#########################CAMERA ROUTES###############################################
 
 @camera_bp.route("/camera-url", methods=["POST"])
 # @jwt_required()
@@ -164,6 +185,10 @@ def get_camera_urls():
     print(cameras)
     return bson.json_util.dumps(cameras), 200
 
+@camera_bp.route("/camera/stop", methods=["GET"])
+def stop_camera():
+    camera_processor.stop_camera()
+    return jsonify({"message": "Camera stopped successfully"}), 200
 
 @camera_bp.route("/camera-url/<label>", methods=["DELETE"])
 # @jwt_required()

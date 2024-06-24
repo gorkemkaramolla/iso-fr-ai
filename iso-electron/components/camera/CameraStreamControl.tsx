@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import CameraDropdown from './CameraDropdown';
 import QualityDropdown from './QualityDropdown';
 import CameraControls from './CameraControls';
 import CameraStream from './CameraStream';
 import { Quality } from '@/utils/enums';
 import axios from 'axios';
+import api from '@/utils/axios_instance';
 interface CameraStreamProps {
   id: number;
   selectedCamera: Camera | undefined;
@@ -78,6 +79,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
   const stopStream = () => {
+    api.get('camera/stop', { params: { id: id } });
     setCameraStreams(
       cameraStreams.map((camera) =>
         camera.id === id
@@ -113,7 +115,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
   const removeStream = () => {
-    // stopStream();
+    stopStream();
     setAvailableIds((prevIds) => [...prevIds, id].sort((a, b) => a - b));
 
     setCameraStreams((prevStreams) => {
@@ -166,7 +168,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               handleQualityChange={handleQualityChange}
             />
           </div>
-          <div className='text-black'>
+          <div className=''>
             Yayın {id} -{' '}
             <span className='text-red-500'>{selectedCamera?.label}</span>
           </div>

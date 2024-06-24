@@ -50,6 +50,7 @@ interface UsageChartProps {
 }
 
 interface Personel {
+  [key: string]: string;
   PERSONEL_ID: string;
   ADI: string;
   SOYADI: string;

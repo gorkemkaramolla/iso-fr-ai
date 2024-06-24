@@ -7,7 +7,6 @@ import MonitorWidget from '@/components/widgets/MonitorWidget';
 import CodeHighlighter from '@/components/utility/Highlight';
 import GaugeWidget from '@/components/widgets/GaugeWidget';
 import UsageChart from '@/components/charts/usage';
-import { title } from 'process';
 const Dashboard: React.FC = () => {
   const { systemInfo, cpuUsageData, gpuUsageData } = useSystemInfo();
   const [isClient, setIsClient] = useState(false);

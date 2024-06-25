@@ -150,7 +150,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
       border-none rounded-md py-1 m-0 border border-black drag-handle
       cursor-move'
       >
-        <div className='flex flex-row space-x-4 gap-4 items-center justify-around p-2'>
+        <div className='flex flex-row space-x-4 gap-4 items-center justify-between p-2 px-20'>
           <div className='flex flex-row gap-4'>
             <CameraControls
               isPlaying={isPlaying}
@@ -162,11 +162,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               startRecording={() => startRecording()}
               stopRecording={() => stopRecording()}
             />
-            <QualityDropdown
-              id={id}
-              selectedQuality={selectedQuality}
-              handleQualityChange={handleQualityChange}
-            />
+            {isNaN(parseFloat(selectedCamera?.url ?? '')) ? (
+              <QualityDropdown
+                id={id}
+                selectedQuality={selectedQuality}
+                handleQualityChange={handleQualityChange}
+              />
+            ) : null}
           </div>
           <div className=''>
             Yayın {id} -{' '}

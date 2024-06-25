@@ -26,8 +26,8 @@ export default async function Page() {
   const activeUsersCount = activeUsers.length;
 
   return (
-    <div className='p-4 flex w-screen'>
-      <div className='mb-4 w-1/4'>
+    <div className='py-4  flex w-screen overflow-y-scroll  '>
+      <div className='w-1/4 '>
         <strong>Currently Active Users: {activeUsersCount}</strong>
         <ul>
           {activeUsers.map((user, i) => (
@@ -35,9 +35,9 @@ export default async function Page() {
           ))}
         </ul>
       </div>
-      <div className='flex flex-col w-3/4 text-sm justify-center overflow-y-scroll h-[93vh] gap-4'>
+      <div className='flex flex-col w-2/4 h-full text-sm justify-center overflow-y-scroll  gap-4'>
         {detections.map((detection, i) => (
-          <Link href={'/'} key={i} className=''>
+          <Link href={`/profiles/${detection.person_id}`} key={i} className=''>
             <div
               className={`${
                 detection.status !== 'Quited'

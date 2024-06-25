@@ -16,7 +16,7 @@ import io
 import binascii
 import cv2
 import numpy as np
-
+from bson.errors import InvalidId
 
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
@@ -33,7 +33,7 @@ client = MongoClient(os.environ.get("MONGO_DB_URI"))
 db = client[os.environ.get("MONGO_DB_NAME")]
 collection = db["logs"]
 camera_collection= db["camera"]
-
+logs_collection = db["logs_collection"]
 ###################################################### Create an instance of your class
 camera_processor = CameraProcessor(device="cpu")
 
@@ -83,6 +83,12 @@ app.register_blueprint(auth_bp)
 
 
 
+@camera_bp.route("/add_sample", methods=["GET"])
+def add_sample():
+    response = camera_processor.add_sample_records_to_db()
+    return jsonify(response), 200
+
+############################
 @camera_bp.route("/get-detections", methods=["GET"])
 def get_detected_faces():
     response = camera_processor.get_detected_faces()
@@ -157,7 +163,45 @@ def stream(stream_id):
         ),
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
+    
+# @camera_bp.route("/images/<path:image_path>", methods=["GET"])
+# def get_image(image_path):
+#     directory = '/Users/gorkemkaramolla/Documents/python2/oracle' 
+#     return send_from_directory(directory, image_path)
 
+@camera_bp.route("/images/<path:image_path>", methods=["GET"])
+def get_image(image_path):
+    full_path = os.path.join(os.getcwd(), image_path)
+    try:
+        return send_file(full_path, mimetype="image/jpeg")
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+@camera_bp.route("/person/<person_id>", methods=["GET"])
+def get_person_by_id(person_id):
+    collection = db["Person"]
+
+    try:
+        person = collection.find_one({"_id": ObjectId(person_id)})
+    except InvalidId:
+        return jsonify({"error": "Invalid ID format"}), 400
+
+    if person:
+        person['_id'] = str(person['_id'])
+        return jsonify(person), 200
+    else:
+        return jsonify({"message": "Person not found"}), 404
+@camera_bp.route("/person/getall", methods=["GET"])
+def get_all_persons():
+    collection = db["Person"]
+    try:
+        persons = list(collection.find({}))
+        # Convert ObjectId to string for JSON serialization
+        for person in persons:
+            person['_id'] = str(person['_id'])
+        return jsonify(persons), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @camera_bp.route("/recog", methods=["GET"])
 def get_all_logs():
@@ -185,13 +229,7 @@ def delete_log(id):
     logs_collection.delete_one({"_id": ObjectId(id)})
     return jsonify({"message": "Log deleted successfully"}), 200
 
-@camera_bp.route("/images/<path:image_path>", methods=["GET"])
-def get_image(image_path):
-    full_path = os.path.join(os.getcwd(), image_path)
-    try:
-        return send_file(full_path, mimetype="image/jpeg")
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
+
 
 app.register_blueprint(camera_bp)
 

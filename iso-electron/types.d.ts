@@ -98,4 +98,24 @@ interface DetectionLog {
   emotion_quited: string;
   image_entered: string;
   image_quited: string;
+  person_id: string;
+}
+
+interface Person {
+  _id: { $oid: string };
+  employee_id: string;
+  first_name: string;
+  last_name: string;
+  title: string;
+  address: string;
+  phone1: string;
+  phone2: string;
+  email: string;
+  mobile: string;
+  biography: string;
+  birth_date: string;
+  iso_phone1: string;
+  iso_phone2: string;
+  photo_file_type: string;
+  image_path: string;
 }

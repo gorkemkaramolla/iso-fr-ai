@@ -11,7 +11,6 @@ from transformers import AutoModelForImageClassification, AutoImageProcessor
 import torch
 from PIL import Image
 import onnxruntime
-from services.camera_processor.enums.camera import Camera
 import uuid
 from cv2.typing import MatLike
 import logging
@@ -24,17 +23,24 @@ class CameraProcessor:
         print(f"Using device: {self.device}")
         onnxruntime.set_default_logger_severity(3)
         self.assets_dir = os.path.expanduser("~/.insightface/models/")
-        detector_path = os.path.join(self.assets_dir, "buffalo_l/det_10g.onnx")
+        detector_path = os.path.join(self.assets_dir, "buffalo_sc/det_500m.onnx")
         self.detector = SCRFD(detector_path)
         self.detector.prepare(0 if device == "cuda" else -1)
-        rec_path = os.path.join(self.assets_dir, "buffalo_l/w600k_r50.onnx")
+        rec_path = os.path.join(self.assets_dir, "buffalo_sc/w600k_mbf.onnx")
         self.rec = ArcFaceONNX(rec_path)
         self.rec.prepare(0 if device == "cuda" else -1)
         self.processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
         self.emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to(self.device)
         self.id_to_label = {0: "angry", 1: "disgust", 2: "fear", 3: "happy", 4: "neutral", 5: "sad", 6: "surprise"}
-        self.similarity_threshold = 0.4
-        self.database = self.create_face_database(self.rec, self.detector, os.path.join(os.path.dirname(os.getcwd()), "face-images"))
+        self.similarity_threshold = 0.2
+
+        # Initialize MongoDB client
+        self.client = MongoClient("mongodb://localhost:27017/")
+        self.db = self.client["isoai"]
+        self.detection_logs_collection = self.db["detection_logs"]
+
+        self.database = self.create_face_database()
+
         self.camera_urls_file = "camera_urls.csv"
         self.log_file = "recognized_faces_log.csv"
         self.init_log_file()
@@ -44,9 +50,6 @@ class CameraProcessor:
         self.known_faces_dir = "recog/known_faces"
         if not os.path.exists(self.known_faces_dir):
             os.makedirs(self.known_faces_dir)
-        self.client = MongoClient("mongodb://localhost:27017/")
-        self.db = self.client["isoai"]
-        self.detection_logs_collection = self.db["detection_logs"]  # Changed to use the correct collection
         self.stop_flag = threading.Event()  # Initialize the stop flag
         self.exit_buffer_time = 30  # Buffer time in seconds
 
@@ -92,18 +95,35 @@ class CameraProcessor:
         df = pd.DataFrame(list(camera_urls.items()), columns=["label", "url"])
         df.to_csv(self.camera_urls_file, index=False)
 
-    def create_face_database(self, model, face_detector, image_folder):
+    def create_face_database(self):
         database = {}
-        for filename in os.listdir(image_folder):
-            if filename.endswith((".jpg", ".png")):
-                name = osp.splitext(filename)[0]
-                image_path = osp.join(image_folder, filename)
-                image = cv2.imread(image_path)
-                bboxes, kpss = face_detector.autodetect(image, max_num=1)
+        person_collection = self.db['Person']
+
+        for person in person_collection.find():
+            image_path = person.get('image_path')
+
+            if image_path and image_path.endswith((".jpg", ".png")):
+                name = f"{person.get('first_name')}{person.get('last_name')}"
+                # Adjust the path to point to the correct image location one level up
+                full_image_path = os.path.join(os.path.dirname(os.getcwd()), image_path.lstrip('/'))
+                print(f"Reading image from: {full_image_path}")
+                image = cv2.imread(full_image_path)
+                if image is None:
+                    print(f"Warning: Could not read image at {full_image_path}")
+                    continue
+                bboxes, kpss = self.detector.autodetect(image, max_num=1)
                 if bboxes.shape[0] > 0:
                     kps = kpss[0]
-                    embedding = model.get(image, kps)
-                    database[name] = embedding
+                    embedding = self.rec.get(image, kps)
+                    database[name] = {
+                        "embedding": embedding,
+                        "person_id": person["_id"]
+                    }
+                else:
+                    print(f"Warning: No face detected in image at {full_image_path}")
+            else:
+                print(f"Warning: Invalid or missing image path for person {person.get('first_name')} {person.get('last_name')}")
+        
         return database
 
     def get_emotion(self, face_image):
@@ -153,6 +173,7 @@ class CameraProcessor:
         image_bytes = image_encoded.tobytes()
 
         if status == "Entered":
+            person_id = self.database[label]["person_id"] if label in self.database else None
             log_record = {
                 "status": status,
                 "label": label,
@@ -161,7 +182,8 @@ class CameraProcessor:
                 "emotion_entered": emotion,
                 "emotion_quited": "",
                 "image_entered": image_bytes,
-                "image_quited": None
+                "image_quited": None,
+                "person_id": person_id
             }
             self.detection_logs_collection.insert_one(log_record)
         elif status == "Quited":
@@ -183,7 +205,6 @@ class CameraProcessor:
                 )
 
         return file_path
-
 
     def recog_face_and_emotion(self, image: MatLike):
         if image is None or len(image.shape) < 2:
@@ -221,13 +242,14 @@ class CameraProcessor:
             best_match = None
             label = "Bilinmeyen"
 
-            for name, db_embedding in self.database.items():
+            for name, data in self.database.items():
+                db_embedding = data["embedding"]
                 dist = np.linalg.norm(db_embedding - embedding)
                 if dist < min_dist:
                     min_dist = dist
                     best_match = name
 
-            sim = self.rec.compute_sim(embedding, self.database[best_match])
+            sim = self.rec.compute_sim(embedding, self.database[best_match]["embedding"])
             if sim >= self.similarity_threshold:
                 label = best_match
 
@@ -325,7 +347,50 @@ class CameraProcessor:
                 "emotion_entered": doc.get("emotion_entered", ""),
                 "emotion_quited": doc.get("emotion_quited", ""),
                 "image_entered": image_entered,  # Base64 encoded image
-                "image_quited": image_quited  # Base64 encoded image or None
+                "image_quited": image_quited,  # Base64 encoded image or None
+                "person_id": str(doc.get("person_id", ""))  # Convert ObjectId to string
             })
 
         return log_data
+
+    def add_sample_records_to_db(self):
+        sample_data = [
+            {
+                "employee_id": "325",
+                "first_name": "Görkem",
+                "last_name": "Karamolla",
+                "title": "Software Engineer",
+                "address": "Şişli,İstanbul",
+                "phone1": "5395455259",
+                "phone2": "",
+                "email": "gorkemkaramolla@gmail.com",
+                "mobile": "0539",
+                "biography": "Software Engineer",
+                "birth_date": "03.03.1997",
+                "iso_phone1": "2522900",
+                "iso_phone2": "",
+                "photo_file_type": "image/jpeg",
+                "image_path": "/face-images/gorkemkaramolla.jpg"
+            },
+            {
+                "employee_id": "324",
+                "first_name": "Fatih",
+                "last_name": "Yavuz",
+                "title": "Software Engineer",
+                "address": "Şişli,İstanbul",
+                "phone1": "5395455259",
+                "phone2": "",
+                "email": "yvzfth3@gmail.com",
+                "mobile": "0539",
+                "biography": "Software Engineer",
+                "birth_date": "03.03.1997",
+                "iso_phone1": "2522900",
+                "iso_phone2": "",
+                "photo_file_type": "image/jpeg",
+                "image_path": "/face-images/FatihYavuz.jpg"
+            },
+        ]
+
+        # Assuming a MongoDB collection named 'Person'
+        person_collection = self.db['Person']
+        person_collection.insert_many(sample_data)

@@ -258,6 +258,20 @@ def delete_log(id):
     return jsonify({"message": "Log deleted successfully"}), 200
 
 
+@camera_bp.route("/recog/name/<id>", methods=["PUT"])
+def update_recog_name(id):
+    data = request.json
+    new_name = data.get("name")
+    if not new_name:
+        return jsonify({"error": "Name is required"}), 400
+
+    result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+    if result.matched_count == 0:
+        return jsonify({"error": "Log not found"}), 404
+
+    return jsonify({"message": "Name updated successfully"}), 200
+
+
 @camera_bp.route("/images/<path:image_path>", methods=["GET"])
 def get_image(image_path):
     full_path = os.path.join(os.getcwd(), image_path)

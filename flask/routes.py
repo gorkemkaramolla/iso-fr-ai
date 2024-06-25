@@ -21,7 +21,7 @@ import io
 import binascii
 import cv2
 import numpy as np
-
+from socketio_instance import notify_new_camera_url
 from config import BINARY_MATCH
 
 app = Flask(__name__)
@@ -162,9 +162,12 @@ def add_camera_url():
     url = data.get("url")
     if not label or not url:
         return jsonify({"error": "Label and URL are required"}), 400
-
-    camera_collection.insert_one({"label": label, "url": url})
-
+    camera = {"label": label, "url": url}
+    result = camera_collection.insert_one(camera)
+    # Convert ObjectId to string
+    camera["_id"] = str(result.inserted_id)
+    # Emit the new camera data
+    notify_new_camera_url(camera=camera)
     return jsonify({"message": "Camera URL added successfully"}), 200
 
 

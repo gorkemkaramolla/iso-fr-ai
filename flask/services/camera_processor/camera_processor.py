@@ -16,6 +16,7 @@ import uuid
 from cv2.typing import MatLike
 import logging
 import threading  # For handling the stop flag in a thread-safe manner
+from socketio_instance import notify_new_face
 
 
 class CameraProcessor:
@@ -179,7 +180,9 @@ class CameraProcessor:
             "emotion": emotion,
             "image_path": file_path,
         }
+        notify_new_face(log_record)
         self.recognition_logs_collection.insert_one(log_record)
+
         return file_path
 
     def recog_face_and_emotion(self, image: MatLike):

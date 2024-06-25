@@ -217,7 +217,7 @@ const VideoStream: React.FC = () => {
           )}
         </div>
         <div className='grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen'>
-          <div className='relative col-span-10 gap-4'>
+          <div className='relative col-span-9 gap-4'>
             {cameraStreams.length > 0 &&
               cameraStreams
                 ?.sort((a, b) => a.id - b.id)
@@ -238,8 +238,8 @@ const VideoStream: React.FC = () => {
                       <Resizable
                         key={camera.id}
                         size={camera.size || { width: '100%', height: '100%' }}
-                        minHeight={380}
-                        minWidth={620}
+                        minHeight={350}
+                        minWidth={550}
                         maxWidth={'100%'}
                         maxHeight={'100%'}
                         className='bg-slate-100 rounded-lg border border-slate-400 shadow-lg'
@@ -269,7 +269,7 @@ const VideoStream: React.FC = () => {
                   );
                 })}
           </div>
-          <div className='col-span-2'>
+          <div className='col-span-3'>
             <RecogFaces />
           </div>
         </div>

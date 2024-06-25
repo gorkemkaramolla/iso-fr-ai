@@ -42,7 +42,7 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
   };
 
   return (
-    <div className='bg-slate-100 rounded-xl p-4 m-4'>
+    <div className='bg-slate-100 rounded-xl p-2 m-4'>
       {!showAddCamera ? (
         <button
           data-tip={

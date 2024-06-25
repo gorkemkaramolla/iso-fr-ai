@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-
+import { User } from 'lucide-react';
 const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL; // Replace with your Flask server URL
 
 const getRecogFaces = async () => {
@@ -87,9 +87,17 @@ const RecogFaces: React.FC = () => {
               className='flex items-center justify-start gap-2'
             >
               <img
-                src={`${BASE_URL}/images/${group.faces[0].image_path}`}
+                src={`${BASE_URL}/faces/face-images/${group.name}.jpg`}
                 alt='avatar'
                 className='shadow-md shadow-red-500 object-cover w-10 h-10 rounded-full'
+                onError={(e) => {
+                  e.currentTarget.onerror = null; // Prevent infinite loop
+                  // e.currentTarget.src = `${BASE_URL}/path-to-placeholder-image.jpg`; // Replace with actual path to your placeholder image
+                  // Or use a local placeholder image
+                  e.currentTarget.src = './inner_circle.png';
+                  // Or use an inline base64-encoded image
+                  // e.currentTarget.src = 'data:image/png;base64,...'; // Replace with actual base64 data
+                }}
               />
               <span className='text-xs overflow-hidden'>{group.name}</span>
             </div>
@@ -101,6 +109,8 @@ const RecogFaces: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'start',
                   flexDirection: 'row-reverse',
+                  padding: '4px',
+                  border: '1px solid #f0f0f0',
                 }}
               >
                 {group.faces.map((face, index) => (
@@ -109,7 +119,7 @@ const RecogFaces: React.FC = () => {
                     <img
                       src={`${BASE_URL}/images/${face.image_path}`}
                       alt={`Known Face ${index}`}
-                      className='shadow-md shadow-red-500 object-cover w-[60px] h-[60px] rounded-sm'
+                      className='object-cover w-[60px] h-[60px] rounded-sm'
                     />
                   </div>
                 ))}

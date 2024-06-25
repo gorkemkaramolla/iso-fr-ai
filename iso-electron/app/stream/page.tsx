@@ -84,6 +84,7 @@ const VideoStream: React.FC = () => {
         );
       }
       setSelectedCamera(undefined);
+      // alert(selectedCamera?.label + ' kamera yayını eklendi.');
     }
   };
 
@@ -125,6 +126,7 @@ const VideoStream: React.FC = () => {
     localStorage.removeItem('cameraStreams');
     // Clear the state
     setCameraStreams([]);
+    setAvailableIds([1, 2, 3, 4, 5, 6]);
   };
   const resetCameraStreams = () => {
     // Get the current cameraStreams state

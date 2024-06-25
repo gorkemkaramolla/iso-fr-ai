@@ -89,14 +89,9 @@ const RecogFaces: React.FC = () => {
               <img
                 src={`${BASE_URL}/images/${group.faces[0].image_path}`}
                 alt='avatar'
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  marginRight: '4px',
-                }}
+                className='shadow-md shadow-red-500 object-cover w-10 h-10 rounded-full'
               />
-              <span className='text-xs'>{group.name}</span>
+              <span className='text-xs overflow-hidden'>{group.name}</span>
             </div>
             {!group.isCollapsed && (
               <div
@@ -114,12 +109,7 @@ const RecogFaces: React.FC = () => {
                     <img
                       src={`${BASE_URL}/images/${face.image_path}`}
                       alt={`Known Face ${index}`}
-                      style={{
-                        width: '60px',
-                        height: '60px',
-                        objectFit: 'cover',
-                        borderRadius: '5%',
-                      }}
+                      className='shadow-md shadow-red-500 object-cover w-[60px] h-[60px] rounded-sm'
                     />
                   </div>
                 ))}

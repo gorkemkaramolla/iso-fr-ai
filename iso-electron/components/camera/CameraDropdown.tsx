@@ -17,7 +17,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
   addCameraStream,
   showAddCamera,
 }) => {
-  const streams = Array.isArray(cameraStreams) ? cameraStreams : [];
+  // const streams = Array.isArray(cameraStreams) ? cameraStreams : [];
   return (
     <div
       className={`bg-slate-100 p-4 rounded-xl m-4 flex gap-2 items-start ${
@@ -25,7 +25,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
       }`}
     >
       <select
-        value={selectedCamera?.url}
+        value={selectedCamera?.url || ''}
         onChange={(e) => {
           console.log(e.target.value);
           setSelectedCamera({
@@ -35,14 +35,14 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
         }}
         className='select select-bordered select-primary w-fit'
       >
-        <option disabled value='' className='select-option' selected>
+        <option disabled value='' className='select-option'>
           Kamera Seçiniz
         </option>
         {cameraUrls?.length !== 0 &&
           cameraUrls
             ?.filter(
               (camera) =>
-                !streams.find(
+                !cameraStreams?.find(
                   (stream) => stream.selectedCamera.label === camera.label
                 )
             )

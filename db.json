@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "66795832f8d212868a96d25c",
+    "employee_id": "325",
+    "first_name": "Görkem",
+    "last_name": "Karamolla",
+    "title": "Software Engineer",
+    "address": "Şişli,İstanbul",
+    "phone1": "5395455259",
+    "phone2": "",
+    "email": "gorkemkaramolla@gmail.com",
+    "mobile": "0539",
+    "biography": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Saepe enim, minima quibusdam provident quo perspiciatis ut eveniet hic amet sed soluta repellendus dolor non autem libero. Eveniet impedit sit accusamus. Lorem ipsum dolor sit amet consectetur adipisicing elit. Saepe enim, minima quibusdam provident quo perspiciatis ut eveniet hic amet sed soluta repellendus dolor non autem libero. Eveniet impedit sit accusamus.Lorem ipsum dolor sit amet consectetur adipisicing elit. Saepe enim, minima quibusdam provident quo perspiciatis ut eveniet hic amet sed soluta repellendus dolor non autem libero. Eveniet impedit sit accusamus.Lorem ipsum dolor sit amet consectetur adipisicing elit. Saepe enim, minima quibusdam provident quo perspiciatis ut eveniet hic amet sed soluta repellendus dolor non autem libero. Eveniet impedit sit accusamus.",
+    "birth_date": "03.03.1997",
+    "iso_phone1": "2522900",
+    "iso_phone2": "",
+    "photo_file_type": "image/jpeg",
+    "image_path": "/face-images/gorkemkaramolla.jpg"
+  },
+  {
+    "_id": "66795832f8d212868a96d25d",
+    "employee_id": "325",
+    "first_name": "Fatih",
+    "last_name": "Yavuz",
+    "title": "Software Engineer",
+    "address": "Şişli,İstanbul",
+    "phone1": "5395455259",
+    "phone2": "",
+    "email": "yvzfth3@gmail.com",
+    "mobile": "0539",
+    "biography": "Software Engineer",
+    "birth_date": "03.03.1997",
+    "iso_phone1": "2522900",
+    "iso_phone2": "",
+    "photo_file_type": "image/jpeg",
+    "image_path": "/face-images/FatihYavuz.jpg"
+  }
+]

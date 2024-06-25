@@ -6,7 +6,7 @@ interface CameraStreamProps {
   id: number;
   streamSrc?: string;
   selectedCamera: Camera | undefined;
-  selectedQuality: Quality;
+  selectedQuality: keyof typeof Quality;
   isPlaying: boolean;
   isLoading: boolean;
 

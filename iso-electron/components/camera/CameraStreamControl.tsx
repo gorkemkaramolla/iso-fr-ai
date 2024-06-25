@@ -9,7 +9,7 @@ import api from '@/utils/axios_instance';
 interface CameraStreamProps {
   id: number;
   selectedCamera: Camera | undefined;
-  selectedQuality: Quality;
+  selectedQuality: keyof typeof Quality;
   isPlaying: boolean;
   isLoading: boolean;
   isRecording: boolean;
@@ -151,7 +151,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
       cursor-move'
       >
         <div className='flex flex-row space-x-4 gap-4 items-center justify-between  px-20'>
-          <div className='flex flex-row gap-4'>
+          <div className='flex flex-row gap-4 items-center'>
             <CameraControls
               isPlaying={isPlaying}
               isLoading={isLoading}

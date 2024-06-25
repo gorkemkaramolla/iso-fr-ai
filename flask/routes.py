@@ -264,6 +264,15 @@ def get_image(image_path):
         return jsonify({"error": "Image not found"}), 404
 
 
+@camera_bp.route("/faces/<path:image_path>", methods=["GET"])
+def get_face_image(image_path):
+    full_path = os.path.join(os.getcwd(), image_path)
+    try:
+        return send_file(full_path, mimetype="image/jpeg")
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
 # @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
 # # @jwt_required()
 # def local_camera(cam_id):

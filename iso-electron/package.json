@@ -45,6 +45,7 @@
     "react-draggable": "^4.4.6",
     "react-gauge-component": "^1.2.21",
     "react-highlight": "^0.15.0",
+    "react-hot-toast": "^2.4.1",
     "react-resizable-panels": "^2.0.19",
     "recharts": "^2.12.7",
     "socket.io-client": "^4.7.5",

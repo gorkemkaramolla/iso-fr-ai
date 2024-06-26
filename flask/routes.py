@@ -44,8 +44,8 @@ es_host = os.environ.get("ES_HOST")
 searcher = ElasticSearcher(client, db, es_host)
 
 ###################################################### Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cuda")
-camera_processor = CameraProcessor(device="cuda")
+diarization_processor = SpeakerDiarizationProcessor(device="cpu")
+camera_processor = CameraProcessor(device="cpu")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 

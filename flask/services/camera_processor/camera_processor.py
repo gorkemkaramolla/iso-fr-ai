@@ -142,7 +142,7 @@ class CameraProcessor:
             print("Error: The face image is empty and cannot be saved.")
             return "Error: Empty face image"
         now = datetime.datetime.now()
-        timestamp = now.strftime("%H:%M:%S %d.%m.%Y")
+        timestamp = now.strftime("%Y-%m-%dT%H:%M:%S")
         if label in self.last_recognitions:
             last_recognition_time = self.last_recognitions[label]
             time_diff = (now - last_recognition_time).total_seconds()

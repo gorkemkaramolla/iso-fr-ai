@@ -53,7 +53,7 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
           disabled={disabled}
           onClick={() => setShowAddCamera(true)} // Show the section when the button is clicked
         >
-          <PlusIcon className='w-4 h-4' />
+          <PlusIcon className='w-8 h-8' />
           {/* <span className='hidden group-hover:flex '>Kamera Ekle</span> */}
         </button>
       ) : (

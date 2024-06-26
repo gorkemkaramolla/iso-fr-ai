@@ -3,7 +3,7 @@ import bson
 import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
 import flask.json.provider as provider
-from pymongo import MongoClient
+from pymongo import DESCENDING, MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
 from services.camera_processor.camera_processor import CameraProcessor
@@ -231,7 +231,9 @@ def stream(stream_id):
 
 @camera_bp.route("/recog", methods=["GET"])
 def get_all_logs():
-    logs = list(logs_collection.find({}, {}))  # Exclude _id from the results
+    logs = list(
+        logs_collection.find({}, {}).sort("timestamp", DESCENDING)
+    )  # Exclude _id from the results
     return bson.json_util.dumps(logs)
     # return "Hello"
 

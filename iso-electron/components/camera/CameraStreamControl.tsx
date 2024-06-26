@@ -9,7 +9,7 @@ import api from '@/utils/axios_instance';
 interface CameraStreamProps {
   id: number;
   selectedCamera: Camera | undefined;
-  selectedQuality: Quality;
+  selectedQuality: keyof typeof Quality;
   isPlaying: boolean;
   isLoading: boolean;
   isRecording: boolean;
@@ -144,14 +144,14 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     console.log(cameraStreams);
   };
   return (
-    <div className='rounded-lg min-h-[400px] max-h-fit w-full'>
+    <div className='rounded-lg min-h-[350px] max-h-fit w-full'>
       <div
         className='text-sm text-center font-bold  bg-slate-50 
       border-none rounded-md py-1 m-0 border border-black drag-handle
       cursor-move'
       >
-        <div className='flex flex-row space-x-4 gap-4 items-center justify-around p-2'>
-          <div className='flex flex-row gap-4'>
+        <div className='flex flex-row space-x-4 gap-4 items-center justify-between  px-20'>
+          <div className='flex flex-row gap-4 items-center'>
             <CameraControls
               isPlaying={isPlaying}
               isLoading={isLoading}
@@ -162,11 +162,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               startRecording={() => startRecording()}
               stopRecording={() => stopRecording()}
             />
-            <QualityDropdown
-              id={id}
-              selectedQuality={selectedQuality}
-              handleQualityChange={handleQualityChange}
-            />
+            {isNaN(parseFloat(selectedCamera?.url ?? '')) ? (
+              <QualityDropdown
+                id={id}
+                selectedQuality={selectedQuality}
+                handleQualityChange={handleQualityChange}
+              />
+            ) : null}
           </div>
           <div className=''>
             Yayın {id} -{' '}

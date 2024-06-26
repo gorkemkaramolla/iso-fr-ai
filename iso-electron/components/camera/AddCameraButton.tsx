@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PlusIcon, XIcon } from 'lucide-react';
 import axios from 'axios';
 import api from '@/utils/axios_instance';
+import toast from 'react-hot-toast';
 
 interface AddCameraButtonProps {
   showAddCamera: boolean;
@@ -29,7 +30,8 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
         url: newCameraUrl,
         crossOriginIsolated: false,
       });
-      alert('Kamera URL eklendi 🎉');
+      // alert('Kamera URL eklendi 🎉');
+      toast.success('Kamera URL eklendi 🎉', { duration: 2000 });
       setNewCameraLabel('');
       setNewCameraUrl('');
       setShowAddCamera(false); // Hide the section after adding a camera
@@ -40,7 +42,7 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
   };
 
   return (
-    <div className='bg-slate-100 rounded-xl p-4 m-4'>
+    <div className='bg-slate-100 rounded-xl p-2 m-4'>
       {!showAddCamera ? (
         <button
           data-tip={

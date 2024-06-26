@@ -21,7 +21,7 @@ import io
 import binascii
 import cv2
 import numpy as np
-
+from socketio_instance import notify_new_camera_url
 from config import BINARY_MATCH
 
 app = Flask(__name__)
@@ -162,9 +162,12 @@ def add_camera_url():
     url = data.get("url")
     if not label or not url:
         return jsonify({"error": "Label and URL are required"}), 400
-
-    camera_collection.insert_one({"label": label, "url": url})
-
+    camera = {"label": label, "url": url}
+    result = camera_collection.insert_one(camera)
+    # Convert ObjectId to string
+    camera["_id"] = str(result.inserted_id)
+    # Emit the new camera data
+    notify_new_camera_url(camera=camera)
     return jsonify({"message": "Camera URL added successfully"}), 200
 
 
@@ -255,8 +258,31 @@ def delete_log(id):
     return jsonify({"message": "Log deleted successfully"}), 200
 
 
+@camera_bp.route("/recog/name/<id>", methods=["PUT"])
+def update_recog_name(id):
+    data = request.json
+    new_name = data.get("name")
+    if not new_name:
+        return jsonify({"error": "Name is required"}), 400
+
+    result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+    if result.matched_count == 0:
+        return jsonify({"error": "Log not found"}), 404
+
+    return jsonify({"message": "Name updated successfully"}), 200
+
+
 @camera_bp.route("/images/<path:image_path>", methods=["GET"])
 def get_image(image_path):
+    full_path = os.path.join(os.getcwd(), image_path)
+    try:
+        return send_file(full_path, mimetype="image/jpeg")
+    except FileNotFoundError:
+        return jsonify({"error": "Image not found"}), 404
+
+
+@camera_bp.route("/faces/<path:image_path>", methods=["GET"])
+def get_face_image(image_path):
     full_path = os.path.join(os.getcwd(), image_path)
     try:
         return send_file(full_path, mimetype="image/jpeg")

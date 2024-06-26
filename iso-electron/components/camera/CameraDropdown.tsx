@@ -20,7 +20,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
   // const streams = Array.isArray(cameraStreams) ? cameraStreams : [];
   return (
     <div
-      className={`bg-slate-100 p-4 rounded-xl m-4 flex gap-2 items-start ${
+      className={`bg-slate-100 p-2 rounded-xl m-4 flex gap-2 items-start ${
         showAddCamera ? 'hidden' : ''
       }`}
     >

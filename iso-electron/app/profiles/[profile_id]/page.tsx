@@ -1,8 +1,23 @@
 import api from '@/utils/axios_instance';
-import { Heading1 } from 'lucide-react';
+import Link from 'next/link';
 import Image from 'next/image';
 import React from 'react';
-
+import {
+  Heading1,
+  GraduationCap,
+  Building,
+  Building2,
+  Globe,
+  Mail,
+  MapPinnedIcon,
+  Phone,
+  Printer,
+  BriefcaseBusiness,
+  Factory,
+  Calendar,
+  Cake,
+  Pin,
+} from 'lucide-react';
 interface Props {
   params: {
     profile_id: string;
@@ -28,22 +43,82 @@ const Profile = async ({ params: { profile_id } }: Props) => {
           </div>
           <div className='flex flex-col'>
             <div className='flex flex-col text-sm  justify-center gap-3 '>
-              <p className='font-extrabold text-xl'>GÖRKEM KARAMOLLA</p>
+              <p className='font-extrabold text-xl'>
+                {person.first_name} {person.last_name}
+              </p>
             </div>
 
-            <div className='md:text-base '>
+            <div className='md:text-base flex gap-4'>
               <div>
-                Doğum Tarihi: <span>{person.birth_date}</span>
+                Doğum Tarihi:{' '}
+                <span className='flex items-center justify-center gap-2'>
+                  <Cake size={22} />
+                  {person.birth_date}
+                </span>
               </div>
               <div>
-                <label>
-                  Email: <span>{person.email}</span>
-                </label>
+                Doğum Yeri:{' '}
+                <span className='flex items-center gap-2'>
+                  <MapPinnedIcon size={22} />
+                  Atakum,Samsun
+                </span>
               </div>
             </div>
           </div>
         </div>
         <div className='w-9/12 flex flex-col p-2 md:py-8 gap-4 md:px-8 item-center  '>
+          <div className='flex flex-col gap-4'>
+            <div className='flex flex-col gap-2'>
+              <div className='flex items-center gap-2'>
+                <Factory size={24} />
+                55. Grup - Deniz,Hava ve Demiryolu Ana ve Yan Sanayii
+              </div>
+              <div className='flex items-center gap-2'>
+                <Building2 size={24} />
+                ADA DENİZCİLİK VE TERSANE İŞLETMECİLİĞİ ANONİM ŞİRKETİ
+              </div>
+              <div className='flex items-center gap-2'>
+                <MapPinnedIcon />
+                AYDINTEPE MAHALLESİ GÜZİN SOKAK NO:1 İÇMELER İSTANBUL TUZLA
+              </div>
+              <div className='flex gap-4'>
+                <div className='flex items-center gap-2'>
+                  <Phone />
+                  902164474901
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Printer />
+                  902164474910
+                </div>
+              </div>
+            </div>
+            <div className='flex items-center gap-2'>
+              <Globe size={24} />
+              <Link
+                className='text-blue-400'
+                target='_blank'
+                href='https://www.google.com'
+              >
+                www.google.com
+              </Link>
+              <Mail />
+              <Link
+                className='text-blue-400'
+                target='_blank'
+                href='https://www.google.com'
+              >
+                gorkemkaramolla@gmail.com
+              </Link>
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <GraduationCap size={24} />
+              <p>NİŞANTAŞI UNIVERSITESI</p>
+            </div>
+
+            {/* <div>Temsilci ID : 123124151</div>
+            <div>TC Kimlik No: 3354353252352</div> */}
+          </div>
           <h2 className='font-extrabold text-2xl'>Özgeçmiş</h2>
           <p>{person.biography}</p>
         </div>

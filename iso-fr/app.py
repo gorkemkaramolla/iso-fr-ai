@@ -14,9 +14,8 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)
 jwt = JWTManager(app)
 app.register_blueprint(camera_bp)
-os.makedirs("temp", exist_ok=True)
-os.makedirs("logs", exist_ok=True)
 
 if __name__ == "__main__":
     socketio.init_app(app)
-    socketio.run(app, debug=True, port=5004)
+    socketio.run(app, debug=True, port=5002, allow_unsafe_werkzeug=True)
+

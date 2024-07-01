@@ -11,51 +11,66 @@ from transformers import AutoModelForImageClassification, AutoImageProcessor
 import torch
 from PIL import Image
 import onnxruntime
+from services.camera_processor.enums.camera import Camera
 import uuid
 from cv2.typing import MatLike
 import logging
 import threading  # For handling the stop flag in a thread-safe manner
-import base64
+from socketio_instance import notify_new_face
+
 
 class CameraProcessor:
     def __init__(self, device="cuda"):
         self.device = torch.device(device)
-        print(f"Using device: {self.device}")
         onnxruntime.set_default_logger_severity(3)
-        self.assets_dir = os.path.expanduser("~/.insightface/models/")
-        detector_path = os.path.join(self.assets_dir, "buffalo_sc/det_500m.onnx")
+        self.assets_dir = os.path.abspath(os.path.join(__file__, '../../models/'))
+        print(self.assets_dir)
+        detector_path = os.path.join(self.assets_dir, "buffalo_l/det_10g.onnx")
         self.detector = SCRFD(detector_path)
+        print("Model directory:", self.assets_dir)
         self.detector.prepare(0 if device == "cuda" else -1)
-        rec_path = os.path.join(self.assets_dir, "buffalo_sc/w600k_mbf.onnx")
+        rec_path = os.path.join(self.assets_dir, "buffalo_l/w600k_r50.onnx")
         self.rec = ArcFaceONNX(rec_path)
         self.rec.prepare(0 if device == "cuda" else -1)
-        self.processor = AutoImageProcessor.from_pretrained("trpakov/vit-face-expression")
-        self.emotion_model = AutoModelForImageClassification.from_pretrained("trpakov/vit-face-expression").to(self.device)
-        self.id_to_label = {0: "angry", 1: "disgust", 2: "fear", 3: "happy", 4: "neutral", 5: "sad", 6: "surprise"}
+        self.processor = AutoImageProcessor.from_pretrained(
+            "trpakov/vit-face-expression"
+        )
+        self.emotion_model = AutoModelForImageClassification.from_pretrained(
+            "trpakov/vit-face-expression"
+        ).to(self.device)
+        self.id_to_label = {
+            0: "angry",
+            1: "disgust",
+            2: "fear",
+            3: "happy",
+            4: "neutral",
+            5: "sad",
+            6: "surprise",
+        }
         self.similarity_threshold = 0.2
-
-        # Initialize MongoDB client
-        self.client = MongoClient("mongodb://localhost:27017/")
-        self.db = self.client["isoai"]
-        self.detection_logs_collection = self.db["detection_logs"]
-
-        self.database = self.create_face_database()
-
+        self.database = self.create_face_database(
+            self.rec,
+            self.detector,
+            os.path.join(os.getcwd(), "face-images"),
+        )
         self.camera_urls_file = "camera_urls.csv"
         self.log_file = "recognized_faces_log.csv"
         self.init_log_file()
         self.last_recognitions = {}
-        self.current_recognitions = {}
-        self.exiting_recognitions = {}
         self.known_faces_dir = "recog/known_faces"
         if not os.path.exists(self.known_faces_dir):
             os.makedirs(self.known_faces_dir)
+        self.unknown_faces_dir = "recog/unknown_faces"
+        if not os.path.exists(self.unknown_faces_dir):
+            os.makedirs(self.unknown_faces_dir)
+        self.client = MongoClient(os.getenv("MONGO_DB_URI"))
+        self.db = self.client["isoai"]
+        self.recognition_logs_collection = self.db["logs"]
         self.stop_flag = threading.Event()  # Initialize the stop flag
-        self.exit_buffer_time = 30  # Buffer time in seconds
 
     def init_log_file(self):
         if not os.path.exists(self.log_file):
-            df = pd.DataFrame(columns=["Status", "Label", "Timestamp", "Emotion"])
+            df = pd.DataFrame(columns=["Timestamp", "Label", "Similarity", "Emotion"])
             df.to_csv(self.log_file, index=False)
 
     def stop_camera(self):
@@ -66,10 +81,14 @@ class CameraProcessor:
             return -1.0, "One or both images are None"
         if len(image1.shape) < 2 or len(image2.shape) < 2:
             return -1.0, "One or both images are not valid"
-        bboxes1, kpss1 = self.detector.detect(image1, max_num=1, input_size=(128, 128), thresh=0.5, metric="max")
+        bboxes1, kpss1 = self.detector.detect(
+            image1, max_num=1, input_size=(128, 128), thresh=0.5, metric="max"
+        )
         if len(bboxes1) == 0 or bboxes1.shape[0] == 0:
             return -1.0, "Face not found in Image-1"
-        bboxes2, kpss2 = self.detector.detect(image2, max_num=1, input_size=(128, 128), thresh=0.5, metric="max")
+        bboxes2, kpss2 = self.detector.detect(
+            image2, max_num=1, input_size=(128, 128), thresh=0.5, metric="max"
+        )
         if len(bboxes2) == 0 or bboxes2.shape[0] == 0:
             return -1.0, "Face not found in Image-2"
         kps1 = kpss1[0]
@@ -95,35 +114,18 @@ class CameraProcessor:
         df = pd.DataFrame(list(camera_urls.items()), columns=["label", "url"])
         df.to_csv(self.camera_urls_file, index=False)
 
-    def create_face_database(self):
+    def create_face_database(self, model, face_detector, image_folder):
         database = {}
-        person_collection = self.db['Person']
-
-        for person in person_collection.find():
-            image_path = person.get('image_path')
-
-            if image_path and image_path.endswith((".jpg", ".png")):
-                name = f"{person.get('first_name')}{person.get('last_name')}"
-                # Adjust the path to point to the correct image location one level up
-                full_image_path = os.path.join(os.path.dirname(os.getcwd()), image_path.lstrip('/'))
-                print(f"Reading image from: {full_image_path}")
-                image = cv2.imread(full_image_path)
-                if image is None:
-                    print(f"Warning: Could not read image at {full_image_path}")
-                    continue
-                bboxes, kpss = self.detector.autodetect(image, max_num=1)
+        for filename in os.listdir(image_folder):
+            if filename.endswith((".jpg", ".png")):
+                name = osp.splitext(filename)[0]
+                image_path = osp.join(image_folder, filename)
+                image = cv2.imread(image_path)
+                bboxes, kpss = face_detector.autodetect(image, max_num=1)
                 if bboxes.shape[0] > 0:
                     kps = kpss[0]
-                    embedding = self.rec.get(image, kps)
-                    database[name] = {
-                        "embedding": embedding,
-                        "person_id": person["_id"]
-                    }
-                else:
-                    print(f"Warning: No face detected in image at {full_image_path}")
-            else:
-                print(f"Warning: Invalid or missing image path for person {person.get('first_name')} {person.get('last_name')}")
-        
+                    embedding = model.get(image, kps)
+                    database[name] = embedding
         return database
 
     def get_emotion(self, face_image):
@@ -136,20 +138,25 @@ class CameraProcessor:
             emotion = self.id_to_label[predicted_class]
         return emotion
 
-    def log_recognition(self, status, label, emotion, face_image):
-        if label == "Bilinmeyen":
-            return
-
+    def save_and_log_face(self, face_image, label, similarity, emotion, is_known):
+        if face_image is None:
+            print("Error: The face image is empty and cannot be saved.")
+            return "Error: Empty face image"
         now = datetime.datetime.now()
-        timestamp = now.strftime("%d/%m/%Y %H:%M:%S")
-
-        # Save image to filesystem
+        timestamp = now.strftime("%H:%M:%S %d.%m.%Y")
+        if label in self.last_recognitions:
+            last_recognition_time = self.last_recognitions[label]
+            time_diff = (now - last_recognition_time).total_seconds()
+            if time_diff < 60:
+                return
+        self.last_recognitions[label] = now
         filename_timestamp = now.strftime("%Y%m%d-%H%M%S")
         filename = f"{label}-{filename_timestamp}.jpg"
-        base_dir = self.known_faces_dir
+        base_dir = self.known_faces_dir if is_known else self.unknown_faces_dir
         person_dir = os.path.join(base_dir, label)
         os.makedirs(person_dir, exist_ok=True)
         file_path = os.path.join(person_dir, filename)
+        print(f"Saving face image to: {file_path}")
         try:
             success = cv2.imwrite(file_path, face_image)
             if not success:
@@ -167,124 +174,59 @@ class CameraProcessor:
         except Exception as e:
             print(f"Unexpected error: {e}")
             return f"Error: Unexpected error - {e}"
-
-        # Save image to MongoDB
-        _, image_encoded = cv2.imencode('.jpg', face_image)
-        image_bytes = image_encoded.tobytes()
-
-        if status == "Entered":
-            person_id = self.database[label]["person_id"] if label in self.database else None
-            log_record = {
-                "status": status,
-                "label": label,
-                "time_entered": timestamp,
-                "time_quited": "",
-                "emotion_entered": emotion,
-                "emotion_quited": "",
-                "image_entered": image_bytes,
-                "image_quited": None,
-                "person_id": person_id
-            }
-            self.detection_logs_collection.insert_one(log_record)
-        elif status == "Quited":
-            # Find the last "Entered" record for this label
-            last_entry = self.detection_logs_collection.find_one(
-                {"label": label, "status": "Entered"},
-                sort=[("time_entered", -1)]
-            )
-
-            if last_entry:
-                self.detection_logs_collection.update_one(
-                    {"_id": last_entry["_id"]},
-                    {"$set": {
-                        "status": status,
-                        "time_quited": timestamp,
-                        "emotion_quited": emotion,
-                        "image_quited": image_bytes
-                    }}
-                )
+        log_record = {
+            "timestamp": timestamp,
+            "label": label,
+            "similarity": round(float(similarity), 2),
+            "emotion": emotion,
+            "image_path": file_path,
+        }
+        notify_new_face(log_record)
+        self.recognition_logs_collection.insert_one(log_record)
 
         return file_path
 
     def recog_face_and_emotion(self, image: MatLike):
         if image is None or len(image.shape) < 2:
             return [], [], [], []
-
         bboxes, kpss = self.detector.autodetect(image, max_num=49)
         if len(bboxes) == 0:
-            current_time = datetime.datetime.now()
-            for label in list(self.current_recognitions):
-                if label not in self.exiting_recognitions:
-                    self.exiting_recognitions[label] = current_time
-                elif (current_time - self.exiting_recognitions[label]).total_seconds() > self.exit_buffer_time:
-                    if label != "Bilinmeyen":
-                        emotion = "unknown"
-                        face_image = np.zeros((100, 100, 3), dtype=np.uint8)  # Placeholder image
-                        self.log_recognition("Quited", label, emotion, face_image)
-                    del self.current_recognitions[label]
-                    del self.exiting_recognitions[label]
             return [], [], [], []
-
         labels = []
         sims = []
         emotions = []
         embeddings = []
-        current_labels = set()
-
-        # Get embeddings for detected faces
         for kps in kpss:
             embedding = self.rec.get(image, kps)
             embeddings.append(embedding)
-
-        # Process each detected face
         for idx, embedding in enumerate(embeddings):
             min_dist = float("inf")
             best_match = None
             label = "Bilinmeyen"
-
-            for name, data in self.database.items():
-                db_embedding = data["embedding"]
+            is_known = False
+            for name, db_embedding in self.database.items():
                 dist = np.linalg.norm(db_embedding - embedding)
                 if dist < min_dist:
                     min_dist = dist
                     best_match = name
-
-            sim = self.rec.compute_sim(embedding, self.database[best_match]["embedding"])
+            sim = self.rec.compute_sim(embedding, self.database[best_match])
             if sim >= self.similarity_threshold:
                 label = best_match
-
+                is_known = True
             bbox = bboxes[idx]
             x1, y1, x2, y2 = map(int, bbox[:4])
             face_image = image[y1:y2, x1:x2]
-
+            if not is_known:
+                label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+                self.database[label] = embedding
             labels.append(label)
             sims.append(sim)
-            emotion = self.get_emotion(face_image)
+            bbox = bboxes[idx]
+            x1, y1, x2, y2 = map(int, bbox[:4])
+            face = image[y1:y2, x1:x2]
+            emotion = self.get_emotion(face)
             emotions.append(emotion)
-
-            current_labels.add(label)
-            if label not in self.current_recognitions:
-                self.log_recognition("Entered", label, emotion, face_image)
-            self.current_recognitions[label] = datetime.datetime.now()
-
-        # Handle exiting recognitions
-        exiting_labels = set(self.current_recognitions.keys()) - current_labels
-        for label in exiting_labels:
-            if label not in self.exiting_recognitions:
-                self.exiting_recognitions[label] = datetime.datetime.now()
-            elif (datetime.datetime.now() - self.exiting_recognitions[label]).total_seconds() > self.exit_buffer_time:
-                if label != "Bilinmeyen":
-                    face_image = np.zeros((100, 100, 3), dtype=np.uint8)  # Placeholder for the image, replace with actual face image if available
-                    emotion = "unknown"  # Placeholder for the emotion, replace with actual emotion if available
-                    self.log_recognition("Quited", label, emotion, face_image)
-                del self.current_recognitions[label]
-                del self.exiting_recognitions[label]
-
-        # Reset exiting recognitions if the label is detected again
-        for label in current_labels:
-            if label in self.exiting_recognitions:
-                del self.exiting_recognitions[label]
-
+            self.save_and_log_face(face_image, label, sim, emotion, is_known)
         return bboxes, labels, sims, emotions
 
     def generate(self, stream_id, camera, quality="Quality", is_recording=False):
@@ -311,7 +253,9 @@ class CameraProcessor:
             if is_recording and writer is None:
                 frame_height, frame_width = frame.shape[:2]
                 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+                writer = cv2.VideoWriter(
+                    filename, fourcc, 20.0, (frame_width, frame_height)
+                )
                 if not writer.isOpened():
                     logging.error("Error initializing video writer")
                     break
@@ -320,77 +264,23 @@ class CameraProcessor:
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
                 text_label = f"{label} ({sim * 100:.2f}%): {emotion}"
-                cv2.putText(frame, text_label, (x1 + 5, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                cv2.putText(
+                    frame,
+                    text_label,
+                    (x1 + 5, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2,
+                )
             if writer:
                 writer.write(frame)
             _, buffer = cv2.imencode(".jpg", frame)
-            yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n")
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
+            )
         cap.release()
         if writer:
             writer.release()
         logging.info("Finished generate function")
-
-    def get_detected_faces(self):
-        collection = self.db['detection_logs']
-        documents = collection.find({})
-
-        log_data = []
-        for doc in documents:
-            image_entered = base64.b64encode(doc['image_entered']).decode('utf-8') if isinstance(doc['image_entered'], bytes) else None
-            image_quited = base64.b64encode(doc['image_quited']).decode('utf-8') if 'image_quited' in doc and isinstance(doc['image_quited'], bytes) else None
-
-            log_data.append({
-                "status": doc.get("status", ""),
-                "label": doc.get("label", ""),
-                "time_entered": doc.get("time_entered", ""),
-                "time_quited": doc.get("time_quited", ""),
-                "emotion_entered": doc.get("emotion_entered", ""),
-                "emotion_quited": doc.get("emotion_quited", ""),
-                "image_entered": image_entered,  # Base64 encoded image
-                "image_quited": image_quited,  # Base64 encoded image or None
-                "person_id": str(doc.get("person_id", ""))  # Convert ObjectId to string
-            })
-
-        return log_data
-
-    def add_sample_records_to_db(self):
-        sample_data = [
-            {
-                "employee_id": "325",
-                "first_name": "Görkem",
-                "last_name": "Karamolla",
-                "title": "Software Engineer",
-                "address": "Şişli,İstanbul",
-                "phone1": "5395455259",
-                "phone2": "",
-                "email": "gorkemkaramolla@gmail.com",
-                "mobile": "0539",
-                "biography": "Software Engineer",
-                "birth_date": "03.03.1997",
-                "iso_phone1": "2522900",
-                "iso_phone2": "",
-                "photo_file_type": "image/jpeg",
-                "image_path": "/face-images/gorkemkaramolla.jpg"
-            },
-            {
-                "employee_id": "324",
-                "first_name": "Fatih",
-                "last_name": "Yavuz",
-                "title": "Software Engineer",
-                "address": "Şişli,İstanbul",
-                "phone1": "5395455259",
-                "phone2": "",
-                "email": "yvzfth3@gmail.com",
-                "mobile": "0539",
-                "biography": "Software Engineer",
-                "birth_date": "03.03.1997",
-                "iso_phone1": "2522900",
-                "iso_phone2": "",
-                "photo_file_type": "image/jpeg",
-                "image_path": "/face-images/FatihYavuz.jpg"
-            },
-        ]
-
-        # Assuming a MongoDB collection named 'Person'
-        person_collection = self.db['Person']
-        person_collection.insert_many(sample_data)

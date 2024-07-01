@@ -142,7 +142,9 @@ class CameraProcessor:
             emotion = self.id_to_label[predicted_class]
         return emotion
 
-    def save_and_log_face(self, face_image, label, similarity, emotion, is_known):
+    def save_and_log_face(
+        self, face_image, label, similarity, emotion, gender, age, is_known
+    ):
         if face_image is None:
             print("Error: The face image is empty and cannot be saved.")
             return "Error: Empty face image"
@@ -252,7 +254,9 @@ class CameraProcessor:
             emotion = self.get_emotion(face_image)
             emotions.append(emotion)
 
-            self.save_and_log_face(face_image, label, sim, emotion, is_known)
+            self.save_and_log_face(
+                face_image, label, sim, emotion, gender, age, is_known
+            )
 
         return bboxes, labels, sims, emotions, genders, ages
 
@@ -329,11 +333,9 @@ class CameraProcessor:
                 if not writer.isOpened():
                     logging.error("Error initializing video writer")
                     break
-            bboxes, labels, sims, emotions, genders, ages = self.recog_face_and_emotion(
-                frame
-            )
+
             for bbox, label, sim, emotion, gender, age in zip(
-                bboxes, labels, sims, emotions, genders, ages
+                *self.recog_face_and_emotion(frame)
             ):
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)

@@ -17,5 +17,5 @@ app.register_blueprint(camera_bp)
 
 if __name__ == "__main__":
     socketio.init_app(app)
-    socketio.run(app, debug=True, port=5002, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True,host="0.0.0.0",port=5002, allow_unsafe_werkzeug=True)
 

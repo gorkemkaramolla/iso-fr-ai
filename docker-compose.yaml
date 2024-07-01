@@ -234,36 +234,41 @@ services:
   auth_service:
     build: ./iso-auth
     ports:
-      - "5001:5000"
+      - "5001:5001"
     env_file:
       - .env
+    depends_on:
+      - mongo
 
   face_recognition_service:
     build: ./iso-fr
     ports:
-      - "5002:5000"
+      - "5002:5002"
     env_file:
       - .env
     depends_on:
       - solr
+      - mongo
 
   speaker_diarization_service:
     build: ./iso-diarize
     ports:
-      - "5003:5000"
+      - "5003:5003"
     env_file:
       - .env
     depends_on:
       - solr
+      - mongo
 
   utils_service:
     build: ./iso-utils
     ports:
-      - "5004:5000"
+      - "5004:5004"
     env_file:
       - .env
     depends_on:
       - solr
+      - mongo
 
   mongo:
     image: mongo:latest
@@ -290,14 +295,7 @@ services:
 volumes:
   mongo_data:
   solr_data:
-
-
-
-
-
-
-
-
+  
 
 
 

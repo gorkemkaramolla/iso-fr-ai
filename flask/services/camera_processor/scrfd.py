@@ -529,5 +529,5 @@ def detect_gender_and_age(image_path):
 
 # Example usage
 if __name__ == "__main__":
-    image_path = "../../../face-images/Yılmaz.jpg"
+    image_path = "../../face-images/FatihYavuz.jpg"
     detect_gender_and_age(image_path)

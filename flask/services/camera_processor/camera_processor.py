@@ -1,3 +1,4 @@
+from typing import List, Tuple
 import cv2
 import numpy as np
 import pandas as pd
@@ -17,6 +18,7 @@ from cv2.typing import MatLike
 import logging
 import threading  # For handling the stop flag in a thread-safe manner
 from socketio_instance import notify_new_face
+from services.camera_processor.attribute import Attribute
 
 
 class CameraProcessor:
@@ -24,13 +26,16 @@ class CameraProcessor:
         self.device = torch.device(device)
         print(f"Using device: {self.device}")
         onnxruntime.set_default_logger_severity(3)
-        self.assets_dir = os.path.expanduser("~/.insightface/models/")
-        detector_path = os.path.join(self.assets_dir, "buffalo_l/det_10g.onnx")
+        self.assets_dir = os.path.expanduser("~/.insightface/models/buffalo_l/")
+        detector_path = os.path.join(self.assets_dir, "det_10g.onnx")
         self.detector = SCRFD(detector_path)
         self.detector.prepare(0 if device == "cuda" else -1)
-        rec_path = os.path.join(self.assets_dir, "buffalo_l/w600k_r50.onnx")
+        rec_path = os.path.join(self.assets_dir, "w600k_r50.onnx")
         self.rec = ArcFaceONNX(rec_path)
         self.rec.prepare(0 if device == "cuda" else -1)
+        gender_age_model_path = os.path.join(self.assets_dir, "genderage.onnx")
+        self.gender_age_model = Attribute(gender_age_model_path)
+        self.gender_age_model.prepare(0 if device == "cuda" else -1)
         self.processor = AutoImageProcessor.from_pretrained(
             "trpakov/vit-face-expression"
         )
@@ -142,7 +147,7 @@ class CameraProcessor:
             print("Error: The face image is empty and cannot be saved.")
             return "Error: Empty face image"
         now = datetime.datetime.now()
-        timestamp = now.strftime("%Y-%m-%dT%H:%M:%S")
+        timestamp = int(now.timestamp() * 1000)
         if label in self.last_recognitions:
             last_recognition_time = self.last_recognitions[label]
             time_diff = (now - last_recognition_time).total_seconds()
@@ -185,48 +190,114 @@ class CameraProcessor:
 
         return file_path
 
-    def recog_face_and_emotion(self, image: MatLike):
+    def recog_face_and_emotion(
+        self, image: np.ndarray
+    ) -> Tuple[
+        List[np.ndarray], List[str], List[float], List[str], List[int], List[str]
+    ]:
         if image is None or len(image.shape) < 2:
-            return [], [], [], []
+            return [], [], [], [], [], []
+
         bboxes, kpss = self.detector.autodetect(image, max_num=49)
         if len(bboxes) == 0:
-            return [], [], [], []
+            return [], [], [], [], [], []
+
         labels = []
         sims = []
         emotions = []
         embeddings = []
+        ages = []
+        genders = []
+
         for kps in kpss:
             embedding = self.rec.get(image, kps)
             embeddings.append(embedding)
+
         for idx, embedding in enumerate(embeddings):
             min_dist = float("inf")
             best_match = None
             label = "Bilinmeyen"
             is_known = False
+
             for name, db_embedding in self.database.items():
                 dist = np.linalg.norm(db_embedding - embedding)
                 if dist < min_dist:
                     min_dist = dist
                     best_match = name
-            sim = self.rec.compute_sim(embedding, self.database[best_match])
+
+            sim = self.rec.compute_sim(
+                embedding, self.database.get(best_match, np.zeros_like(embedding))
+            )
             if sim >= self.similarity_threshold:
                 label = best_match
                 is_known = True
+
             bbox = bboxes[idx]
             x1, y1, x2, y2 = map(int, bbox[:4])
             face_image = image[y1:y2, x1:x2]
+
             if not is_known:
                 label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
                 self.database[label] = embedding
+
             labels.append(label)
             sims.append(sim)
-            bbox = bboxes[idx]
-            x1, y1, x2, y2 = map(int, bbox[:4])
-            face = image[y1:y2, x1:x2]
-            emotion = self.get_emotion(face)
+
+            # Predict age and gender
+            # face = {"bbox": bbox}
+            gender, age = self.gender_age_model.get(image, face=bbox)
+            ages.append(age)
+            genders.append("M" if gender == 1 else "F")
+
+            emotion = self.get_emotion(face_image)
             emotions.append(emotion)
+
             self.save_and_log_face(face_image, label, sim, emotion, is_known)
-        return bboxes, labels, sims, emotions
+
+        return bboxes, labels, sims, emotions, genders, ages
+
+    # def recog_face_and_emotion(self, image: MatLike):
+    #     if image is None or len(image.shape) < 2:
+    #         return [], [], [], []
+    #     bboxes, kpss = self.detector.autodetect(image, max_num=49)
+    #     if len(bboxes) == 0:
+    #         return [], [], [], []
+    #     labels = []
+    #     sims = []
+    #     emotions = []
+    #     embeddings = []
+    #     for kps in kpss:
+    #         embedding = self.rec.get(image, kps)
+    #         embeddings.append(embedding)
+    #     for idx, embedding in enumerate(embeddings):
+    #         min_dist = float("inf")
+    #         best_match = None
+    #         label = "Bilinmeyen"
+    #         is_known = False
+    #         for name, db_embedding in self.database.items():
+    #             dist = np.linalg.norm(db_embedding - embedding)
+    #             if dist < min_dist:
+    #                 min_dist = dist
+    #                 best_match = name
+    #         sim = self.rec.compute_sim(embedding, self.database[best_match])
+    #         if sim >= self.similarity_threshold:
+    #             label = best_match
+    #             is_known = True
+    #         bbox = bboxes[idx]
+    #         x1, y1, x2, y2 = map(int, bbox[:4])
+    #         face_image = image[y1:y2, x1:x2]
+    #         if not is_known:
+    #             label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    #             self.database[label] = embedding
+    #         labels.append(label)
+    #         sims.append(sim)
+    #         bbox = bboxes[idx]
+    #         x1, y1, x2, y2 = map(int, bbox[:4])
+    #         face = image[y1:y2, x1:x2]
+    #         emotion = self.get_emotion(face)
+    #         emotions.append(emotion)
+    #         self.save_and_log_face(face_image, label, sim, emotion, is_known)
+    #     return bboxes, labels, sims, emotions
 
     def generate(self, stream_id, camera, quality="Quality", is_recording=False):
         self.stop_flag.clear()  # Clear the stop flag at the beginning
@@ -258,11 +329,15 @@ class CameraProcessor:
                 if not writer.isOpened():
                     logging.error("Error initializing video writer")
                     break
-            bboxes, labels, sims, emotions = self.recog_face_and_emotion(frame)
-            for bbox, label, sim, emotion in zip(bboxes, labels, sims, emotions):
+            bboxes, labels, sims, emotions, genders, ages = self.recog_face_and_emotion(
+                frame
+            )
+            for bbox, label, sim, emotion, gender, age in zip(
+                bboxes, labels, sims, emotions, genders, ages
+            ):
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
-                text_label = f"{label} ({sim * 100:.2f}%): {emotion}"
+                text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"
                 cv2.putText(
                     frame,
                     text_label,

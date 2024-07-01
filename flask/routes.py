@@ -3,7 +3,7 @@ import bson
 import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
 import flask.json.provider as provider
-from pymongo import DESCENDING, MongoClient
+from pymongo import ASCENDING, DESCENDING, MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
 from services.camera_processor.camera_processor import CameraProcessor

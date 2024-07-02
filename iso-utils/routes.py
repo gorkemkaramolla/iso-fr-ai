@@ -15,7 +15,7 @@ client = MongoClient(os.environ.get("MONGO_DB_URI"))
 db = client[os.environ.get("MONGO_DB_NAME")]
 
 # Setup Solr Searcher
-solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/mycollection")
+solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/isoai")
 searcher = SolrSearcher(client, db, solr_url)
 
 # Create an instance of your class
@@ -23,7 +23,7 @@ logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()
 
 # Setup Blueprint
-solr_search_bp = Blueprint("search_bp", __name__)
+solr_search_bp = Blueprint("solar_search_bp", __name__)
 system_check = Blueprint("system_check", __name__)
 
 @solr_search_bp.route("/search", methods=["GET"])
@@ -34,8 +34,7 @@ def search():
         return jsonify(results), results.get('status', 400)
     return jsonify(results), 200
 
-app.register_blueprint(solr_search_bp, url_prefix="/api")
-
+app.register_blueprint(solr_search_bp)
 @app.route("/system_check/", methods=["GET"])
 @jwt_required()
 def system_check_route():

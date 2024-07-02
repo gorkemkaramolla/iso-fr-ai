@@ -11,4 +11,3 @@ elasticsearch-dsl==7.4.1
 pillow==10.3.0
 numpy==1.26.4
 requests==2.32.3
-solrpy==1.0.0

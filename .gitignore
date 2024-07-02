@@ -35,3 +35,4 @@ flask/recog
 flask/recognized_faces_log.csv
 flask/face-images
 mac-venv
+iso-fr-2

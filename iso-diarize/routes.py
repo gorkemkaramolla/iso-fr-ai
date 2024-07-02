@@ -59,6 +59,11 @@ def process_audio_route():
             client_id
         ]  # Ensure to clear the flag irrespective of success or failure
 
+@audio_bp.route("/hello", methods=["GET"])
+@jwt_required()
+def hello_route():
+    return "Hello", 200
+
 
 @audio_bp.route("/transcriptions/", defaults={"id": None}, methods=["GET"])
 @audio_bp.route("/transcriptions/<id>", methods=["GET"])

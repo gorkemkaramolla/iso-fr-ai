@@ -240,7 +240,7 @@ const RecogFaces: React.FC = () => {
               bg-slate-50 w-full p-2 rounded-xl shadow-md '
             >
               <img
-                src={`${BASE_URL}/faces/face-images/${group.name}.jpg`}
+                src={`${BASE_URL}/faces/${group.name}`}
                 alt='avatar'
                 className='shadow-md shadow-red-500 object-cover w-10 h-10 rounded-full'
                 onError={(e) => {
@@ -324,7 +324,7 @@ const RecogFaces: React.FC = () => {
                         {formatLastSeen(face.timestamp)}
                       </div>
                       <dialog id={`modal-${index}`} className='modal'>
-                        <div className='modal-box m-0 p-0 bg-transparent'>
+                        <div className='modal-box m-0 p-0 bg-transparent rounded-sm'>
                           <form method='dialog'>
                             <button className='btn btn-circle btn-ghost absolute right-4 top-4 backdrop-blur-sm text-red-500'>
                               <XIcon className='w-6 h-6 stroke-[5] ' />

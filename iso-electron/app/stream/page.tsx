@@ -1,15 +1,17 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
-import AddCameraButton from '@/components/camera/AddCameraButton';
-import CameraDropdown from '@/components/camera/CameraDropdown';
-import RecogFaces from '@/components/camera/RecogFace';
-import CameraStreamControl from '@/components/camera/CameraStreamControl';
-import { Resizable } from 're-resizable';
-import Draggable from 'react-draggable';
-import api from '@/utils/axios_instance';
-import { Quality } from '@/utils/enums';
-import toast, { Toaster } from 'react-hot-toast';
+"use client";
+import React, { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import AddCameraButton from "@/components/camera/AddCameraButton";
+import CameraDropdown from "@/components/camera/CameraDropdown";
+import RecogFaces from "@/components/camera/RecogFace";
+import CameraStreamControl from "@/components/camera/CameraStreamControl";
+import { Resizable } from "re-resizable";
+import Draggable from "react-draggable";
+import api from "@/utils/axios_instance";
+import { Quality } from "@/utils/enums";
+import toast, { Toaster } from "react-hot-toast";
+import LocalCamera from "@/components/camera/LocalCamera";
+import SendLocalCameraStream from "@/components/camera/SendLocalCameraStream";
 
 const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
 const socket = io(BASE_URL!);
@@ -23,8 +25,8 @@ const VideoStream: React.FC = () => {
   const [isModified, setIsModified] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedStreams = localStorage.getItem('cameraStreams');
+    if (typeof window !== "undefined") {
+      const savedStreams = localStorage.getItem("cameraStreams");
       if (savedStreams) {
         const parsedStreams = JSON.parse(savedStreams);
         setCameraStreams(parsedStreams);
@@ -44,23 +46,23 @@ const VideoStream: React.FC = () => {
   useEffect(() => {
     const fetchCameraUrls = async () => {
       try {
-        const response = await api.get('/camera-urls');
+        const response = await api.get("/camera-urls");
         const data = response.data;
         setCameraUrls(data);
       } catch (error) {
-        console.error('Error fetching camera URLs:', error);
+        console.error("Error fetching camera URLs:", error);
       }
     };
     fetchCameraUrls();
   }, []);
 
   useEffect(() => {
-    socket.on('new_camera', (newCamera) => {
+    socket.on("new_camera", (newCamera) => {
       setCameraUrls((prevCameraUrls) => [...prevCameraUrls, newCamera]);
     });
 
     return () => {
-      socket.off('new_camera');
+      socket.off("new_camera");
     };
   }, []);
 
@@ -81,13 +83,13 @@ const VideoStream: React.FC = () => {
         isLoading: true,
         isRecording: false,
         position: { x: 0, y: 0 },
-        size: { width: '100%', height: '100%' },
+        size: { width: "100%", height: "100%" },
       };
 
       setCameraStreams([...cameraStreams, newCameraStream]);
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         // Retrieve the existing list of cameraStreams from localStorage
-        const savedStreams = localStorage.getItem('cameraStreams');
+        const savedStreams = localStorage.getItem("cameraStreams");
         let cameraStreamsList = savedStreams ? JSON.parse(savedStreams) : [];
 
         // Append the new cameraStream to the list
@@ -95,7 +97,7 @@ const VideoStream: React.FC = () => {
 
         // Save the updated list back to localStorage
         localStorage.setItem(
-          'cameraStreams',
+          "cameraStreams",
           JSON.stringify(cameraStreamsList)
         );
       }
@@ -116,7 +118,7 @@ const VideoStream: React.FC = () => {
       );
 
       // Save the updated streams to localStorage
-      localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+      localStorage.setItem("cameraStreams", JSON.stringify(updatedStreams));
 
       return updatedStreams;
     });
@@ -134,7 +136,7 @@ const VideoStream: React.FC = () => {
       );
 
       // Save the updated streams to localStorage
-      localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+      localStorage.setItem("cameraStreams", JSON.stringify(updatedStreams));
 
       return updatedStreams;
     });
@@ -142,15 +144,15 @@ const VideoStream: React.FC = () => {
 
   const deleteAllCameraStreams = () => {
     const confirmed = window.confirm(
-      'Tüm yayınları kapatmak istediğinizden emin misiniz?'
+      "Tüm yayınları kapatmak istediğinizden emin misiniz?"
     );
     if (confirmed) {
       // Clear local storage
-      localStorage.removeItem('cameraStreams');
+      localStorage.removeItem("cameraStreams");
       // Clear the state
       setCameraStreams([]);
       setAvailableIds([1, 2, 3, 4, 5, 6]);
-      toast.success('Tüm yayınlar kapatıldı!', { duration: 2000 });
+      toast.success("Tüm yayınlar kapatıldı!", { duration: 2000 });
       setIsModified(false); // Reset the isModified state
     }
   };
@@ -162,11 +164,11 @@ const VideoStream: React.FC = () => {
       const resetStreams = currentStreams.map((stream) => ({
         ...stream,
         position: { x: 0, y: 0 }, // Set the default position
-        size: { width: '100%', height: '100%' }, // Set the default size
+        size: { width: "100%", height: "100%" }, // Set the default size
       }));
 
       // Update local storage
-      localStorage.setItem('cameraStreams', JSON.stringify(resetStreams));
+      localStorage.setItem("cameraStreams", JSON.stringify(resetStreams));
 
       // Return the updated streams
       return resetStreams;
@@ -175,11 +177,11 @@ const VideoStream: React.FC = () => {
   };
 
   return (
-    <div className='h-full w-full overflow-auto'>
+    <div className="h-full w-full overflow-auto">
       <Toaster />
-      <div className='container mx-auto mb-20'>
-        <div className='flex items-center'>
-          <div className='flex flex-grow items-center justify-center'>
+      <div className="container mx-auto mb-20">
+        <div className="flex items-center">
+          <div className="flex flex-grow items-center justify-center">
             <AddCameraButton
               showAddCamera={showAddCamera}
               setShowAddCamera={setShowAddCamera}
@@ -196,28 +198,33 @@ const VideoStream: React.FC = () => {
           </div>
 
           {cameraStreams.length > 0 && (
-            <div className='flex gap-4 '>
+            <div className="flex gap-4 ">
               {isModified && (
                 <button
                   onClick={resetCameraStreams}
-                  id='resetAllStreams'
-                  className='btn btn-ghost text-blue-600 hover:text-blue-700'
+                  id="resetAllStreams"
+                  className="btn btn-ghost text-blue-600 hover:text-blue-700"
                 >
                   Düzeni Sıfırla
                 </button>
               )}
               <button
                 onClick={deleteAllCameraStreams}
-                id='closeAllStreams'
-                className='btn btn-ghost text-red-600 hover:text-red-700'
+                id="closeAllStreams"
+                className="btn btn-ghost text-red-600 hover:text-red-700"
               >
                 Tüm Yayınları Kapat
               </button>
             </div>
           )}
         </div>
-        <div className='grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen'>
-          <div className='relative col-span-9 gap-4'>
+        <div className="grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen">
+        
+          <div className="relative col-span-9 gap-4">
+          <div>
+            <LocalCamera />
+            <SendLocalCameraStream />
+          </div>
             {cameraStreams.length > 0 &&
               cameraStreams
                 ?.sort((a, b) => a.id - b.id)
@@ -226,8 +233,8 @@ const VideoStream: React.FC = () => {
                     <Draggable
                       key={camera.id}
                       position={camera.position || { x: 0, y: 0 }}
-                      handle='.drag-handle'
-                      bounds='parent'
+                      handle=".drag-handle"
+                      bounds="parent"
                       onStop={(e, data) =>
                         saveCameraStreamPosition(camera.id, {
                           x: data.x,
@@ -237,12 +244,12 @@ const VideoStream: React.FC = () => {
                     >
                       <Resizable
                         key={camera.id}
-                        size={camera.size || { width: '100%', height: '100%' }}
+                        size={camera.size || { width: "100%", height: "100%" }}
                         minHeight={350}
                         minWidth={550}
-                        maxWidth={'100%'}
-                        maxHeight={'100%'}
-                        className='bg-slate-100 rounded-lg border border-slate-400 shadow-lg'
+                        maxWidth={"100%"}
+                        maxHeight={"100%"}
+                        className="bg-slate-100 rounded-lg border border-slate-400 shadow-lg"
                         onResizeStop={(e, direction, ref) =>
                           saveCameraStreamSize(camera.id, {
                             width: ref.style.width,
@@ -269,7 +276,7 @@ const VideoStream: React.FC = () => {
                   );
                 })}
           </div>
-          <div className='col-span-3'>
+          <div className="col-span-3">
             <RecogFaces />
           </div>
         </div>

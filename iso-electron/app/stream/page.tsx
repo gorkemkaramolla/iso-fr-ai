@@ -10,8 +10,9 @@ import Draggable from 'react-draggable';
 import api from '@/utils/axios_instance';
 import { Quality } from '@/utils/enums';
 import toast, { Toaster } from 'react-hot-toast';
+import createApi from '@/utils/axios_instance';
 
-const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
 const socket = io(BASE_URL!);
 
 const VideoStream: React.FC = () => {
@@ -44,6 +45,7 @@ const VideoStream: React.FC = () => {
   useEffect(() => {
     const fetchCameraUrls = async () => {
       try {
+        const api = createApi(process.env.NEXT_PUBLIC_FR_URL);
         const response = await api.get('/camera-urls');
         const data = response.data;
         setCameraUrls(data);
@@ -71,11 +73,9 @@ const VideoStream: React.FC = () => {
       const newCameraStream = {
         id: newId,
         selectedCamera: camera,
-        streamSrc: `${
-          process.env.NEXT_PUBLIC_FLASK_URL
-        }/stream/${newId}?camera=${selectedCamera?.url}&quality=${
-          Object.keys(Quality)[0]
-        }&is_recording=${false}`,
+        streamSrc: `${BASE_URL}/stream/${newId}?camera=${
+          selectedCamera?.url
+        }&quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
         selectedQuality: Object.keys(Quality)[0],
         isPlaying: true,
         isLoading: true,

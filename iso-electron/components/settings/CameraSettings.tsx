@@ -20,10 +20,10 @@ const CameraManager: React.FC = () => {
   const [newCamera, setNewCamera] = useState<Camera>({ label: '', url: '' });
   const [displayDialog, setDisplayDialog] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
   useEffect(() => {
     setLoading(true);
-    fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/camera-urls`)
+    fetch(`${BASE_URL}/camera-urls`)
       .then((response) => response.json())
       .then((data) => {
         setCameraUrls(data);
@@ -42,7 +42,7 @@ const CameraManager: React.FC = () => {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         setLoading(true);
-        fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/camera-url/${label}`, {
+        fetch(`${BASE_URL}/camera-url/${label}`, {
           method: 'DELETE',
         })
           .then((response) => response.json())
@@ -82,7 +82,7 @@ const CameraManager: React.FC = () => {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         setLoading(true);
-        fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/camera-url/${label}`, {
+        fetch(`${BASE_URL}/camera-url/${label}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -127,7 +127,7 @@ const CameraManager: React.FC = () => {
       return;
     }
     setLoading(true);
-    fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/camera-url`, {
+    fetch(`${process.env.NEXT_PUBLIC_FR_URL}/camera-url`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

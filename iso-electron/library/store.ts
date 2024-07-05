@@ -1,20 +1,22 @@
-// lib/store.ts
-import { create, StateCreator, StoreApi } from 'zustand';
+import create, { StateCreator } from 'zustand';
 
+// Assuming StoreState is defined somewhere, if not, define it as follows:
 interface StoreState {
   accessToken: string;
-  setAccessToken: (token: string) => void;
+  refreshToken?: string; // Assuming refreshToken is optional
+  setAccessToken: (access_token: string) => void;
+  setRefreshToken: (refresh_token: string) => void;
 }
 
-// Middleware to log state changes
+// Enhanced Middleware to log state changes
 const logger =
   <T extends object>(config: StateCreator<T>): StateCreator<T> =>
   (set, get, api) =>
     config(
       (args) => {
-        console.log('  applying', args);
+        console.log('Applying:', args);
         set(args);
-        console.log('  new state', get());
+        console.log('New state:', get());
       },
       get,
       api
@@ -23,7 +25,15 @@ const logger =
 const useStore = create<StoreState>(
   logger<StoreState>((set) => ({
     accessToken: '',
-    setAccessToken: (token: string) => set({ accessToken: token }),
+    refreshToken: '', // Initialize refreshToken if it should not be optional
+    setAccessToken: (access_token: string) => {
+      console.log('Setting access token');
+      set({ accessToken: access_token });
+    },
+    setRefreshToken: (refresh_token: string) => {
+      console.log('Setting refresh token');
+      set({ refreshToken: refresh_token });
+    },
   }))
 );
 

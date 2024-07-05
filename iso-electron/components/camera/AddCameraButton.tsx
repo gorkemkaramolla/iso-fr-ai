@@ -3,6 +3,7 @@ import { PlusIcon, XIcon } from 'lucide-react';
 import axios from 'axios';
 import api from '@/utils/axios_instance';
 import toast from 'react-hot-toast';
+import createApi from '@/utils/axios_instance';
 
 interface AddCameraButtonProps {
   showAddCamera: boolean;
@@ -25,6 +26,8 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
     }
 
     try {
+      const api = createApi(process.env.NEXT_PUBLIC_FR_URL);
+
       await api.post('/camera-url', {
         label: newCameraLabel,
         url: newCameraUrl,

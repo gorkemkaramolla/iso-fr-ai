@@ -89,6 +89,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
         const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
 
         const response = await api.get(`/transcriptions/${String(id)}`);
+        console.log(response);
         setTranscription(response.data);
       } catch (error) {
         console.error('Error fetching transcription:', error);

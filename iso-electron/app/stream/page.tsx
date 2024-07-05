@@ -13,6 +13,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import LocalCamera from '@/components/camera/LocalCamera';
 import SendLocalCameraStream from '@/components/camera/SendLocalCameraStream';
 import createApi from '@/utils/axios_instance';
+import createApi from '@/utils/axios_instance';
 
 const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
 const socket = io(BASE_URL!);

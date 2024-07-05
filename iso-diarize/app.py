@@ -14,8 +14,8 @@ CORS(app, origins="*", supports_credentials=True)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-app.config["JWT_COOKIE_SECURE"] = True  # Set to True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection in production
+app.config["JWT_COOKIE_SECURE"] = False  # Set to False in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
 
 # Initialize JWT Manager
 jwt = JWTManager(app)

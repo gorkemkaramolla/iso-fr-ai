@@ -18,7 +18,6 @@ import logging
 import threading  # For handling the stop flag in a thread-safe manner
 from socketio_instance import notify_new_face
 
-
 class CameraProcessor:
     def __init__(self, device="cuda"):
         self.device = torch.device(device)
@@ -32,12 +31,12 @@ class CameraProcessor:
         rec_path = os.path.join(self.assets_dir, "buffalo_l/w600k_r50.onnx")
         self.rec = ArcFaceONNX(rec_path)
         self.rec.prepare(0 if device == "cuda" else -1)
-        self.processor = AutoImageProcessor.from_pretrained(
-            "trpakov/vit-face-expression"
-        )
-        self.emotion_model = AutoModelForImageClassification.from_pretrained(
-            "trpakov/vit-face-expression"
-        ).to(self.device)
+        # self.processor = AutoImageProcessor.from_pretrained(
+        #     "trpakov/vit-face-expression"
+        # )
+        # self.emotion_model = AutoModelForImageClassification.from_pretrained(
+        #     "trpakov/vit-face-expression"
+        # ).to(self.device)
         self.id_to_label = {
             0: "angry",
             1: "disgust",
@@ -128,19 +127,27 @@ class CameraProcessor:
                     database[name] = embedding
         return database
 
+    # def get_emotion(self, face_image):
+    #     pil_image = Image.fromarray(face_image)
+    #     processed_image = self.processor(pil_image, return_tensors="pt").to(self.device)
+    #     with torch.no_grad():
+    #         outputs = self.emotion_model(**processed_image)
+    #         predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+    #         predicted_class = predictions.argmax().item()
+    #         emotion = self.id_to_label[predicted_class]
+    #     return emotion
     def get_emotion(self, face_image):
-        pil_image = Image.fromarray(face_image)
-        processed_image = self.processor(pil_image, return_tensors="pt").to(self.device)
-        with torch.no_grad():
-            outputs = self.emotion_model(**processed_image)
-            predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
-            predicted_class = predictions.argmax().item()
-            emotion = self.id_to_label[predicted_class]
-        return emotion
-
+        # pil_image = Image.fromarray(face_image)
+        # processed_image = self.processor(pil_image, return_tensors="pt").to(self.device)
+        # with torch.no_grad():
+        #     outputs = self.emotion_model(**processed_image)
+        #     predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        #     predicted_class = predictions.argmax().item()
+        #     emotion = self.id_to_label[predicted_class]
+        return "emotion"
     def save_and_log_face(self, face_image, label, similarity, emotion, is_known):
         if face_image is None:
-            print("Error: The face image is empty and cannot be saved.")
+            print("Error: Ths/buffalo_l.ze face image is empty and cannot be saved.")
             return "Error: Empty face image"
         now = datetime.datetime.now()
         timestamp = now.strftime("%H:%M:%S %d.%m.%Y")

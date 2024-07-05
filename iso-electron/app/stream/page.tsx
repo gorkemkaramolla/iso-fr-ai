@@ -218,12 +218,13 @@ const VideoStream: React.FC = () => {
             </div>
           )}
         </div>
-        <div className='grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen'>
-          <div className='relative col-span-9 gap-4'>
-            <div>
-              <LocalCamera />
-              <SendLocalCameraStream />
-            </div>
+        <div className="grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen">
+        
+          <div className="relative col-span-9 gap-4">
+          <div>
+            <LocalCamera />
+            {/* <SendLocalCameraStream /> */}
+          </div>
             {cameraStreams.length > 0 &&
               cameraStreams
                 ?.sort((a, b) => a.id - b.id)

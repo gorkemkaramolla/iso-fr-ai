@@ -5,17 +5,17 @@ from routes import audio_bp  # Ensure this module is correctly set up with relev
 import flask.json.provider as provider
 from flask_jwt_extended import JWTManager
 from socketio_instance import socketio  # Ensure this is set up for your real-time features
-from datetime import timedelta
 
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
-CORS(app, origins="*")
+CORS(app, origins="*", supports_credentials=True)
 
 # Configure JWT
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["JWT_TOKEN_LOCATION"] = ["headers"]
-app.config["JWT_HEADER_NAME"] = "Authorization"
-app.config["JWT_HEADER_TYPE"] = "Bearer"
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+app.config["JWT_COOKIE_SECURE"] = True  # Set to True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection in production
 
 # Initialize JWT Manager
 jwt = JWTManager(app)

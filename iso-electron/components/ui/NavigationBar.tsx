@@ -1,14 +1,16 @@
 import Link from 'next/link';
 import React from 'react';
 import Image from 'next/image';
-import ElasticSearch from '../utility/ElasticSearch';
+// import ElasticSearch from '../utility/ElasticSearch';
 import { Button } from 'primereact/button';
 import { Settings } from 'lucide-react';
+import { deleteCookies } from '@/library/auth/is_authenticated';
+import createApi from '@/utils/axios_instance';
 interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
   return (
-    <nav className='navbar h-[7vh] w-full  z-40 justify-between  bg-base-100 flex '>
+    <nav className='navbar h-[7vh] w-full container mx-auto z-40 justify-between  bg-base-100 flex '>
       <div className=' navbar-start '>
         <div className='dropdown'>
           <div tabIndex={0} role='button' className='btn btn-ghost btn-circle'>
@@ -57,9 +59,7 @@ const NavigationBar: React.FC<Props> = () => {
           />
         </Link>
       </div>
-      <div className='navbar-end'>
-        <ElasticSearch />
-      </div>
+      <div className='navbar-end'>{/* <ElasticSearch /> */}</div>
 
       <div className='dropdown dropdown-end'>
         <div tabIndex={1} role='button' className='btn btn-ghost btn-circle'>
@@ -90,11 +90,35 @@ const NavigationBar: React.FC<Props> = () => {
           Bildirim
         </ul>
       </div>
-      <Link href={'/settings'}>
-        <button className='btn btn-ghost btn-circle'>
-          <Settings className='w-6 h-6' />
-        </button>
-      </Link>
+
+      <div className='dropdown dropdown-end'>
+        <div
+          tabIndex={0}
+          role='button'
+          className='btn btn-ghost btn-circle avatar'
+        >
+          <div className='w-10 rounded-full'>
+            <img alt='Tailwind CSS Navbar component' src='iso_logo.jpg' />
+          </div>
+        </div>
+        <ul
+          tabIndex={0}
+          className='menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow'
+        >
+          <li>
+            <a className='justify-between'>
+              Profile
+              <span className='badge'>New</span>
+            </a>
+          </li>
+          <li>
+            <Link href={'/settings'}>Ayarlar</Link>
+          </li>
+          <li>
+            <Link href={'/api/logout'}>Çıkış Yap</Link>
+          </li>
+        </ul>
+      </div>
     </nav>
   );
 };

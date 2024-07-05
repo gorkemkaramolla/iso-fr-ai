@@ -5,6 +5,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import useStore from '@/library/store';
 import api from '@/utils/axios_instance';
+import createApi from '@/utils/axios_instance';
 
 interface ApiResponse {
   transcription_id: string;
@@ -19,7 +20,11 @@ const ChatSideMenu: React.FC = () => {
 
   const getTranscriptions = async () => {
     try {
-      const storedResponses = await api.get('/transcriptions/');
+      const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+
+      const storedResponses = await api.get('/transcriptions/', {
+        withCredentials: true,
+      });
       const sortedData: ApiResponse[] = storedResponses.data.sort(
         (a: ApiResponse, b: ApiResponse) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -67,7 +72,7 @@ const ChatSideMenu: React.FC = () => {
                       >
                         <p className='flex gap-2 flex-col items-center'>
                           <div className='flex gap-1'>
-                            <div className='badge-sm badge-success text-success-content rounded-none p-4 badge'>
+                            <div className='cursor-pointer'>
                               Transcription ID = {response.transcription_id}
                             </div>
                           </div>

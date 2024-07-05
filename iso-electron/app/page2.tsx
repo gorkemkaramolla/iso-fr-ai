@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import api from '@/utils/axios_instance';
 import { binaryToMatch } from '@/config/binary';
 import Image from 'next/image';
+import createApi from '@/utils/axios_instance';
 
 export default function Home() {
   const [personels, setPersonels] = useState<Personel[]>([]);
@@ -11,7 +12,9 @@ export default function Home() {
 
   useEffect(() => {
     const fetchPersonels = async () => {
+      const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
       const response = await api.get('/users');
+
       setPersonels(response.data);
     };
 

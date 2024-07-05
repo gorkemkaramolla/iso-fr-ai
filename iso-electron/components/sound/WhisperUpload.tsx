@@ -4,6 +4,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import useStore from '@/library/store';
 import api from '@/utils/axios_instance';
+import createApi from '@/utils/axios_instance';
 
 interface Segment {
   id: number;
@@ -39,7 +40,7 @@ function WhisperUpload() {
   };
 
   useEffect(() => {
-    const socket = io(`${process.env.NEXT_PUBLIC_FLASK_URL}`);
+    const socket = io(`${process.env.NEXT_PUBLIC_DIARIZE_URL}`);
     socket.on('progress', (data) => {
       setProgress(data.progress);
     });
@@ -61,6 +62,7 @@ function WhisperUpload() {
     formData.append('file', file, file.name);
 
     try {
+      const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
       const res = await api.post<ApiResponse>('/process-audio/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',

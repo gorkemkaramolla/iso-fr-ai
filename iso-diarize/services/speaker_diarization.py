@@ -9,7 +9,7 @@ from datetime import datetime
 import json
 from bson import ObjectId
 import logging
-
+from pydub import AudioSegment
 # from db import cursor, connection, LOB, ERROR
 from db import mongo_client, mongo_db
 from socketio_instance import socketio
@@ -44,26 +44,22 @@ class SpeakerDiarizationProcessor:
     def get_all_transcriptions(self):
         try:
             collection = self.mongo_db["transcripts"]
-
             cursor = collection.find({})
 
             all_transcriptions = [
                 {
                     "transcription_id": str(doc["_id"]),
                     "created_at": doc["created_at"],
-                    "full_text": doc.get(
-                        "full_text", ""
-                    ),  # Optionally include full text if you want to show it
+                    "full_text": doc.get("full_text", ""),
                 }
                 for doc in cursor
             ]
-            self.logger.info(
-                f"Transcriptions: {all_transcriptions} successfully fetched from database"
-            )
-            return jsonify(all_transcriptions), 200
+            self.logger.info(f"Transcriptions: {all_transcriptions} successfully fetched from database")
+            return all_transcriptions, 200
         except Exception as e:
             self.logger.info(f"Database error: {str(e)}")
-            return jsonify(error=str(e)), 500
+            return {"error": str(e)}, 500
+
 
     def safe_parse_date(self, date_value):
         if not date_value:
@@ -91,21 +87,21 @@ class SpeakerDiarizationProcessor:
             transcription = transcripts_collection.find_one({"_id": id})
             if not transcription:
                 self.logger.error(f"No transcription found for ID: {id}")
-                return jsonify(error="No transcription found for this ID"), 404
+                return {"error": "No transcription found for this ID"}, 404
 
             # Fetch related segments
             segments = list(segments_collection.find({"transcript_id": id}))
 
             if not segments:
                 self.logger.error(f"No transcription segments found for ID: {id}")
-                return jsonify(error="No transcription segments found for this ID"), 404
+                return {"error": "No transcription segments found for this ID"}, 404
 
             # Construct response data
             segments_data = [
                 {
-                    "segment_id": str(segment["_id"]),
-                    "start_time": segment["start_time"],
-                    "end_time": segment["end_time"],
+                    "segment_id": segment["_id"],
+                    "start_time": segment["start_time"].isoformat() if segment["start_time"] else None,
+                    "end_time": segment["end_time"].isoformat() if segment["end_time"] else None,
                     "speaker": segment["speaker"],
                     "transcribed_text": segment["transcribed_text"],
                 }
@@ -113,24 +109,22 @@ class SpeakerDiarizationProcessor:
             ]
 
             result = {
-                "transcription_id": str(transcription["_id"]),
-                "created_at": transcription["created_at"],
+                "transcription_id": transcription["_id"],
+                "created_at": transcription["created_at"].isoformat() if transcription["created_at"] else None,
                 "full_text": transcription.get("full_text", ""),
                 "segments": segments_data,
             }
-            self.logger.info(
-                f"get_transcription: {result} successfully fetched from database"
-            )
-            return jsonify(result), 200
+            self.logger.info(f"get_transcription: {result} successfully fetched from database")
+            return result, 200
         except Exception as e:
             error_message = f"Error during transcription retrieval: {e}"
             self.logger.error(error_message)
-            return (
-                jsonify(error="An error occurred while retrieving the transcription."),
-                500,
-            )
+            return {"error": "An error occurred while retrieving the transcription."}, 500
+
 
     def process_audio(self, client_id):
+        self.emit_progress(10)
+        
         self.logger.info("New transcription request received")
         if "file" not in request.files:
             self.logger.error("No file part in request")
@@ -144,25 +138,22 @@ class SpeakerDiarizationProcessor:
         filename = secure_filename(file.filename)
         self.file_path = os.path.join("temp", filename)
         file.save(self.file_path)
+        self.emit_progress(30)
 
         try:
             if filename.endswith((".mp4", ".mp3", ".avi")):
-                original = AudioSegment.from_file(file_path)
-                wav_path = f"{os.path.splitext(file_path)[0]}.wav"
+                original = AudioSegment.from_file(self.file_path)
+                wav_path = f"{os.path.splitext(self.file_path)[0]}.wav"
                 original.export(wav_path, format="wav")
                 self.file_path = wav_path
 
-            self.emit_progress(100)
-            self.emit_progress(10)
-            self.emit_progress(30)
             self.emit_progress(50)
 
             processor = AudioProcessor(
                 self.file_path, self.device, self.hf_auth_token, "large-v3"
             )
+            
             transcription = processor.process()
-            self.emit_progress(70)
-            self.emit_progress(90)
 
             created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             transcript_id = str(ObjectId())
@@ -172,6 +163,7 @@ class SpeakerDiarizationProcessor:
                 "transcription": transcription,
                 "created_at": created_at,
             }
+            self.emit_progress(70)
 
             self.mongo_db.transcripts.insert_one(
                 {
@@ -180,6 +172,7 @@ class SpeakerDiarizationProcessor:
                     "full_text": transcription["text"],
                 }
             )
+            self.emit_progress(90)
 
             for segment in transcription["segments"]:
                 self.mongo_db.segments.insert_one(
@@ -191,6 +184,7 @@ class SpeakerDiarizationProcessor:
                         "speaker": segment["speaker"],
                     }
                 )
+            self.emit_progress(100)
 
             return jsonify(response_data), 200
         except Exception as e:

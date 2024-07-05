@@ -6,6 +6,7 @@ import Heading from '@/components/ui/Heading';
 import RotatingWheel from '@/components/ui/LogoSpinner';
 import useStore from '@/library/store';
 import api from '@/utils/axios_instance';
+import createApi from '@/utils/axios_instance';
 
 interface Segment {
   segment_id: string;
@@ -85,6 +86,8 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   useEffect(() => {
     const getTranscription = async () => {
       try {
+        const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+
         const response = await api.get(`/transcriptions/${String(id)}`);
         setTranscription(response.data);
       } catch (error) {
@@ -108,6 +111,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     if (updatedSegments) {
       setTranscription({ ...transcription!, segments: updatedSegments });
     }
+    const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
 
     await api.post(`/rename_segments/${id}/${oldName}/${newName}`, {});
   };

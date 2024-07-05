@@ -144,8 +144,6 @@ def login():
         return jsonify({"error": "Username and password are required"}), 400
 
     tokens = auth_provider.login(username, password)
-    if not tokens.get("refresh_token"):
-        return jsonify({"error": "Refresh token not generated"}), 500
 
     response = jsonify({"message": "Login successful"})
     set_access_cookies(response, tokens["access_token"])

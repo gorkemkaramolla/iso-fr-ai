@@ -7,9 +7,19 @@ from pymongo import MongoClient
 from logger import configure_logging
 from flask_cors import CORS
 from auth.auth_provider import AuthProvider
-from flask_jwt_extended import jwt_required, JWTManager
+from flask_jwt_extended import (
+    jwt_required,
+    JWTManager,
+    create_access_token,
+    create_refresh_token,
+    set_access_cookies,
+    set_refresh_cookies,
+    get_jwt,
+    get_jwt_identity,
+    unset_jwt_cookies
+)
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from bson.objectid import ObjectId
 import io
 import binascii
@@ -20,12 +30,17 @@ from config import BINARY_MATCH
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
 
-CORS(app, origins="*")
+CORS(app, origins="*", supports_credentials=True)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(minutes=2)
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
+app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
+app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=10)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)
 
-# jwt = JWTManager(app)
+jwt = JWTManager(app)
 
 ###################################################### Setup MongoDB
 client = MongoClient(os.environ.get("MONGO_DB_URI"))
@@ -33,15 +48,13 @@ db = client[os.environ.get("MONGO_DB_NAME")]
 logs_collection = db["logs"]
 camera_collection = db["cameras"]
 
-###################################################### Create an instance of your class
+##################################################### Create an instance of your class
 logger = configure_logging()
 
 # Setup Blueprint
 auth_bp = Blueprint("auth_bp", __name__)
 users_bp = Blueprint("users_bp", __name__)
 
-
-#########################################################
 @users_bp.route("/users/images", methods=["GET"])
 def get_user_images():
     personel = list(
@@ -69,6 +82,23 @@ def get_user_images():
             continue
     return "Images saved", 200
 
+@users_bp.route('/testix', methods=['GET'])
+@jwt_required()
+def testix():
+    # Access the 'Cookie' header directly
+    cookie_header = request.headers.get('Cookie', 'Unknown')
+    
+    # Access cookies using request.cookies, which is a dictionary
+    cookies = request.cookies  # This is a dictionary of all cookies
+    
+    # Prepare the response data
+    response_data = {
+        'CookieHeader': cookie_header,
+        'Cookies': cookies
+    }
+    
+    # Return the data as a JSON response
+    return jsonify(response_data), 200
 
 @users_bp.route("/users", methods=["GET"])
 def get_users():
@@ -77,22 +107,22 @@ def get_users():
         person.pop("_id", None)  # Remove _id from the dictionary
     return jsonify(personel), 200
 
-
 app.register_blueprint(users_bp)
-
 
 auth_provider = AuthProvider()
 
-
-@auth_bp.route("/token/refresh", methods=["POST"])
-@jwt_required(refresh=True)
-def refresh():
-
-    # resp.set_cookie('access_token', new_token, httponly=True, secure=True,
-    #                 expires=datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-    access_token = auth_provider.refresh_token()
-    return jsonify({"access_token": access_token}), 200
-
+@auth_bp.after_request
+def refresh_expiring_jwts(response):
+    try:
+        exp_timestamp = get_jwt()["exp"]
+        now = datetime.now(timezone.utc)
+        target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+        if target_timestamp > exp_timestamp:
+            access_token = create_access_token(identity=get_jwt_identity())
+            set_access_cookies(response, access_token)
+        return response
+    except (RuntimeError, KeyError):
+        return response
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -105,7 +135,6 @@ def register():
     response = auth_provider.register(username, password)
     return response
 
-
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
@@ -115,7 +144,21 @@ def login():
         return jsonify({"error": "Username and password are required"}), 400
 
     tokens = auth_provider.login(username, password)
-    return jsonify(tokens), 200
+    if not tokens.get("refresh_token"):
+        return jsonify({"error": "Refresh token not generated"}), 500
 
+    response = jsonify({"message": "Login successful"})
+    set_access_cookies(response, tokens["access_token"])
+    set_refresh_cookies(response, tokens["refresh_token"])
+    return response, 200
+
+@auth_bp.route('/logout', methods=('POST',))
+def logout():
+    response = jsonify()
+    unset_jwt_cookies(response)
+    return response, 200
 
 app.register_blueprint(auth_bp)
+
+if __name__ == "__main__":
+    app.run(debug=True)

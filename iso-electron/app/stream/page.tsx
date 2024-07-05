@@ -223,7 +223,7 @@ const VideoStream: React.FC = () => {
           <div className="relative col-span-9 gap-4">
           <div>
             <LocalCamera />
-            <SendLocalCameraStream />
+            {/* <SendLocalCameraStream /> */}
           </div>
             {cameraStreams.length > 0 &&
               cameraStreams

@@ -36,7 +36,7 @@ camera_collection = db["cameras"]
 #######################################################Setup ElasticSearch
 
 ###################################################### Create an instance of your class
-camera_processor = CameraProcessor(device="cpu")
+camera_processor = CameraProcessor(device="cuda")
 logger = configure_logging()
 
 # Setup Blueprint

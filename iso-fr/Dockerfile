@@ -1,14 +1,41 @@
 # Use a specific version of the Python image
-FROM python:3.12.2-slim
+# FROM python:3.12.4-slim
+# Use the NVIDIA CUDA image as the base image
+FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
 
 # Set the working directory inside the container
 WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Berlin
 
 # Install system dependencies in one layer and clean up afterwards to reduce layer size
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev python3-dev unzip wget && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev python3-dev python3-pip unzip wget ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install Python 3.12.4 from the official repository
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.12 python3.12-venv python3.12-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install pip for Python 3.12
+RUN wget https://bootstrap.pypa.io/get-pip.py && \
+    python3.12 get-pip.py && \
+    rm get-pip.py
+
+# Update alternatives to set python3.12 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
+    update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3.12 1
+
+# Install certifi and other required packages
+RUN python3.12 -m pip install --upgrade pip certifi six
 
 # Prepare the models directory within the /app directory and download model files
 RUN mkdir -p /app/services/models && \
@@ -21,11 +48,68 @@ RUN mkdir -p /app/services/models && \
 # Copy the local directory contents to the container's working directory
 COPY . /app
 
-# Update pip and Install Python dependencies from the requirements.txt file
-RUN pip install --no-cache-dir -r requirements.txt
+# Update pip and install Python dependencies from the requirements.txt file
+RUN python3 -m pip install --upgrade pip && \
+    pip3 install --no-cache-dir -r requirements.txt
 
 # Inform Docker that the container listens on the specified port at runtime
 EXPOSE 5002
 
 # Command to run the application
-CMD ["python", "app.py"]
+CMD ["python3", "app.py"]
+
+# FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
+
+# # Set the working directory inside the container
+# WORKDIR /app
+# ENV DEBIAN_FRONTEND=noninteractive
+# ENV TZ=Europe/Berlin
+
+# # Install system dependencies in one layer and clean up afterwards to reduce layer size
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#     ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev python3-dev python3-pip unzip wget && \
+#     apt-get clean && \
+#     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# # Install Python 3.12.4 from the official repository
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#     software-properties-common && \
+#     add-apt-repository ppa:deadsnakes/ppa && \
+#     apt-get update && \
+#     apt-get install -y python3.12 python3.12-venv python3.12-dev && \
+#     apt-get clean && \
+#     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# # Install pip for Python 3.12
+# RUN wget https://bootstrap.pypa.io/get-pip.py && \
+#     python3.12 get-pip.py && \
+#     rm get-pip.py
+
+# # Update alternatives to set python3.12 as default
+# RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
+#     update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3.12 1
+
+# # Prepare the models directory within the /app directory and download model files
+# RUN mkdir -p /app/services/models && \
+#     wget -O /app/services/models/buffalo_l.zip "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip" && \
+#     unzip /app/services/models/buffalo_l.zip -d /app/services/models && \
+#     rm /app/services/models/buffalo_l.zip && \
+#     echo "Listing contents of the model directory:" && \
+#     ls -la /app/services/models/
+
+# # Copy the local directory contents to the container's working directory
+# COPY . /app
+
+# # Update pip and install Python dependencies from the requirements.txt file
+# RUN python3 -m pip install --upgrade pip && \
+#     pip3 install --no-cache-dir -r requirements.txt
+
+# # Inform Docker that the container listens on the specified port at runtime
+# EXPOSE 5002
+
+# # Command to run the application
+# CMD ["python3", "app.py"]
+
+

@@ -53,7 +53,7 @@ const CameraStream: React.FC = () => {
   return (
     <div>
       <video ref={videoRef} width={"640"} height={"480"} autoPlay style={{ display: 'none' }} />
-      <canvas ref={canvasRef} width="640" height="480" style={{ display: 'block' }} />
+      <canvas ref={canvasRef} width="640" height="480" style={{ display: 'none' }} />
       <img ref={processedVideoRef} alt="Processed Stream" />
     </div>
   );

@@ -10,8 +10,8 @@ app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-app.config["JWT_COOKIE_SECURE"] = True  # Set to True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection in production
+app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
 
 CORS(app, origins="*")
 
@@ -48,7 +48,7 @@ def process_audio_route():
         response = diarization_processor.process_audio(client_id)
         return response
     finally:
-        del active_requests[client_id]  # Ensure to clear the flag irrespective of success or failure
+        del active_requests[client_id] 
 
 @audio_bp.route("/hello", methods=["GET"])
 @jwt_required()
@@ -61,10 +61,10 @@ def hello_route():
 def get_transcription_route(id):
     try:
         if id is None:
-            response, status_code = diarization_processor.get_all_transcriptions()
+            response = diarization_processor.get_all_transcriptions()
         else:
-            response, status_code = diarization_processor.get_transcription(id)
-        return jsonify(response), status_code
+            response = diarization_processor.get_transcription(id)
+        return jsonify(response)
     except TypeError as e:
         logger.error(f"TypeError in get_transcription_route: {e}")
         return jsonify({"error": "Response is not JSON serializable"}), 500

@@ -36,7 +36,7 @@ app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
 app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
 app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
+app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection in production
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=10)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)
 
@@ -144,15 +144,13 @@ def login():
         return jsonify({"error": "Username and password are required"}), 400
 
     tokens = auth_provider.login(username, password)
-    if not tokens.get("refresh_token"):
-        return jsonify({"error": "Refresh token not generated"}), 500
 
     response = jsonify({"message": "Login successful"})
     set_access_cookies(response, tokens["access_token"])
     set_refresh_cookies(response, tokens["refresh_token"])
     return response, 200
 
-@auth_bp.route('/logout', methods=('POST',))
+@auth_bp.route('/logout', methods=['POST'])
 def logout():
     response = jsonify()
     unset_jwt_cookies(response)
@@ -160,5 +158,3 @@ def logout():
 
 app.register_blueprint(auth_bp)
 
-if __name__ == "__main__":
-    app.run(debug=True)

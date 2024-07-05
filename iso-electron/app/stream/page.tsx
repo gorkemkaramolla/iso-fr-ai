@@ -10,7 +10,8 @@ import Draggable from 'react-draggable';
 import api from '@/utils/axios_instance';
 import { Quality } from '@/utils/enums';
 import toast, { Toaster } from 'react-hot-toast';
-import createApi from '@/utils/axios_instance';
+import LocalCamera from '@/components/camera/LocalCamera';
+import SendLocalCameraStream from '@/components/camera/SendLocalCameraStream';
 
 const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
 const socket = io(BASE_URL!);
@@ -45,7 +46,6 @@ const VideoStream: React.FC = () => {
   useEffect(() => {
     const fetchCameraUrls = async () => {
       try {
-        const api = createApi(process.env.NEXT_PUBLIC_FR_URL);
         const response = await api.get('/camera-urls');
         const data = response.data;
         setCameraUrls(data);
@@ -218,6 +218,10 @@ const VideoStream: React.FC = () => {
         </div>
         <div className='grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen'>
           <div className='relative col-span-9 gap-4'>
+            <div>
+              <LocalCamera />
+              <SendLocalCameraStream />
+            </div>
             {cameraStreams.length > 0 &&
               cameraStreams
                 ?.sort((a, b) => a.id - b.id)

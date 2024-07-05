@@ -19,4 +19,4 @@ pymongo == 4.7.2
 psutil==5.9.8
 xmltodict==0.13.0
 flask_jwt_extended==4.6.0
-whisper-run== 0.2.5
+whisper-run== 1.0.0

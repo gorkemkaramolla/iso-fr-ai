@@ -1,4 +1,8 @@
+import base64
+import datetime
+import glob
 import json
+import logging
 import bson
 import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
@@ -8,7 +12,7 @@ from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
 from services.camera_processor.camera_processor import CameraProcessor
 from services.camera_processor.enums.camera import Camera
-from services.elastic_search import ElasticSearcher
+# from services.elastic_search import ElasticSearcher
 from logger import configure_logging
 from flask_cors import CORS
 from auth.auth_provider import AuthProvider
@@ -21,7 +25,7 @@ import io
 import binascii
 import cv2
 import numpy as np
-from socketio_instance import notify_new_camera_url
+from socketio_instance import notify_new_camera_url, socketio
 from config import BINARY_MATCH
 
 app = Flask(__name__)
@@ -40,8 +44,8 @@ db = client[os.environ.get("MONGO_DB_NAME")]
 logs_collection = db["logs"]
 camera_collection = db["cameras"]
 #######################################################Setup ElasticSearch
-es_host = os.environ.get("ES_HOST")
-searcher = ElasticSearcher(client, db, es_host)
+# es_host = os.environ.get("ES_HOST")
+# searcher = ElasticSearcher(client, db, es_host)
 
 ###################################################### Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cuda")
@@ -59,17 +63,17 @@ elastic_search_bp = Blueprint("elastic_search_bp", __name__)
 users_bp = Blueprint("users_bp", __name__)
 
 
-####################################################### Setup Blueprint
-@elastic_search_bp.route("/search", methods=["GET"])
-def search():
-    query = request.args.get("query")
-    results = searcher.search(query)
-    if isinstance(results, tuple):
-        return jsonify({"error": results[0]["error"]}), results[1]
-    return jsonify(results), 200
+# ####################################################### Setup Blueprint
+# @elastic_search_bp.route("/search", methods=["GET"])
+# def search():
+#     query = request.args.get("query")
+#     results = searcher.search(query)
+#     if isinstance(results, tuple):
+#         return jsonify({"error": results[0]["error"]}), results[1]
+#     return jsonify(results), 200
 
 
-app.register_blueprint(elastic_search_bp, url_prefix="/api")
+# app.register_blueprint(elastic_search_bp, url_prefix="/api")
 
 
 #########################################################
@@ -228,6 +232,38 @@ def stream(stream_id):
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
 
+# ****************************************************************************
+# Local CAM Stream
+
+
+# @socketio.on('video_frame')
+# def handle_video_frame(data):
+#     # Decode the image
+#     image_data = data.split(',')[1]
+#     nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
+#     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+#     # Process the image (e.g., convert to grayscale)
+#     processed_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+#     # Encode the image to base64
+#     _, buffer = cv2.imencode('.jpg', processed_img)
+#     processed_image = base64.b64encode(buffer).decode('utf-8')
+#     socketio.emit('processed_frame', 'data:image/jpeg;base64,' + processed_image)
+@socketio.on('video_frame')
+def handle_video_frame(data):
+    # Decode the image
+    image_data = data.split(',')[1]
+    nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    # Process the image
+    processed_image = camera_processor.generate_local_cam(img)
+
+    # Emit the processed frame back to the client
+    socketio.emit('processed_frame', processed_image)
+
+# ****************************************************************************
 
 @camera_bp.route("/recog", methods=["GET"])
 def get_all_logs():
@@ -283,13 +319,23 @@ def get_image(image_path):
         return jsonify({"error": "Image not found"}), 404
 
 
-@camera_bp.route("/faces/<path:image_path>", methods=["GET"])
-def get_face_image(image_path):
-    full_path = os.path.join(os.getcwd(), image_path)
-    try:
-        return send_file(full_path, mimetype="image/jpeg")
-    except FileNotFoundError:
-        return jsonify({"error": "Image not found"}), 404
+@camera_bp.route("/faces/<image_name>", methods=["GET"])
+def get_face_image(image_name):
+    # Define the directory to search in and the possible extensions
+    search_dir = os.path.join(os.getcwd(), "face-images")
+    print("------" + search_dir)
+    extensions = ['jpg', 'jpeg', 'png']
+    
+    # Search for files matching the image name with any of the extensions
+    for ext in extensions:
+        file_pattern = os.path.join(search_dir, f"{image_name}.{ext}")
+        matching_files = glob.glob(file_pattern)
+        if matching_files:
+            # If a match is found, send the first matching file
+            return send_file(matching_files[0], mimetype="image/jpeg")
+    
+    # If no file matches, return an error message
+    return jsonify({"error": "Image not found"}), 404
 
 
 # @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])

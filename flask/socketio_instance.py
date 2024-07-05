@@ -1,7 +1,7 @@
 from flask_socketio import SocketIO
 import json
 
-socketio = SocketIO(cors_allowed_origins="*")
+socketio = SocketIO(cors_allowed_origins="*", engineio_logger=False, ping_timeout=5, ping_interval=5)
 
 
 import numpy as np

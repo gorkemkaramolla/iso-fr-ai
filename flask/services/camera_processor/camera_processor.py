@@ -1,3 +1,4 @@
+import base64
 from typing import List, Tuple
 import cv2
 import numpy as np
@@ -360,3 +361,48 @@ class CameraProcessor:
         if writer:
             writer.release()
         logging.info("Finished generate function")
+
+    def generate_local_cam(self, frame, is_recording=False):
+        self.stop_flag.clear()  # Clear the stop flag at the beginning
+        logging.info(f"Processing frame")
+
+        writer = None
+        if is_recording:
+            now = datetime.datetime.now()
+            directory = "./records/"
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            filename = directory + now.strftime("%H:%M:%S_%d.%m.%Y") + ".mp4"
+
+        if is_recording and writer is None:
+            frame_height, frame_width = frame.shape[:2]
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(
+                filename, fourcc, 20.0, (frame_width, frame_height)
+            )
+            if not writer.isOpened():
+                logging.error("Error initializing video writer")
+                return
+
+        for bbox, label, sim, emotion, gender, age in zip(
+            *self.recog_face_and_emotion(frame)
+        ):
+            x1, y1, x2, y2 = map(int, bbox[:4])
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
+            text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"
+            cv2.putText(
+                frame,
+                text_label,
+                (x1 + 5, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 255, 0),
+                2,
+            )
+
+        if writer:
+            writer.write(frame)
+
+        _, buffer = cv2.imencode(".jpg", frame)
+        processed_image = base64.b64encode(buffer).decode('utf-8')
+        return 'data:image/jpeg;base64,' + processed_image

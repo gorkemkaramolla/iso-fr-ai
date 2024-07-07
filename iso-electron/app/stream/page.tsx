@@ -13,7 +13,6 @@ import toast, { Toaster } from 'react-hot-toast';
 import LocalCamera from '@/components/camera/LocalCamera';
 import SendLocalCameraStream from '@/components/camera/SendLocalCameraStream';
 import createApi from '@/utils/axios_instance';
-import createApi from '@/utils/axios_instance';
 
 const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
 const socket = io(BASE_URL!);
@@ -48,7 +47,9 @@ const VideoStream: React.FC = () => {
   useEffect(() => {
     const fetchCameraUrls = async () => {
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_FR_URL + '/camera-urls');
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_FR_URL + '/camera-urls'
+        );
         const data = await response.json();
         setCameraUrls(data);
       } catch (error) {
@@ -218,13 +219,12 @@ const VideoStream: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen">
-        
-          <div className="relative col-span-9 gap-4">
-          <div>
-            <LocalCamera />
-            {/* <SendLocalCameraStream /> */}
-          </div>
+        <div className='grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen'>
+          <div className='relative col-span-9 gap-4'>
+            <div>
+              <LocalCamera />
+              {/* <SendLocalCameraStream /> */}
+            </div>
             {cameraStreams.length > 0 &&
               cameraStreams
                 ?.sort((a, b) => a.id - b.id)

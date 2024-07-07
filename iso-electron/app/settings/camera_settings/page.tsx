@@ -152,7 +152,7 @@ const CameraManager: React.FC = () => {
       });
   };
   return (
-    <div className='container mx-auto'>
+    <>
       {loading && (
         <div className='flex justify-center items-center h-screen'>
           <LogoSpinner />
@@ -160,12 +160,13 @@ const CameraManager: React.FC = () => {
       )}
       {!loading && (
         <>
-          <div className='flex items-center justify-between p-4'>
-            <h1 className='text-3xl font-bold'>Kamera Ayarları</h1>
+          <div className='flex items-center justify-between p-2'>
+            <h1 className='text-xl font-bold'>Kamera Ayarları</h1>
             <Button
               color='help'
               label='Yeni Kamera Ekle'
               icon='pi pi-plus'
+              className='p-button-sm'
               onClick={() => setDisplayDialog(true)}
             />
           </div>
@@ -179,17 +180,17 @@ const CameraManager: React.FC = () => {
             <Column
               header='İşlemler'
               body={(rowData) => (
-                <div className='flex gap-4'>
+                <div className='flex gap-2'>
                   <Button
                     icon='pi pi-pencil'
-                    className='p-button-rounded p-button-warning'
+                    className='p-button-rounded p-button-warning p-button-sm'
                     onClick={() => handleEdit(rowData.label)}
                     tooltip='Düzenle'
                     tooltipOptions={{ position: 'bottom' }}
                   />
                   <Button
                     icon='pi pi-trash'
-                    className='p-button-rounded p-button-danger'
+                    className='p-button-rounded p-button-danger p-button-sm'
                     onClick={() => handleDelete(rowData.label)}
                     tooltip='Sil'
                     tooltipOptions={{ position: 'bottom' }}
@@ -203,31 +204,38 @@ const CameraManager: React.FC = () => {
             header='Yeni Kamera Ekle'
             visible={displayDialog}
             onHide={() => setDisplayDialog(false)}
+            style={{ width: '30vw' }}
           >
-            <div className='grid grid-rows-2 gap-4'>
-              <div className='p-field grid grid-cols-2 items-center gap-4'>
-                <label htmlFor='label'>Kamera Adı</label>
+            <div className='grid grid-rows-2 gap-2'>
+              <div className='p-field grid grid-cols-2 items-center gap-2'>
+                <label htmlFor='label' className='text-sm'>
+                  Kamera Adı
+                </label>
                 <InputText
                   id='label'
                   value={newCamera.label}
                   onChange={(e) =>
                     setNewCamera({ ...newCamera, label: e.target.value })
                   }
+                  className='p-1 text-sm'
                 />
               </div>
-              <div className='p-field grid grid-cols-2 items-center gap-4'>
-                <label htmlFor='url'>URL</label>
+              <div className='p-field grid grid-cols-2 items-center gap-2'>
+                <label htmlFor='url' className='text-sm'>
+                  URL
+                </label>
                 <InputText
                   id='url'
                   value={newCamera.url}
                   onChange={(e) =>
                     setNewCamera({ ...newCamera, url: e.target.value })
                   }
+                  className='p-1 text-sm'
                 />
               </div>
             </div>
             <Button
-              className='mt-4'
+              className='mt-2 p-button-sm'
               label='Ekle'
               icon='pi pi-check'
               onClick={handleAddNewCamera}
@@ -238,31 +246,38 @@ const CameraManager: React.FC = () => {
             header='Düzenle'
             visible={editMode !== null}
             onHide={() => setEditMode(null)}
+            style={{ width: '30vw' }}
           >
-            <div className='grid grid-rows-2 gap-4'>
-              <div className='p-field grid grid-cols-2 items-center gap-4'>
-                <label htmlFor='editLabel'>Kamera Adı</label>
+            <div className='grid grid-rows-2 gap-2'>
+              <div className='p-field grid grid-cols-2 items-center gap-2'>
+                <label htmlFor='editLabel' className='text-sm'>
+                  Kamera Adı
+                </label>
                 <InputText
                   id='editLabel'
                   value={editData.label}
                   onChange={(e) =>
                     setEditData({ ...editData, label: e.target.value })
                   }
+                  className='p-1 text-sm'
                 />
               </div>
-              <div className='p-field grid grid-cols-2 items-center gap-4'>
-                <label htmlFor='editUrl'>URL</label>
+              <div className='p-field grid grid-cols-2 items-center gap-2'>
+                <label htmlFor='editUrl' className='text-sm'>
+                  URL
+                </label>
                 <InputText
                   id='editUrl'
                   value={editData.url}
                   onChange={(e) =>
                     setEditData({ ...editData, url: e.target.value })
                   }
+                  className='p-1 text-sm'
                 />
               </div>
             </div>
             <Button
-              className='mt-4'
+              className='mt-2 p-button-sm'
               label='Kaydet'
               icon='pi pi-check'
               onClick={() => handleUpdate(editMode!)}
@@ -271,7 +286,7 @@ const CameraManager: React.FC = () => {
         </>
       )}
       <ConfirmDialog />
-    </div>
+    </>
   );
 };
 

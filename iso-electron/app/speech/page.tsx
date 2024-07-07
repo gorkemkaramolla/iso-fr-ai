@@ -18,9 +18,9 @@ const Speech: React.FC<Props> = () => {
           <Panel defaultSize={75}>
             <WhisperUpload />
           </Panel>
-          <PanelResizeHandle className='w-1 border-2 border-red-500 border-base-200' />
+          <PanelResizeHandle className='w-1 border-2 border-red-500 z-0 md:block hidden border-base-200' />
 
-          <Panel defaultSize={25} className='z-0'>
+          <Panel defaultSize={25} className='z-0 md:block hidden'>
             <TranscriptionHistory />
           </Panel>
         </PanelGroup>

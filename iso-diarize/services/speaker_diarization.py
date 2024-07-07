@@ -1,5 +1,6 @@
 from flask import jsonify, Blueprint, request
 from werkzeug.utils import secure_filename
+from pydub import AudioSegment  
 
 # import whisper
 import torch

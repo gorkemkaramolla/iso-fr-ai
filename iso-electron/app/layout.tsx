@@ -21,11 +21,12 @@ export default function RootLayout({
   // Check authentication status
 
   return (
-    <html lang='tr' data-theme='light' className={'w-screen overflow-x-hidden'}>
+    <html lang='tr' data-theme='light' className={'w-screen overflow-hidden'}>
       <body className={inter.className + ' light flex justify-center'}>
         <PrimeReactProvider>
           <div className='w-full h-[100dvh]'>
             <Provider>a</Provider>
+
             <div className='grow h-[93dvh]'>{children}</div>
           </div>
         </PrimeReactProvider>

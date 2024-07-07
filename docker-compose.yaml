@@ -317,11 +317,11 @@ services:
     depends_on:
       - solr
       - mongo
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
     volumes:
       - face_recognition_data:/app/data
 
@@ -334,11 +334,11 @@ services:
     depends_on:
       - solr
       - mongo
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
 
   utils_service:
     build: ./iso-utils

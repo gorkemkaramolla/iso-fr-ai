@@ -10,7 +10,7 @@ interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
   return (
-    <nav className='navbar h-[7vh] w-full container mx-auto z-40 justify-between  bg-base-100 flex '>
+    <nav className='navbar h-[7vh] w-full container mx-auto z-40 justify-between sticky top-0  bg-base-100 flex '>
       <div className=' navbar-start '>
         <div className='dropdown'>
           <div tabIndex={0} role='button' className='btn btn-ghost btn-circle'>
@@ -54,7 +54,7 @@ const NavigationBar: React.FC<Props> = () => {
             width={100}
             height={100}
             src='logo.svg'
-            alt=''
+            alt='hello'
             className='w-full  h-full'
           />
         </Link>

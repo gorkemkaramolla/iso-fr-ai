@@ -7,11 +7,9 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import LogoSpinner from '@/components/ui/LogoSpinner';
-import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
-import 'primereact/resources/primereact.min.css'; //core css
-import 'primeicons/primeicons.css'; //icons
-
-// Define the types for the camera data and the component state
+import 'primereact/resources/themes/lara-light-indigo/theme.css';
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
 
 const CameraManager: React.FC = () => {
   const [cameraUrls, setCameraUrls] = useState<Camera[]>([]);
@@ -21,41 +19,39 @@ const CameraManager: React.FC = () => {
   const [displayDialog, setDisplayDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
+
   useEffect(() => {
-    setLoading(true);
-    fetch(`${BASE_URL}/camera-urls`)
-      .then((response) => response.json())
-      .then((data) => {
+    const fetchCameraUrls = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${BASE_URL}/camera-urls`);
+        const data = await response.json();
         setCameraUrls(data);
-        setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error fetching camera URLs:', error);
+      } finally {
         setLoading(false);
-      });
-  }, []);
+      }
+    };
+
+    fetchCameraUrls();
+  }, [BASE_URL]);
 
   const handleDelete = (label: string) => {
     confirmDialog({
       message: 'Are you sure you want to delete this camera?',
       header: 'Delete Confirmation',
       icon: 'pi pi-exclamation-triangle',
-      accept: () => {
+      accept: async () => {
         setLoading(true);
-        fetch(`${BASE_URL}/camera-url/${label}`, {
-          method: 'DELETE',
-        })
-          .then((response) => response.json())
-          .then(() => {
-            setCameraUrls(
-              cameraUrls.filter((camera) => camera.label !== label)
-            );
-            setLoading(false);
-          })
-          .catch((error) => {
-            console.error('Error deleting camera URL:', error);
-            setLoading(false);
-          });
+        try {
+          await fetch(`${BASE_URL}/camera-url/${label}`, { method: 'DELETE' });
+          setCameraUrls(cameraUrls.filter((camera) => camera.label !== label));
+        } catch (error) {
+          console.error('Error deleting camera URL:', error);
+        } finally {
+          setLoading(false);
+        }
       },
     });
   };
@@ -68,7 +64,7 @@ const CameraManager: React.FC = () => {
     }
   };
 
-  const handleUpdate = (label: string) => {
+  const handleUpdate = async (label: string) => {
     const trimmedLabel = editData.label.trim();
     const trimmedUrl = editData.url.trim();
 
@@ -76,43 +72,42 @@ const CameraManager: React.FC = () => {
       alert('Both label and URL are required.');
       return;
     }
+
     confirmDialog({
       message: 'Are you sure you want to save the changes?',
       header: 'Save Confirmation',
       icon: 'pi pi-exclamation-triangle',
-      accept: () => {
+      accept: async () => {
         setLoading(true);
-        fetch(`${BASE_URL}/camera-url/${label}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...editData,
-            label: trimmedLabel,
-            url: trimmedUrl,
-          }),
-        })
-          .then((response) => response.json())
-          .then(() => {
-            setCameraUrls(
-              cameraUrls.map((camera) =>
-                camera.label === label
-                  ? { ...editData, label: trimmedLabel, url: trimmedUrl }
-                  : camera
-              )
-            );
-            setEditMode(null);
-            setEditData({ label: '', url: '' });
-            setLoading(false);
-          })
-          .catch((error) => {
-            console.error('Error updating camera URL:', error);
-            setLoading(false);
+        try {
+          await fetch(`${BASE_URL}/camera-url/${label}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...editData,
+              label: trimmedLabel,
+              url: trimmedUrl,
+            }),
           });
+          setCameraUrls(
+            cameraUrls.map((camera) =>
+              camera.label === label
+                ? { ...editData, label: trimmedLabel, url: trimmedUrl }
+                : camera
+            )
+          );
+          setEditMode(null);
+          setEditData({ label: '', url: '' });
+        } catch (error) {
+          console.error('Error updating camera URL:', error);
+        } finally {
+          setLoading(false);
+        }
       },
     });
   };
 
-  const handleAddNewCamera = () => {
+  const handleAddNewCamera = async () => {
     const hasWhitespace = (str: string) => /\s/.test(str);
     const trimmedLabel = newCamera.label.trim();
     const trimmedUrl = newCamera.url.trim();
@@ -126,44 +121,42 @@ const CameraManager: React.FC = () => {
       alert('Label and URL cannot contain spaces.');
       return;
     }
+
     setLoading(true);
-    fetch(`${process.env.NEXT_PUBLIC_FR_URL}/camera-url`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...newCamera,
-        label: trimmedLabel,
-        url: trimmedUrl,
-      }),
-    })
-      .then((response) => response.json())
-      .then(() => {
-        setCameraUrls([
-          ...cameraUrls,
-          { ...newCamera, label: trimmedLabel, url: trimmedUrl },
-        ]);
-        setNewCamera({ label: '', url: '' });
-        setDisplayDialog(false);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error adding new camera:', error);
-        setLoading(false);
+    try {
+      await fetch(`${BASE_URL}/camera-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newCamera,
+          label: trimmedLabel,
+          url: trimmedUrl,
+        }),
       });
+      setCameraUrls([
+        ...cameraUrls,
+        { ...newCamera, label: trimmedLabel, url: trimmedUrl },
+      ]);
+      setNewCamera({ label: '', url: '' });
+      setDisplayDialog(false);
+    } catch (error) {
+      console.error('Error adding new camera:', error);
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <div className='container mx-auto'>
-      {loading && (
+      {loading ? (
         <div className='flex justify-center items-center h-screen'>
           <LogoSpinner />
         </div>
-      )}
-      {!loading && (
+      ) : (
         <>
           <div className='flex items-center justify-between p-4'>
             <h1 className='text-3xl font-bold'>Kamera Ayarları</h1>
             <Button
-              color='help'
               label='Yeni Kamera Ekle'
               icon='pi pi-plus'
               onClick={() => setDisplayDialog(true)}
@@ -172,10 +165,10 @@ const CameraManager: React.FC = () => {
           <DataTable
             value={cameraUrls}
             responsiveLayout='scroll'
-            className='border rounded-xl [&_div]:rounded-xl'
+            className='border rounded-xl'
           >
-            <Column field='label' header='Kamera Adı' className='text-left' />
-            <Column field='url' header='URL' className='p-0 m-0 text-left' />
+            <Column field='label' header='Kamera Adı' />
+            <Column field='url' header='URL' />
             <Column
               header='İşlemler'
               body={(rowData) => (
@@ -185,14 +178,12 @@ const CameraManager: React.FC = () => {
                     className='p-button-rounded p-button-warning'
                     onClick={() => handleEdit(rowData.label)}
                     tooltip='Düzenle'
-                    tooltipOptions={{ position: 'bottom' }}
                   />
                   <Button
                     icon='pi pi-trash'
                     className='p-button-rounded p-button-danger'
                     onClick={() => handleDelete(rowData.label)}
                     tooltip='Sil'
-                    tooltipOptions={{ position: 'bottom' }}
                   />
                 </div>
               )}

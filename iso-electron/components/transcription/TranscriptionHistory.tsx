@@ -53,9 +53,7 @@ const ChatSideMenu: React.FC = () => {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
   return (
-    <div
-      className={`h-full sticky top-0 flex flex-col items-center transition-all duration-500`}
-    >
+    <div className={`h-full sticky top-12 md:block hidden`}>
       {menuToggle && (
         <div className='py-4'>
           <h2 className='text-lg font-bold text-center'>Transkript Kaydı</h2>

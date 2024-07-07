@@ -5,6 +5,8 @@ from services.solr_search import SolrSearcher  # Ensure this is correctly import
 from logger import configure_logging
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required
+from bson import ObjectId
+
 import os
 app = Flask(__name__)
 CORS(app, origins="*")
@@ -25,6 +27,28 @@ system_monitoring_instance = SystemMonitoring()
 # Setup Blueprint
 solr_search_bp = Blueprint("solar_search_bp", __name__)
 system_check = Blueprint("system_check", __name__)
+personel_bp = Blueprint("personel_bp", __name__)
+
+
+@personel_bp.route("/personel", methods=["POST"])
+def add_personel():
+    data = request.json
+    db["Personel"].insert_one(data)
+    return jsonify({"message": "Personel added successfully"}), 201
+
+
+@personel_bp.route("/personel", methods=["GET"])
+def get_personel():
+    personel = list(db["Personel"].find())
+
+    # Convert ObjectId to string
+    for person in personel:
+        person["_id"] = str(person["_id"])
+    
+    return jsonify(personel), 200
+
+
+app.register_blueprint(personel_bp)
 
 @solr_search_bp.route("/search", methods=["GET"])
 def search():
@@ -41,6 +65,7 @@ def system_check_route():
     system_info = system_monitoring_instance.send_system_info()
     return jsonify(system_info)
 app.register_blueprint(system_check)
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5004)

@@ -4,6 +4,7 @@ import os
 from routes import (
     system_check,
     solr_search_bp,
+    personel_bp
 )
 import flask.json.provider as provider
 from flask_jwt_extended import JWTManager
@@ -20,6 +21,7 @@ app.config["JWT_HEADER_TYPE"] = "Bearer"
 jwt = JWTManager(app)
 app.register_blueprint(system_check)
 app.register_blueprint(solr_search_bp)
+app.register_blueprint(personel_bp)
 os.makedirs("logs", exist_ok=True)
 if __name__ == "__main__":
     socketio.init_app(app)

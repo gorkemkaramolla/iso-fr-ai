@@ -26,12 +26,16 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
     }
 
     try {
-      const api = createApi(process.env.NEXT_PUBLIC_FR_URL);
-
-      await api.post('/camera-url', {
-        label: newCameraLabel,
-        url: newCameraUrl,
-        crossOriginIsolated: false,
+      await fetch(`${process.env.NEXT_PUBLIC_FR_URL}/camera-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          label: newCameraLabel,
+          url: newCameraUrl,
+          crossOriginIsolated: false,
+        }),
       });
       // alert('Kamera URL eklendi 🎉');
       toast.success('Kamera URL eklendi 🎉', { duration: 2000 });

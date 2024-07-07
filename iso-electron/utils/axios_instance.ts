@@ -19,6 +19,7 @@ const api = axios.create({
   withCredentials: true, // Send cookies with every request, like 'credentials: include'
   headers: {
     'Content-Type': 'application/json', // Ensuring JSON content type is set globally
+    "Access-Control-Allow-Origin": "*"
   },
 });
 

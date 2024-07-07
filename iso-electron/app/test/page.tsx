@@ -2,13 +2,13 @@
 import React, { useState, useEffect } from 'react';
 
 export default function TestComponent() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<{ error: string } | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
         const formData = new FormData(); // Assuming formData is defined or passed to this function
-        const req = await fetch(`${w}/testix`, {
+        const req = await fetch(`${process.env.NEXT_PUBLIC_AUTH_URL}/testix`, {
           method: 'GET',
           credentials: 'include',
           headers: {

@@ -27,6 +27,7 @@ interface CameraStream {
   isRecording: boolean;
   position?: { x: number; y: number };
   size?: { width: string | number; height: string | number };
+  isLocalCamera?: boolean;
 }
 interface SystemInfo {
   logs_data: string;

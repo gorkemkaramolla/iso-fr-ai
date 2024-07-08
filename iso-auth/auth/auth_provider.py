@@ -11,9 +11,9 @@ class AuthProvider:
     def login(self, username, password):
         users_collection = self.db["users"]
         user = users_collection.find_one({"username": username})
+        print(user)
         if not user or not check_password_hash(user["password"], password):
-            return jsonify({"message": "Invalid credentials"}), 401
-
+            return None
         access_token = create_access_token(identity={"username": username})
         refresh_token = create_refresh_token(identity={"username": username})
         
@@ -31,6 +31,7 @@ class AuthProvider:
         }
         users_collection.insert_one(user_data)
         return jsonify({"message": "User registered successfully"}), 201
+    
     def refresh_token(self):
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user)

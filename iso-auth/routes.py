@@ -144,7 +144,9 @@ def login():
         return jsonify({"error": "Username and password are required"}), 400
 
     tokens = auth_provider.login(username, password)
-
+    if tokens is None:
+        return jsonify({"error": "Invalid username or password"}), 401
+    
     response = jsonify({"message": "Login successful"})
     
     set_access_cookies(response, tokens["access_token"], max_age=int(os.getenv("JWT_EXPIRES_SECONDS") or 60))

@@ -24,6 +24,7 @@ interface CameraStreamProps {
   addCameraStream?: () => void;
   cameraStreams: CameraStream[];
   setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;
+  isLocalCamera?: boolean;
 }
 
 const CameraStreamControl: React.FC<CameraStreamProps> = ({
@@ -35,7 +36,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   isRecording,
   streamSrc,
   cameraStreams,
-  availableIds,
+  isLocalCamera,
   setCameraStreams,
   setAvailableIds,
   cameraUrls,
@@ -184,7 +185,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         setCameraStreams={setCameraStreams}
         isPlaying={isPlaying}
         isLoading={isLoading}
-
+        isLocalCamera={isLocalCamera}
         // onLoad={() => onCameraChange(id, selectedCamera)}
       />
     </div>

@@ -69,38 +69,72 @@ const VideoStream: React.FC = () => {
     };
   }, []);
 
+  // const addCameraStream = (camera: Camera) => {
+  //   if (availableIds.length > 0) {
+  //     const newId = availableIds[0]; // Take the smallest available ID
+  //     setAvailableIds(availableIds.slice(1)); // Remove the new ID from the available IDs
+  //     const newCameraStream = {
+  //       id: newId,
+  //       selectedCamera: camera,
+  //       streamSrc: `${BASE_URL}/stream/${newId}?camera=${
+  //         selectedCamera?.url
+  //       }&quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
+  //       selectedQuality: Object.keys(Quality)[0],
+  //       isPlaying: true,
+  //       isLoading: true,
+  //       isRecording: false,
+  //       position: { x: 0, y: 0 },
+  //       size: { width: '100%', height: '100%' },
+  //     };
+
+  //     setCameraStreams([...cameraStreams, newCameraStream]);
+  //     if (typeof window !== 'undefined') {
+  //       // Retrieve the existing list of cameraStreams from localStorage
+  //       const savedStreams = localStorage.getItem('cameraStreams');
+  //       let cameraStreamsList = savedStreams ? JSON.parse(savedStreams) : [];
+
+  //       // Append the new cameraStream to the list
+  //       cameraStreamsList.push(newCameraStream);
+
+  //       // Save the updated list back to localStorage
+  //       localStorage.setItem(
+  //         'cameraStreams',
+  //         JSON.stringify(cameraStreamsList)
+  //       );
+  //     }
+  //     setSelectedCamera(undefined);
+  //     // alert(selectedCamera?.label + ' kamera yayını eklendi.');
+  //   }
+  // };
   const addCameraStream = (camera: Camera) => {
     if (availableIds.length > 0) {
       const newId = availableIds[0]; // Take the smallest available ID
       setAvailableIds(availableIds.slice(1)); // Remove the new ID from the available IDs
+      const isLocalCamera = camera.url === '0'; // Check if the URL is "0"
       const newCameraStream = {
         id: newId,
         selectedCamera: camera,
-        streamSrc: `${BASE_URL}/stream/${newId}?camera=${
-          selectedCamera?.url
-        }&quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
+        streamSrc: isLocalCamera ? '' : `${BASE_URL}/stream/${newId}?camera=${selectedCamera?.url}&quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
         selectedQuality: Object.keys(Quality)[0],
         isPlaying: true,
         isLoading: true,
         isRecording: false,
         position: { x: 0, y: 0 },
         size: { width: '100%', height: '100%' },
+        isLocalCamera: isLocalCamera, // Add a flag for local camera
       };
-
+  
       setCameraStreams([...cameraStreams, newCameraStream]);
       if (typeof window !== 'undefined') {
         // Retrieve the existing list of cameraStreams from localStorage
         const savedStreams = localStorage.getItem('cameraStreams');
         let cameraStreamsList = savedStreams ? JSON.parse(savedStreams) : [];
-
+  
         // Append the new cameraStream to the list
         cameraStreamsList.push(newCameraStream);
-
+  
         // Save the updated list back to localStorage
-        localStorage.setItem(
-          'cameraStreams',
-          JSON.stringify(cameraStreamsList)
-        );
+        localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
       }
       setSelectedCamera(undefined);
       // alert(selectedCamera?.label + ' kamera yayını eklendi.');
@@ -222,8 +256,7 @@ const VideoStream: React.FC = () => {
         <div className='grid grid-cols-12 justify-center items-start mx-auto gap-4 min-h-screen'>
           <div className='relative col-span-9 gap-4'>
             <div>
-              <LocalCamera />
-              {/* <SendLocalCameraStream /> */}
+              {/* <LocalCamera /> */}
             </div>
             {cameraStreams.length > 0 &&
               cameraStreams
@@ -270,6 +303,7 @@ const VideoStream: React.FC = () => {
                           setAvailableIds={setAvailableIds}
                           cameraStreams={cameraStreams}
                           setCameraStreams={setCameraStreams}
+                          isLocalCamera={camera.isLocalCamera}
                         />
                       </Resizable>
                     </Draggable>

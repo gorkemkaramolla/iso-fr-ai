@@ -234,22 +234,6 @@ def stream(stream_id):
 
 # ****************************************************************************
 # Local CAM Stream
-
-
-# @socketio.on('video_frame')
-# def handle_video_frame(data):
-#     # Decode the image
-#     image_data = data.split(',')[1]
-#     nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
-#     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-#     # Process the image (e.g., convert to grayscale)
-#     processed_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-#     # Encode the image to base64
-#     _, buffer = cv2.imencode('.jpg', processed_img)
-#     processed_image = base64.b64encode(buffer).decode('utf-8')
-#     socketio.emit('processed_frame', 'data:image/jpeg;base64,' + processed_image)
 @socketio.on('video_frame')
 def handle_video_frame(data):
     # Decode the image

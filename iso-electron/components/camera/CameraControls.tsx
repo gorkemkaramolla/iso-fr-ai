@@ -47,7 +47,7 @@ const CameraControls: React.FC<CameraControlsProps> = ({
   }, [isLoading, isPlaying, isRecording]);
 
   return (
-    <div className='dropdown'>
+    <div className='dropdown dropdown-bottom dropdown-end'>
       <div
         tabIndex={0}
         role='button'

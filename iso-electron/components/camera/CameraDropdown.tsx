@@ -59,7 +59,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
       <div
         className='tooltip tooltip-bottom'
         data-tip={
-          cameraStreams.length >= 6 ? 'Maksimum 6 kamera eklenebilir' : null
+          cameraStreams.length >= 4 ? 'Maksimum 4 kamera eklenebilir' : null
         }
       >
         <button
@@ -67,9 +67,9 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
             selectedCamera && addCameraStream(selectedCamera);
           }}
           className='btn btn-neutral text-white'
-          disabled={cameraStreams.length >= 6 || selectedCamera === undefined}
+          disabled={cameraStreams.length >= 4 || selectedCamera === undefined}
           aria-disabled={
-            cameraStreams.length >= 6 || selectedCamera === undefined
+            cameraStreams.length >= 4 || selectedCamera === undefined
           }
         >
           Yayın Başlat

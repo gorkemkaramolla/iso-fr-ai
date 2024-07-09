@@ -53,7 +53,7 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
       {!showAddCamera ? (
         <button
           data-tip={
-            disabled ? 'Maximum 6 kamera eklenebilir' : 'Yeni kamera ekle'
+            disabled ? 'Maximum 4 kamera eklenebilir' : 'Yeni kamera ekle'
           }
           className='tooltip tooltip-bottom btn btn-default btn-circle btn-outline 
             rounded-3xl text-semibold flex items-center justify-center group'

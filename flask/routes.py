@@ -3,6 +3,7 @@ import datetime
 import glob
 import json
 import logging
+import shutil
 import bson
 import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
@@ -280,6 +281,19 @@ def delete_log(id):
     return jsonify({"message": "Log deleted successfully"}), 200
 
 
+# @camera_bp.route("/recog/name/<id>", methods=["PUT"])
+# def update_recog_name(id):
+#     data = request.json
+#     new_name = data.get("name")
+#     if not new_name:
+#         return jsonify({"error": "Name is required"}), 400
+
+#     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+#     if result.matched_count == 0:
+#         return jsonify({"error": "Log not found"}), 404
+
+#     return jsonify({"message": "Name updated successfully"}), 200
+
 @camera_bp.route("/recog/name/<id>", methods=["PUT"])
 def update_recog_name(id):
     data = request.json
@@ -287,11 +301,36 @@ def update_recog_name(id):
     if not new_name:
         return jsonify({"error": "Name is required"}), 400
 
+    # Update the name in the database
     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
     if result.matched_count == 0:
         return jsonify({"error": "Log not found"}), 404
 
-    return jsonify({"message": "Name updated successfully"}), 200
+    # Copy and rename the folder
+    base_dir = os.path.join('recog', 'known_faces')
+    old_folder_path = os.path.join(base_dir, id)
+    new_folder_path = os.path.join(base_dir, new_name)
+    
+    try:
+        # Copy the directory if it exists
+        if os.path.exists(old_folder_path):
+            shutil.copytree(old_folder_path, new_folder_path)
+        
+        # Rename the folder
+        os.rename(old_folder_path, new_folder_path)
+
+        # Update the image paths in the database
+        logs_collection.update_many(
+            {"label": new_name},
+            {"$set": {"image_path": {"$replaceOne": {"input": "$image_path", "find": id, "replacement": new_name}}}}
+        )
+    except FileNotFoundError:
+        return jsonify({"error": "Folder not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"message": "Name, folder, and image paths updated successfully"}), 200
+
 
 
 @camera_bp.route("/images/<path:image_path>", methods=["GET"])

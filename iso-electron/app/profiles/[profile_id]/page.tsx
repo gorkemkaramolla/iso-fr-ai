@@ -36,7 +36,7 @@ const Profile = async ({ params: { profile_id } }: Props) => {
         <div className=' w-full md:w-3/12 flex  justify-center flex-row md:flex-col gap-3 '>
           <div className='flex'>
             <Image
-              src={`${process.env.NEXT_PUBLIC_FR_URL}/images${person.image_path}`}
+              src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images${person.image_path}`}
               width={5}
               height={1}
               className='rounded-full md:h-64 md:w-64 w-24 h-24 object-cover'

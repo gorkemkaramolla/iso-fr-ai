@@ -33,6 +33,7 @@ export default async function handler(
       console.error(
         'Login error:',
         (error as any).response?.data || (error as any).message
+        
       );
       res.status(401).json({ error: 'Invalid credentials' });
     }

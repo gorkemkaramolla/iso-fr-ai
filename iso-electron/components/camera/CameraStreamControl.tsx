@@ -24,6 +24,7 @@ interface CameraStreamProps {
   addCameraStream?: () => void;
   cameraStreams: CameraStream[];
   setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;
+  isLocalCamera?: boolean;
 }
 
 const CameraStreamControl: React.FC<CameraStreamProps> = ({
@@ -35,12 +36,12 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   isRecording,
   streamSrc,
   cameraStreams,
-  availableIds,
+  isLocalCamera,
   setCameraStreams,
   setAvailableIds,
   cameraUrls,
 }) => {
-  const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
+  const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
   const startRecording = () => {
     setCameraStreams(
       cameraStreams.map((camera) =>
@@ -77,7 +78,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
   const stopStream = () => {
-    const api = createApi(process.env.NEXT_PUBLIC_FR_URL);
+    const api = createApi(process.env.NEXT_PUBLIC_FLASK_URL);
 
     api.get('camera/stop', { params: { id: id } });
     setCameraStreams(
@@ -149,8 +150,20 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
       cursor-move'
       >
         <div className='flex flex-row space-x-4 gap-4 items-center justify-between  px-20'>
+        <div className=''>
+            Yayın {id} -{' '}
+            <span className='text-red-500'>{selectedCamera?.label}</span>
+          </div>
           <div className='flex flex-row gap-4 items-center'>
-            <CameraControls
+         
+            {isNaN(parseFloat(selectedCamera?.url ?? '')) ? (
+              <QualityDropdown
+                id={id}
+                selectedQuality={selectedQuality}
+                handleQualityChange={handleQualityChange}
+              />
+            ) : null}
+               <CameraControls
               isPlaying={isPlaying}
               isLoading={isLoading}
               isRecording={isRecording}
@@ -160,18 +173,8 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               startRecording={() => startRecording()}
               stopRecording={() => stopRecording()}
             />
-            {isNaN(parseFloat(selectedCamera?.url ?? '')) ? (
-              <QualityDropdown
-                id={id}
-                selectedQuality={selectedQuality}
-                handleQualityChange={handleQualityChange}
-              />
-            ) : null}
           </div>
-          <div className=''>
-            Yayın {id} -{' '}
-            <span className='text-red-500'>{selectedCamera?.label}</span>
-          </div>
+        
         </div>
       </div>
       {/* <div>{streamSrc}</div> */}
@@ -184,7 +187,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         setCameraStreams={setCameraStreams}
         isPlaying={isPlaying}
         isLoading={isLoading}
-
+        isLocalCamera={isLocalCamera}
         // onLoad={() => onCameraChange(id, selectedCamera)}
       />
     </div>

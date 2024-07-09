@@ -33,4 +33,4 @@ os.makedirs("logs", exist_ok=True)
 
 if __name__ == "__main__":
     socketio.init_app(app)
-    socketio.run(app, debug=True, port=5004)
+    socketio.run(app, debug=True, port=5004, host="192.168.101.81")

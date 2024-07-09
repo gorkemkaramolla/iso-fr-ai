@@ -18,7 +18,7 @@ const CameraManager: React.FC = () => {
   const [newCamera, setNewCamera] = useState<Camera>({ label: '', url: '' });
   const [displayDialog, setDisplayDialog] = useState(false);
   const [loading, setLoading] = useState(true);
-  const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
+  const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
   console.log(BASE_URL);
   useEffect(() => {
     const fetchCameraUrls = async () => {

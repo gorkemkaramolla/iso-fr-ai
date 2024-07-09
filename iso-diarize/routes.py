@@ -24,7 +24,7 @@ logs_collection = db["logs"]
 camera_collection = db["cameras"]
 
 ###################################################### Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cpu")
+diarization_processor = SpeakerDiarizationProcessor(device="cuda")
 logger = configure_logging()
 
 # Setup Blueprint

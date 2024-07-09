@@ -5,7 +5,9 @@ import NavigationBar from '@/components/ui/NavigationBar';
 import { PrimeReactProvider } from 'primereact/api';
 import { isAuthenticated } from '@/library/auth/is_authenticated'; // Import the utility function
 import Provider from '@/components/providers';
-
+import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
+import 'primereact/resources/primereact.min.css'; //core css
+import 'primeicons/primeicons.css'; //icons
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -21,7 +23,7 @@ export default function RootLayout({
   // Check authentication status
 
   return (
-    <html lang='tr' data-theme='light' className={'w-screen overflow-hidden'}>
+    <html lang='tr' data-theme='light' className={'w-screen overflow-x-hidden'}>
       <body className={inter.className + ' light flex justify-center'}>
         <PrimeReactProvider>
           <div className='w-full h-[100dvh]'>

@@ -295,7 +295,6 @@
 # volumes:
 #   mongo_data:
 #   solr_data:
-  
 version: '3.8'
 
 services:
@@ -317,11 +316,6 @@ services:
     depends_on:
       - solr
       - mongo
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
     volumes:
       - face_recognition_data:/app/data
 
@@ -334,11 +328,6 @@ services:
     depends_on:
       - solr
       - mongo
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
 
   utils_service:
     build: ./iso-utils
@@ -349,6 +338,8 @@ services:
     depends_on:
       - solr
       - mongo
+    volumes:
+      - /Users/gorkemkaramolla/Documents/isoai-images
 
   mongo:
     image: mongo:latest
@@ -376,9 +367,6 @@ volumes:
   mongo_data:
   solr_data:
   face_recognition_data:
-
-
-
 
 
 

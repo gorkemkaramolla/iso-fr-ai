@@ -3,6 +3,7 @@ import json
 from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 from pymongo import MongoClient
+import uuid
 
 class SolrSearcher:
     def __init__(self, mongo_client, mongo_db, solr_url="http://localhost:8983/solr/isoai"):
@@ -65,7 +66,8 @@ class SolrSearcher:
             return []
 
     def convert_objectid_to_str(self, document):
-        document['_id'] = str(document['_id'])
+        if '_id' in document:
+            document['_id'] = str(document['_id'])
         return document
 
     def index_data(self, document):
@@ -79,8 +81,29 @@ class SolrSearcher:
             request = Request(f'{self.solr_url}/update?commit=true', data=data, headers=headers)
             connection = urlopen(request)
             response = json.load(connection)
-            logging.info(f"Document {document['_id']} indexed successfully, response: {response}")
+            logging.info(f"Document {document.get('_id', 'unknown')} indexed successfully, response: {response}")
         except Exception as e:
-            logging.error(f"Error indexing document {document['_id']}: {e}")
+            logging.error(f"Error indexing document {document.get('_id', 'unknown')}: {e}")
 
-
+    def add_record_to_solr(self, document):
+        """
+        Adds a single document to the Solr index.
+        """
+        try:
+            # Ensure the document has a unique ID for Solr if it doesn't already
+            if '_id' not in document:
+                document['_id'] = str(uuid.uuid4())
+            document = self.convert_objectid_to_str(document)
+            data = json.dumps([document]).encode('utf-8')
+            headers = {
+                'Content-Type': 'application/json',
+                'Content-Length': len(data)
+            }
+            request = Request(f'{self.solr_url}/update?commit=true', data=data, headers=headers)
+            connection = urlopen(request)
+            response = json.load(connection)
+            logging.info(f"Document {document['_id']} added successfully to Solr, response: {response}")
+            return {"status": "success", "response": response}
+        except Exception as e:
+            logging.error(f"Error adding document {document.get('_id', 'unknown')} to Solr: {e}")
+            return {"status": "error", "message": str(e)}

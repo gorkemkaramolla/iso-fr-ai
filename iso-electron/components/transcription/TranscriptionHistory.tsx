@@ -6,6 +6,7 @@ import axios from 'axios';
 import useStore from '@/library/store';
 import api from '@/utils/axios_instance';
 import createApi from '@/utils/axios_instance';
+import { formatDate } from '@/utils/formatDate';
 
 interface ApiResponse {
   transcription_id: string;
@@ -70,8 +71,8 @@ const ChatSideMenu: React.FC = () => {
                       >
                         <p className='flex gap-2 flex-col items-center'>
                           <div className='flex gap-1'>
-                            <div className='cursor-pointer'>
-                              Transcription ID = {response.transcription_id}
+                            <div className='w-full cursor-pointer'>
+                              <span>ID = {response.transcription_id}</span>
                             </div>
                           </div>
                           <div className='flex items-center gap-1'>
@@ -79,7 +80,7 @@ const ChatSideMenu: React.FC = () => {
                               Tarih
                             </div>
                             <Calendar className='w-4 h-4' />
-                            {response.created_at}
+                            {formatDate(response.created_at)}
                           </div>
                         </p>
                       </div>

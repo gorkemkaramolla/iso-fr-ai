@@ -37,7 +37,7 @@ app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
 app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
 app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection in production
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=int(os.getenv("JWT_EXPIRE_SECONDS")) or 60)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=int(os.getenv("JWT_EXPIRE_SECONDS")) )
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)
 
 jwt = JWTManager(app)
@@ -147,7 +147,7 @@ def login():
 
     response = jsonify({"message": "Login successful"})
     
-    set_access_cookies(response, tokens["access_token"], max_age=int(os.getenv("JWT_EXPIRES_SECONDS") or 60))
+    set_access_cookies(response, tokens["access_token"], max_age=int(os.getenv("JWT_EXPIRE_SECONDS") ))
     return response, 200
 
 @auth_bp.route('/logout', methods=['POST'])

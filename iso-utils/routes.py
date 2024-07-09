@@ -50,6 +50,35 @@ def get_personel():
 
 app.register_blueprint(personel_bp)
 
+@solr_search_bp.route("/add_to_solr", methods=["POST"])
+def add_to_solr():
+    data = request.form.to_dict()
+    file = request.files.get('file')
+
+    if file and file.filename.endswith(('.png', '.jpg', '.jpeg')):
+        try:
+            # Generate a unique filename
+            filename = str(uuid.uuid4()) + os.path.splitext(file.filename)[-1]
+
+            # Save the file to the mounted directory
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(file_path)
+
+            # Add the file path to the data (or convert to base64 if needed)
+            data['file_path'] = file_path
+
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+    else:
+        return jsonify({"status": "error", "message": "No valid image file provided"}), 400
+
+    # Add the record to Solr
+    result = searcher.add_record_to_solr(data)
+    if result["status"] == "success":
+        return jsonify(result), 201
+    else:
+        return jsonify(result), 500
+
 @solr_search_bp.route("/search", methods=["GET"])
 def search():
     query = request.args.get("query")

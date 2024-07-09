@@ -14,7 +14,7 @@ import LocalCamera from '@/components/camera/LocalCamera';
 import SendLocalCameraStream from '@/components/camera/SendLocalCameraStream';
 import createApi from '@/utils/axios_instance';
 
-const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
 const socket = io(BASE_URL!);
 
 const VideoStream: React.FC = () => {
@@ -48,7 +48,7 @@ const VideoStream: React.FC = () => {
     const fetchCameraUrls = async () => {
       try {
         const response = await fetch(
-          process.env.NEXT_PUBLIC_FR_URL + '/camera-urls'
+          process.env.NEXT_PUBLIC_FLASK_URL + '/camera-urls'
         );
         const data = await response.json();
         setCameraUrls(data);

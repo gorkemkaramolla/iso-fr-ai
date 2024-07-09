@@ -26,7 +26,7 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
     }
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_FR_URL}/camera-url`, {
+      await fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/camera-url`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

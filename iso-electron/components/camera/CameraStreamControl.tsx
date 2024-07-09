@@ -41,7 +41,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   setAvailableIds,
   cameraUrls,
 }) => {
-  const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
+  const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
   const startRecording = () => {
     setCameraStreams(
       cameraStreams.map((camera) =>
@@ -78,7 +78,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
   const stopStream = () => {
-    const api = createApi(process.env.NEXT_PUBLIC_FR_URL);
+    const api = createApi(process.env.NEXT_PUBLIC_FLASK_URL);
 
     api.get('camera/stop', { params: { id: id } });
     setCameraStreams(

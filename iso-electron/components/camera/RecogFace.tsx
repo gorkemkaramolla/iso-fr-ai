@@ -3,7 +3,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { SearchIcon, XIcon } from 'lucide-react';
 
-const BASE_URL = process.env.NEXT_PUBLIC_FR_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
 const socket = io(BASE_URL!);
 
 const getRecogFaces = async () => {

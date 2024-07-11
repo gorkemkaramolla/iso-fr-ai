@@ -98,10 +98,10 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   }
 
   return (
-    <div className=''>
+    <div className='flex flex-col'>
       <h1 className='bold text-2xl'>{transcription.created_at}</h1>
       <h2 className='bold text-xl'>Meclis Konuşması</h2>
-      <div className='flex items-start'>
+      <div className='flex items-start  w-full  justify-center'>
         <Dialog
           header='Rename Speaker'
           visible={showModal}
@@ -134,7 +134,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
           </div>
         </Dialog>
         <div
-          className='overflow-x-auto w-full'
+          className='overflow-x-auto w-8/12'
           style={{ height: '650px', overflowY: 'scroll' }}
         >
           <div style={{ position: 'relative' }}>

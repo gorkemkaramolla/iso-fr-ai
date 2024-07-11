@@ -69,6 +69,8 @@ interface RecogFace {
     $oid: string;
   };
   emotion: string;
+  gender: number;
+  age: number;
   image_path: string;
   label: string;
   similarity: number;

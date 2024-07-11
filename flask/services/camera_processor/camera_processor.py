@@ -186,6 +186,8 @@ class CameraProcessor:
             "label": label,
             "similarity": round(float(similarity), 2),
             "emotion": emotion,
+            "gender": gender,
+            "age": age,
             "image_path": file_path,
         }
         notify_new_face(log_record)

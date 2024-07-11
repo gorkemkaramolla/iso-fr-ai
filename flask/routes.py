@@ -301,35 +301,230 @@ def update_recog_name(id):
     if not new_name:
         return jsonify({"error": "Name is required"}), 400
 
-    # Update the name in the database
+    # Update the label in the database
     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
     if result.matched_count == 0:
         return jsonify({"error": "Log not found"}), 404
+  
+    # Determine the correct source folder path
+    base_dir = os.path.join('recog')
+    unknown_faces_path = os.path.join(base_dir, 'unknown_faces', id)
+    known_faces_path = os.path.join(base_dir, 'known_faces', id)
+    if os.path.exists(unknown_faces_path):
+        old_folder_path = unknown_faces_path
+    elif os.path.exists(known_faces_path):
+        old_folder_path = known_faces_path
+    else:
+        return jsonify({"error": "Image folder not found"}), 404
 
-    # Copy and rename the folder
-    base_dir = os.path.join('recog', 'known_faces')
-    old_folder_path = os.path.join(base_dir, id)
-    new_folder_path = os.path.join(base_dir, new_name)
-    
+    new_folder_path = os.path.join(base_dir, 'known_faces', new_name)
+
     try:
-        # Copy the directory if it exists
-        if os.path.exists(old_folder_path):
-            shutil.copytree(old_folder_path, new_folder_path)
+        # Check if the target directory exists
+        if not os.path.exists(new_folder_path):
+            os.makedirs(new_folder_path)
         
-        # Rename the folder
-        os.rename(old_folder_path, new_folder_path)
+        # Rename and move files from old to new folder
+        for file_name in os.listdir(old_folder_path):
+            if file_name.startswith(id):
+                # Construct the new file name by replacing id with new_name
+                new_file_name = file_name.replace(id, new_name, 1)
+                src_file_path = os.path.join(old_folder_path, file_name)
+                dst_file_path = os.path.join(new_folder_path, new_file_name)
+                
+                # Move the file with the new name
+                shutil.move(src_file_path, dst_file_path)
+            else:
+                # If the file does not start with id, move it without renaming
+                src_file_path = os.path.join(old_folder_path, file_name)
+                dst_file_path = os.path.join(new_folder_path, file_name)
+                shutil.move(src_file_path, dst_file_path)
+
+        # Remove the old folder if it's empty
+        if not os.listdir(old_folder_path):
+            os.rmdir(old_folder_path)
 
         # Update the image paths in the database
         logs_collection.update_many(
             {"label": new_name},
-            {"$set": {"image_path": {"$replaceOne": {"input": "$image_path", "find": id, "replacement": new_name}}}}
+            [{"$set": {"image_path": {"$replaceAll": {"input": "$image_path", "find": id, "replacement": new_name}}}},
+             {"$set": {"image_path": {"$replaceOne": {"input": "$image_path", "find": "unknown_faces", "replacement": "known_faces"}}}}
+             
+             ]
         )
     except FileNotFoundError:
         return jsonify({"error": "Folder not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    return jsonify({"message": "Name, folder, and image paths updated successfully"}), 200
+    return jsonify({"message": "Name, folder, and image paths updated successfully"}), 200@camera_bp.route("/recog/name/<id>", methods=["PUT"])
+
+# def update_recog_name(id):
+#     data = request.json
+#     new_name = data.get("name")
+#     if not new_name:
+#         return jsonify({"error": "Name is required"}), 400
+
+#     # Update the label in the database
+#     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+#     if result.matched_count == 0:
+#         return jsonify({"error": "Log not found"}), 404
+
+#     # Determine the correct source folder path
+#     base_dir = os.path.join('recog')
+#     unknown_faces_path = os.path.join(base_dir, 'unknown_faces', id)
+#     known_faces_path = os.path.join(base_dir, 'known_faces', id)
+#     if os.path.exists(unknown_faces_path):
+#         old_folder_path = unknown_faces_path
+#     elif os.path.exists(known_faces_path):
+#         old_folder_path = known_faces_path
+#     else:
+#         return jsonify({"error": "Image folder not found"}), 404
+
+#     new_folder_path = os.path.join(base_dir, 'known_faces', new_name)
+
+#     try:
+#         # Check if the target directory exists
+#         if not os.path.exists(new_folder_path):
+#             os.makedirs(new_folder_path)
+        
+#         # Move files from old to new folder
+#         for file_name in os.listdir(old_folder_path):
+#             src_file_path = os.path.join(old_folder_path, file_name)
+#             dst_file_path = os.path.join(new_folder_path, file_name)
+#             shutil.move(src_file_path, dst_file_path)
+
+#         # Remove the old folder if it's empty
+#         if not os.listdir(old_folder_path):
+#             os.rmdir(old_folder_path)
+
+#         # Update the image paths in the database
+#         logs_collection.update_many(
+#             {"label": new_name},
+#             [{"$set": {"image_path": {"$replaceAll": {"input": "$image_path", "find": id, "replacement": new_name}}}}]
+#         )
+#     except FileNotFoundError:
+#         return jsonify({"error": "Folder not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+#     return jsonify({"message": "Name, folder, and image paths updated successfully"}), 200
+
+# @camera_bp.route("/recog/name/<id>", methods=["PUT"])
+# def update_recog_name(id):
+#     data = request.json
+#     new_name = data.get("name")
+#     if not new_name:
+#         return jsonify({"error": "Name is required"}), 400
+
+#     # Update the label in the database
+#     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+#     if result.matched_count == 0:
+#         return jsonify({"error": "Log not found"}), 404
+
+#     # Correctly handle folder paths
+#     base_dir_known = os.path.join('recog', 'known_faces')
+#     base_dir_unknown = os.path.join('recog', 'unknown_faces')
+#     old_folder_path = os.path.join(base_dir_unknown, id)
+#     new_folder_path = os.path.join(base_dir_known, new_name)
+
+#     try:
+#         # Check if the target directory exists
+#         if not os.path.exists(new_folder_path):
+#             os.makedirs(new_folder_path)
+        
+#         # Copy files from old to new folder
+#         for file_name in os.listdir(old_folder_path):
+#             src_file_path = os.path.join(old_folder_path, file_name)
+#             dst_file_path = os.path.join(new_folder_path, file_name)
+#             shutil.copy(src_file_path, dst_file_path)
+
+#         # Update the image paths in the database using an aggregation pipeline
+#         logs_collection.update_many(
+#             {"label": new_name},
+#             [{"$set": {"image_path": {"$replaceAll": {"input": "$image_path", "find": f"unknown_faces/{id}/", "replacement": f"known_faces/{new_name}/"}}}}]
+#         )
+#     except FileNotFoundError:
+#         return jsonify({"error": "Folder not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+#     return jsonify({"message": "Name, folder, and image paths updated successfully"}), 200
+
+# @camera_bp.route("/recog/name/<id>", methods=["PUT"])
+# def update_recog_name(id):
+#     data = request.json
+#     new_name = data.get("name")
+#     if not new_name:
+#         return jsonify({"error": "Name is required"}), 400
+
+#     # Update the label in the database
+#     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+#     if result.matched_count == 0:
+#         return jsonify({"error": "Log not found"}), 404
+
+#     # Correctly handle folder paths
+#     base_dir_known = os.path.join('recog', 'known_faces')
+#     base_dir_unknown = os.path.join('recog', 'unknown_faces')
+#     old_folder_path = os.path.join(base_dir_unknown, id)  # Changed to unknown_faces
+#     new_folder_path = os.path.join(base_dir_known, new_name)  # Target is known_faces
+    
+#     try:
+#         # Move the directory if it exists, handle existing target
+#         if os.path.exists(old_folder_path):
+#             if os.path.exists(new_folder_path):
+#                 shutil.rmtree(new_folder_path)
+#             shutil.move(old_folder_path, new_folder_path)
+
+#         # Update the image paths in the database using an aggregation pipeline
+#         logs_collection.update_many(
+#             {"label": new_name},
+#             [{"$set": {"image_path": {"$replaceAll": {"input": "$image_path", "find": f"unknown_faces/{id}/", "replacement": f"known_faces/{new_name}/"}}}}]
+#         )
+#     except FileNotFoundError:
+#         return jsonify({"error": "Folder not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+#     return jsonify({"message": "Name, folder, and image paths updated successfully"}), 200
+
+
+# @camera_bp.route("/recog/name/<id>", methods=["PUT"])
+# def update_recog_name(id):
+#     data = request.json
+#     new_name = data.get("name")
+#     if not new_name:
+#         return jsonify({"error": "Name is required"}), 400
+
+#     # Update the name in the database
+#     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+#     if result.matched_count == 0:
+#         return jsonify({"error": "Log not found"}), 404
+
+#     # Copy and rename the folder
+#     base_dir = os.path.join('recog', 'known_faces')
+#     old_folder_path = os.path.join(base_dir, id)
+#     new_folder_path = os.path.join(base_dir, new_name)
+    
+#     try:
+#         # Copy the directory if it exists
+#         if os.path.exists(old_folder_path):
+#             shutil.copytree(old_folder_path, new_folder_path)
+        
+#         # Rename the folder
+#         os.rename(old_folder_path, new_folder_path)
+
+#         # Update the image paths in the database
+#         logs_collection.update_many(
+#             {"label": new_name},
+#             {"$set": {"image_path": {"$replaceOne": {"input": "$image_path", "find": id, "replacement": new_name}}}}
+#         )
+#     except FileNotFoundError:
+#         return jsonify({"error": "Folder not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+#     return jsonify({"message": "Name, folder, and image paths updated successfully"}), 200
 
 
 

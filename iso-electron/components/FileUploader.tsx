@@ -1,11 +1,10 @@
 'use client';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, ChangeEvent } from 'react';
 import { Toast } from 'primereact/toast';
 import {
   FileUpload,
   FileUploadHeaderTemplateOptions,
   FileUploadSelectEvent,
-  FileUploadUploadEvent,
   ItemTemplateOptions,
 } from 'primereact/fileupload';
 import { ProgressBar } from 'primereact/progressbar';
@@ -17,7 +16,7 @@ import Image from 'next/image';
 export default function FileUploader({
   onFileUpload,
 }: {
-  onFileUpload: (files: File[]) => void;
+  onFileUpload: (file: File) => void;
 }) {
   const toast = useRef<Toast>(null);
   const [totalSize, setTotalSize] = useState(0);
@@ -34,26 +33,11 @@ export default function FileUploader({
 
     for (let i = 0; i < files.length; i++) {
       _totalSize += files[i].size || 0;
+      // Immediately call the parent prop function on file selection
+      onFileUpload(files[i]);
     }
 
     setTotalSize(_totalSize);
-  };
-
-  const onTemplateUpload = (e: FileUploadUploadEvent) => {
-    let _totalSize = 0;
-    e.files.forEach((file) => {
-      _totalSize += file.size || 0;
-    });
-
-    setTotalSize(_totalSize);
-    toast.current?.show({
-      severity: 'info',
-      summary: 'Success',
-      detail: 'File Uploaded',
-    });
-
-    // Pass uploaded files to parent component
-    onFileUpload(e.files);
   };
 
   const onTemplateRemove = (file: File, callback: Function) => {
@@ -162,12 +146,6 @@ export default function FileUploader({
     className:
       'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined',
   };
-  const uploadOptions = {
-    icon: 'pi pi-fw pi-cloud-upload',
-    iconOnly: true,
-    className:
-      'custom-upload-btn p-button-success p-button-rounded p-button-outlined',
-  };
 
   if (!isClient) {
     return null;
@@ -176,28 +154,24 @@ export default function FileUploader({
   return (
     <div className=''>
       <Toast ref={toast}></Toast>
-
       <Tooltip target='.custom-choose-btn' content='Choose' position='bottom' />
       <Tooltip target='.custom-cancel-btn' content='Clear' position='bottom' />
-      <Tooltip target='.custom-upload-btn' content='Upload' position='bottom' />
 
       <FileUpload
         ref={fileUploadRef}
         name='demo[]'
         url='/api/upload'
-        multiple
+        multiple={false}
         accept='image/*'
-        maxFileSize={1000000}
+        maxFileSize={5000000}
         onSelect={onTemplateSelect}
         onError={onTemplateClear}
         onClear={onTemplateClear}
-        onUpload={onTemplateUpload}
         headerTemplate={headerTemplate}
         itemTemplate={itemTemplate}
         emptyTemplate={emptyTemplate}
         chooseOptions={chooseOptions}
         cancelOptions={cancelOptions}
-        uploadOptions={uploadOptions}
         customUpload
       />
     </div>

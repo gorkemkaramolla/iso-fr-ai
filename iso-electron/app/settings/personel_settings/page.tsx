@@ -1,85 +1,160 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, useRef } from 'react';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { ConfirmDialog } from 'primereact/confirmdialog';
-import { Calendar } from 'primereact/calendar';
+import { Toast } from 'primereact/toast';
+import { z } from 'zod';
 import FileUploader from '@/components/FileUploader';
+import { redirect, useRouter } from 'next/navigation';
+
+const formSchema = z.object({
+  name: z.string().nonempty({ message: 'İsim boş bırakılmamalı' }),
+  lastname: z.string().nonempty({ message: 'Soyisim boş bırakılmamalı' }),
+  title: z.string(),
+  address: z.string(),
+  phone: z.string(),
+  email: z.string().email({ message: 'Geçersiz email adresi' }),
+  gsm: z.string(),
+  resume: z.string(),
+  birthDate: z.string(),
+  isoPhone: z.string(),
+  isoPhone2: z.string(),
+  uploadedFile: z.any(),
+});
+
+interface FormDataState {
+  name: string;
+  lastname: string;
+  title: string;
+  address: string;
+  phone: string;
+  email: string;
+  gsm: string;
+  resume: string;
+  birthDate: string;
+  isoPhone: string;
+  isoPhone2: string;
+  uploadedFile: File | null;
+}
 
 export default function Page() {
-  const [name, setName] = useState('');
-  const [lastname, setLastname] = useState('');
-  const [title, setTitle] = useState('');
-  const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [gsm, setGsm] = useState('');
-  const [resume, setResume] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [isoPhone, setIsoPhone] = useState('');
-  const [isoPhone2, setIsoPhone2] = useState('');
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [formData, setFormData] = useState<FormDataState>({
+    name: '',
+    lastname: '',
+    title: '',
+    address: '',
+    phone: '',
+    email: '',
+    gsm: '',
+    resume: '',
+    birthDate: '',
+    isoPhone: '',
+    isoPhone2: '',
+    uploadedFile: null,
+  });
 
-  const handleFileUpload = (files: React.SetStateAction<never[]>) => {
-    setUploadedFiles(files);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const toast = useRef<Toast>(null);
+  const router = useRouter();
+  const showError = (error: string) => {
+    toast.current?.show({
+      severity: 'error',
+      summary: 'Error',
+      detail: error,
+      life: 3000,
+    });
+  };
+
+  const showSuccess = (message: string) => {
+    toast.current?.show({
+      severity: 'success',
+      summary: 'Success',
+      detail: message,
+      life: 3000,
+    });
+  };
+
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [id]: value }));
+  };
+
+  const handleFileUpload = (file: File) => {
+    setFormData((prevData) => ({ ...prevData, uploadedFile: file }));
   };
 
   const handleSubmit = () => {
-    console.log('Yeni Personel Ekle');
-    const apiUrl = `${process.env.NEXT_PUBLIC_UTILS_URL}/personel`;
-    const solrUrl = `${process.env.NEXT_PUBLIC_UTILS_URL}/add_to_solr`;
+    try {
+      formSchema.parse(formData);
+      setErrors({});
 
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('lastname', lastname);
-    formData.append('title', title);
-    formData.append('address', address);
-    formData.append('phone', phone);
-    formData.append('email', email);
-    formData.append('gsm', gsm);
-    formData.append('resume', resume);
-    formData.append('birth_date', birthDate);
-    formData.append('iso_phone', isoPhone);
-    formData.append('iso_phone2', isoPhone2);
+      const apiUrl = `${process.env.NEXT_PUBLIC_UTILS_URL}/personel`;
 
-    uploadedFiles.forEach((file) => {
-      formData.append('files', file);
-    });
+      const fd = new FormData();
+      fd.append('name', formData.name);
+      fd.append('lastname', formData.lastname);
+      fd.append('title', formData.title);
+      fd.append('address', formData.address);
+      fd.append('phone', formData.phone);
+      fd.append('email', formData.email);
+      fd.append('gsm', formData.gsm);
+      fd.append('resume', formData.resume);
+      fd.append('birthDate', formData.birthDate);
+      fd.append('isoPhone', formData.isoPhone);
+      fd.append('isoPhone2', formData.isoPhone2);
 
-    fetch(apiUrl, {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Personel API response:', data);
+      if (formData.uploadedFile) {
+        fd.append('uploadedFile', formData.uploadedFile);
+      }
 
-        // After successfully adding personel, add to Solr
-        fetch(solrUrl, {
-          method: 'POST',
-          body: formData,
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            console.log('Solr API response:', data);
-          })
-          .catch((error) => {
-            console.error('Error adding to Solr:', error);
-          });
+      fetch(apiUrl, {
+        method: 'POST',
+        body: fd,
       })
-      .catch((error) => {
-        console.error('Error adding personel:', error);
-      });
+        .then(async (response) => {
+          const data = await response.json();
+          if (response.ok) {
+            showSuccess(data.message || 'Personel başarıyla eklendi.');
+            router.push(`/profiles/${data.data._id}`);
+          } else {
+            showError(data.message || 'Bir hata oluştu.');
+            console.error(
+              'Error adding personel:',
+              data.message || 'Bir hata oluştu.'
+            );
+          }
+        })
+        .catch((error) => {
+          showError(error.message || 'Bir hata oluştu.');
+          console.error('Error adding personel:', error);
+        });
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        e.errors.forEach((err) => {
+          if (err.path && err.path[0]) {
+            fieldErrors[err.path[0]] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+      } else {
+        showError('An unexpected error occurred');
+      }
+    }
   };
 
   return (
     <div className=''>
-      <div className='flex items-center  justify-between p-2'>
+      <Toast ref={toast}></Toast>
+
+      <div className='flex items-center justify-between p-2'>
         <h1 className='text-xl font-bold'>Personel Ayarları</h1>
         <Button
           onClick={handleSubmit}
-          color='help'
           label='Yeni Personel Ekle'
           icon='pi pi-plus'
           className='p-button-sm'
@@ -87,8 +162,8 @@ export default function Page() {
       </div>
 
       <div className='flex flex-col gap-2'>
-        <div className='w-full flex md:flex-row flex-col gap-4 '>
-          <div className=' w-full md:w-1/2 '>
+        <div className='w-full flex md:flex-row flex-col gap-4'>
+          <div className='w-full md:w-1/2'>
             <FileUploader onFileUpload={handleFileUpload} />
           </div>
           <div className='flex-col flex w-full md:w-1/2'>
@@ -98,23 +173,32 @@ export default function Page() {
                   İsim
                 </label>
                 <InputText
-                  className='w-full p-1 text-sm'
+                  className={`w-full p-1 text-sm ${
+                    errors.name ? 'border-red-500' : ''
+                  }`}
                   id='name'
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={formData.name}
+                  onChange={handleChange}
                 />
+                {errors.name && (
+                  <small className='p-error'>{errors.name}</small>
+                )}
               </div>
-
               <div className='flex-1'>
                 <label htmlFor='lastname' className='text-sm'>
                   Soyisim
                 </label>
                 <InputText
-                  className='w-full p-1 text-sm'
+                  className={`w-full p-1 text-sm ${
+                    errors.lastname ? 'border-red-500' : ''
+                  }`}
                   id='lastname'
-                  value={lastname}
-                  onChange={(e) => setLastname(e.target.value)}
+                  value={formData.lastname}
+                  onChange={handleChange}
                 />
+                {errors.lastname && (
+                  <small className='p-error'>{errors.lastname}</small>
+                )}
               </div>
             </div>
             <div className='p-field flex flex-wrap gap-2'>
@@ -125,12 +209,11 @@ export default function Page() {
                 <InputText
                   className='w-full p-1 text-sm'
                   id='title'
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  value={formData.title}
+                  onChange={handleChange}
                 />
               </div>
             </div>
-
             <div className='p-field flex flex-wrap gap-2'>
               <div className='flex-1'>
                 <label htmlFor='address' className='text-sm'>
@@ -139,8 +222,8 @@ export default function Page() {
                 <InputTextarea
                   className='w-full p-1 text-sm'
                   id='address'
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  value={formData.address}
+                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -152,8 +235,8 @@ export default function Page() {
                 <InputText
                   className='w-full p-1 text-sm'
                   id='phone'
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={formData.phone}
+                  onChange={handleChange}
                 />
               </div>
               <div className='flex-1'>
@@ -161,14 +244,18 @@ export default function Page() {
                   Email
                 </label>
                 <InputText
-                  className='w-full p-1 text-sm'
+                  className={`w-full p-1 text-sm ${
+                    errors.email ? 'border-red-500' : ''
+                  }`}
                   id='email'
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={handleChange}
                 />
+                {errors.email && (
+                  <small className='p-error'>{errors.email}</small>
+                )}
               </div>
             </div>
-
             <div className='p-field flex flex-wrap gap-2'>
               <div className='flex-1'>
                 <label htmlFor='gsm' className='text-sm'>
@@ -177,48 +264,47 @@ export default function Page() {
                 <InputText
                   className='w-full p-1 text-sm'
                   id='gsm'
-                  value={gsm}
-                  onChange={(e) => setGsm(e.target.value)}
+                  value={formData.gsm}
+                  onChange={handleChange}
                 />
               </div>
               <div className='p-field flex flex-wrap gap-2'>
                 <div className='flex-1'>
-                  <label htmlFor='birth_date' className='text-sm'>
+                  <label htmlFor='birthDate' className='text-sm'>
                     Doğum Tarihi
                   </label>
                   <InputText
                     className='w-full p-1 text-sm'
-                    id='birth_date'
-                    value={birthDate}
+                    id='birthDate'
+                    value={formData.birthDate}
                     type='date'
                     lang='tr'
-                    onChange={(e) => setBirthDate(e.target.value)}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
             </div>
-
             <div className='p-field flex flex-wrap gap-2'>
               <div className='flex-1'>
-                <label htmlFor='iso_phone' className='text-sm'>
+                <label htmlFor='isoPhone' className='text-sm'>
                   ISO Telefon 1
                 </label>
                 <InputText
                   className='w-full p-1 text-sm'
-                  id='iso_phone'
-                  value={isoPhone}
-                  onChange={(e) => setIsoPhone(e.target.value)}
+                  id='isoPhone'
+                  value={formData.isoPhone}
+                  onChange={handleChange}
                 />
               </div>
               <div className='flex-1'>
-                <label htmlFor='iso_phone2' className='text-sm'>
+                <label htmlFor='isoPhone2' className='text-sm'>
                   ISO Telefon 2
                 </label>
                 <InputText
                   className='w-full p-1 text-sm'
-                  id='iso_phone2'
-                  value={isoPhone2}
-                  onChange={(e) => setIsoPhone2(e.target.value)}
+                  id='isoPhone2'
+                  value={formData.isoPhone2}
+                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -230,8 +316,8 @@ export default function Page() {
                 <InputTextarea
                   className='w-full p-1 text-sm'
                   id='resume'
-                  value={resume}
-                  onChange={(e) => setResume(e.target.value)}
+                  value={formData.resume}
+                  onChange={handleChange}
                 />
               </div>
             </div>

@@ -51,7 +51,7 @@ interface UsageChartProps {
 }
 
 interface Personel {
-  id: string;
+  _id: string;
   name: string;
   lastname: string;
   title: string;

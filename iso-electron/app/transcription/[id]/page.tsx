@@ -134,7 +134,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
           </div>
         </Dialog>
         <div
-          className='overflow-x-auto w-8/12'
+          className='overflow-x-auto w-10/12'
           style={{ height: '650px', overflowY: 'scroll' }}
         >
           <div style={{ position: 'relative' }}>

@@ -6,8 +6,7 @@ Flask-SocketIO==5.3.6
 Flask-JWT-Extended==4.6.0
 psutil==6.0.0
 xmltodict==0.13.0
-elasticsearch==7.10.1
-elasticsearch-dsl==7.4.1
+
 pillow==10.3.0
 numpy==1.26.4
 requests==2.32.3

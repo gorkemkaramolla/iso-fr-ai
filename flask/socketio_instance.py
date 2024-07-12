@@ -13,6 +13,8 @@ def notify_new_face(face):
         for key, value in face.items():
             if isinstance(value, np.float32):
                 face[key] = float(value)
+            if isinstance(value, np.int64):
+                face[key] = int(value)
             # Add more conditions here if there are nested structures
 
     # Emit a new face detection event

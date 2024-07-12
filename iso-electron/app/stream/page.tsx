@@ -64,6 +64,18 @@ const VideoStream: React.FC = () => {
       socket.off('new_camera');
     };
   }, []);
+   // Step 3: Load `isGrid` from localStorage when the component mounts
+   useEffect(() => {
+    const storedIsGrid = localStorage.getItem('isGrid');
+    if (storedIsGrid) {
+      setIsGrid(JSON.parse(storedIsGrid));
+    }
+  }, []);
+
+  // Step 4: Update localStorage when `isGrid` changes
+  useEffect(() => {
+    localStorage.setItem('isGrid', JSON.stringify(isGrid));
+  }, [isGrid]);
   const addCameraStream = (camera: Camera) => {
     if (availableIds.length > 0) {
       const newId = availableIds[0]; // Take the smallest available ID

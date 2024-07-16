@@ -39,8 +39,10 @@ RUN mkdir -p /app/services/models && \
     wget -O /app/services/models/buffalo_l.zip "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip" && \
     unzip /app/services/models/buffalo_l.zip -d /app/services/models && \
     rm /app/services/models/buffalo_l.zip && \
+    wget -O /app/services/models/emotion_model.onnx "https://github.com/shangeth/Facial-Emotion-Recognition-PyTorch-ONNX/raw/master/ONNX/models/onnx_model.onnx" && \
     echo "Listing contents of the model directory:" && \
-ls -la /app/services/models/
+    ls -la /app/services/models/
+
 # Copy the local directory contents to the container's working directory
 COPY . /app
 
@@ -50,7 +52,7 @@ RUN apt-get update && \
     libcublas-11-0 libcusparse-11-0 libcudnn8=8.0.5.39-1+cuda11.1 libcublas-dev-11-0 libcusparse-dev-11-0 libcudnn8-dev=8.0.5.39-1+cuda11.1 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-    
+
 # Update pip and install Python dependencies from the requirements.txt file
 RUN python3 -m pip install --upgrade pip && \
     pip3 install --no-cache-dir -r requirements.txt
@@ -59,6 +61,7 @@ RUN python3 -m pip install --upgrade pip && \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl ca-certificates && \
     update-ca-certificates
+
 # Ensure Python uses the correct certificates
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 

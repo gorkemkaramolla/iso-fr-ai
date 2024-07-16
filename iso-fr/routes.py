@@ -7,8 +7,9 @@ import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file
 import flask.json.provider as provider
 from pymongo import DESCENDING, MongoClient
-from services.camera_processor.camera_processor import CameraProcessor
-from services.camera_processor.enums.camera import Camera
+# from services.camera_processor.camera_processor import CameraProcessor
+from services.camera_processor.Stream import Stream
+# from services.camera_processor.enums.camera import Camera
 from logger import configure_logging
 from flask_cors import CORS
 from flask_jwt_extended import jwt_required, JWTManager
@@ -39,7 +40,8 @@ camera_collection = db["cameras"]
 #######################################################Setup ElasticSearch
 
 ###################################################### Create an instance of your class
-camera_processor = CameraProcessor(device="cuda")
+# camera_processor = CameraProcessor(device="cuda")
+stream_instance = Stream(device="cuda")
 logger = configure_logging()
 
 # Setup Blueprint
@@ -114,7 +116,7 @@ def stream(stream_id):
     # print("Camera: ", camera)
     # print("Quality: ", quality)
     return Response(
-        camera_processor.generate(
+        stream_instance.recog_face_ip_cam(
             stream_id,
             camera=camera,
             quality=quality,
@@ -127,17 +129,19 @@ def stream(stream_id):
 # Local CAM Stream
 @socketio.on('video_frame')
 def handle_video_frame(data):
+    frame_data = data['frame']
+    is_recording = data['isRecording']
+
     # Decode the image
-    image_data = data.split(',')[1]
+    image_data = frame_data.split(',')[1]
     nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     # Process the image
-    processed_image = camera_processor.generate_local_cam(img)
+    processed_image = stream_instance.recog_face_local_cam(img, is_recording)
 
     # Emit the processed frame back to the client
     socketio.emit('processed_frame', processed_image)
-
 # ****************************************************************************
 
 @camera_bp.route("/recog", methods=["GET"])

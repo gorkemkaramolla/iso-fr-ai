@@ -188,6 +188,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
         isPlaying={isPlaying}
         isLoading={isLoading}
         isLocalCamera={isLocalCamera}
+        isRecording={isRecording}
         // onLoad={() => onCameraChange(id, selectedCamera)}
       />
     </div>

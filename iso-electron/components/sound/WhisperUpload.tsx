@@ -89,7 +89,7 @@ function WhisperUpload() {
 
   return (
     <div className='w-full h-full overflow-auto'>
-      <div className='w-full my-0 absolute bottom-0 bg-gray-900 rounded-full'>
+      <div className='w-full my-0 absolute bottom-0  rounded-full'>
         <div
           className='h-2 bg-terminalGreen   rounded-full'
           style={{ width: `${progress}%` }}

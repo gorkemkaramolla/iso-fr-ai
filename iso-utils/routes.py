@@ -67,17 +67,21 @@ def get_personel_by_id(id):
 @personel_bp.route('/personel/image/', methods=['GET'])
 def get_user_images():
     user_id = request.args.get('id')
-    if not user_id:
-        return abort(400, description="ID parameter is required")
+    if  user_id :
+        if not user_id:
+            return abort(400, description="ID parameter is required")
     
-    image_path = personel_service.get_personel_image_path(user_id)
-    if image_path:
-        if os.path.exists(image_path):
-            return send_from_directory(personel_service.IMAGE_DIRECTORY, os.path.basename(image_path))
-        else:
-            return abort(404, description="Image file not found on filesystem")
-    
-    return abort(404, description="Image not found")
+        image_path = personel_service.get_personel_image_path(user_id)
+        if image_path:
+            if os.path.exists(image_path):
+                return send_from_directory(personel_service.IMAGE_DIRECTORY, os.path.basename(image_path))
+            else:
+                return abort(404, description="Image file not found on filesystem")
+        
+        return abort(404, description="Image not found")
+    else : 
+        image_paths = personel_service.get_all_personel_image_paths()
+        return image_paths;
 app.register_blueprint(personel_bp)
 
 

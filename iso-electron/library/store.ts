@@ -1,11 +1,12 @@
-import create, { StateCreator } from 'zustand';
+import { create, StateCreator } from 'zustand';
 
-// Assuming StoreState is defined somewhere, if not, define it as follows:
 interface StoreState {
   accessToken: string;
-  refreshToken?: string; // Assuming refreshToken is optional
+  refreshToken?: string;
+  currentTime: number;
   setAccessToken: (access_token: string) => void;
   setRefreshToken: (refresh_token: string) => void;
+  setCurrentTime: (currentTime: number) => void;
 }
 
 // Enhanced Middleware to log state changes
@@ -26,6 +27,7 @@ const useStore = create<StoreState>(
   logger<StoreState>((set) => ({
     accessToken: '',
     refreshToken: '', // Initialize refreshToken if it should not be optional
+    currentTime: 0,
     setAccessToken: (access_token: string) => {
       console.log('Setting access token');
       set({ accessToken: access_token });
@@ -33,6 +35,9 @@ const useStore = create<StoreState>(
     setRefreshToken: (refresh_token: string) => {
       console.log('Setting refresh token');
       set({ refreshToken: refresh_token });
+    },
+    setCurrentTime: (currentTime: number) => {
+      set({ currentTime });
     },
   }))
 );

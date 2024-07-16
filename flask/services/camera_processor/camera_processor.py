@@ -14,7 +14,6 @@ import torch
 from PIL import Image
 import onnxruntime
 from services.camera_processor.enums.camera import Camera
-import uuid
 from cv2.typing import MatLike
 import logging
 import threading  # For handling the stop flag in a thread-safe manner
@@ -262,49 +261,6 @@ class CameraProcessor:
             )
 
         return bboxes, labels, sims, emotions, genders, ages
-
-    # def recog_face_and_emotion(self, image: MatLike):
-    #     if image is None or len(image.shape) < 2:
-    #         return [], [], [], []
-    #     bboxes, kpss = self.detector.autodetect(image, max_num=49)
-    #     if len(bboxes) == 0:
-    #         return [], [], [], []
-    #     labels = []
-    #     sims = []
-    #     emotions = []
-    #     embeddings = []
-    #     for kps in kpss:
-    #         embedding = self.rec.get(image, kps)
-    #         embeddings.append(embedding)
-    #     for idx, embedding in enumerate(embeddings):
-    #         min_dist = float("inf")
-    #         best_match = None
-    #         label = "Bilinmeyen"
-    #         is_known = False
-    #         for name, db_embedding in self.database.items():
-    #             dist = np.linalg.norm(db_embedding - embedding)
-    #             if dist < min_dist:
-    #                 min_dist = dist
-    #                 best_match = name
-    #         sim = self.rec.compute_sim(embedding, self.database[best_match])
-    #         if sim >= self.similarity_threshold:
-    #             label = best_match
-    #             is_known = True
-    #         bbox = bboxes[idx]
-    #         x1, y1, x2, y2 = map(int, bbox[:4])
-    #         face_image = image[y1:y2, x1:x2]
-    #         if not is_known:
-    #             label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
-    #             self.database[label] = embedding
-    #         labels.append(label)
-    #         sims.append(sim)
-    #         bbox = bboxes[idx]
-    #         x1, y1, x2, y2 = map(int, bbox[:4])
-    #         face = image[y1:y2, x1:x2]
-    #         emotion = self.get_emotion(face)
-    #         emotions.append(emotion)
-    #         self.save_and_log_face(face_image, label, sim, emotion, is_known)
-    #     return bboxes, labels, sims, emotions
 
     def generate(self, stream_id, camera, quality="Quality", is_recording=False):
         self.stop_flag.clear()  # Clear the stop flag at the beginning

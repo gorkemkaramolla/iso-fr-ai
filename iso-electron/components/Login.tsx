@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { loginSchema, LoginData } from '@/library/validation';
 import { FormEvent } from 'react';
 import useStore from '@/library/store';
-
+import Image from 'next/image';
 export default function LoginForm() {
   const router = useRouter();
   const { setAccessToken, setRefreshToken } = useStore();
@@ -43,32 +43,44 @@ export default function LoginForm() {
 
   return (
     <div className='w-full h-[93vh] flex justify-center items-center'>
-      <form
-        className='card card-compact w-96 bg-base-100 shadow-lg p-4 flex flex-col gap-3'
-        onSubmit={handleSubmit}
-      >
-        <label className='input input-bordered flex items-center gap-2'>
-          <User />
-          <input
-            name='username'
-            type='text'
-            className='grow'
-            placeholder='Username'
+      <div className='flex w-full justify-center flex-col items-center'>
+        <div className='card card-compact items-center bg-base-100 shadow-lg'>
+          <Image
+            alt='hello'
+            className=''
+            width={250}
+            height={250}
+            src={'/iso_logo.jpg'}
           />
-        </label>
-        <label className='input input-bordered flex items-center gap-2'>
-          <KeySquare />
-          <input
-            name='password'
-            type='password'
-            className='grow'
-            placeholder='Password'
-          />
-        </label>
-        <button type='submit' className='btn btn-primary'>
-          Submit
-        </button>
-      </form>
+
+          <form
+            className=' p-4 flex flex-col gap-3 w-96'
+            onSubmit={handleSubmit}
+          >
+            <label className='input input-bordered flex items-center gap-2'>
+              <User />
+              <input
+                name='username'
+                type='text'
+                className='grow'
+                placeholder='Username'
+              />
+            </label>
+            <label className='input input-bordered flex items-center gap-2'>
+              <KeySquare />
+              <input
+                name='password'
+                type='password'
+                className='grow'
+                placeholder='Password'
+              />
+            </label>
+            <button type='submit' className='btn btn-primary'>
+              Submit
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

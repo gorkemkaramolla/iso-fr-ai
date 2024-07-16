@@ -28,25 +28,28 @@ class SolrSearcher:
             return {"error": "Query parameter is missing"}, 400
 
         try:
-            logging.info(f"Performing search with query: {query}")
-            query_params = urlencode({'q': f'name:{query} OR id:{query} OR lastname:{query}', 'wt': 'json'})
+            fields = ["id", "name", "lastname", "title", "address", "phone", "email", "gsm", "resume", "birth_date", "iso_phone", "iso_phone2", "_id"]
+            field_query = " OR ".join([f"{field}:\"{query}\"" for field in fields])
+            
+            # Using the edismax query parser for better multi-field support
+            query_params = urlencode({
+                'q': field_query,
+                'wt': 'json',
+                'defType': 'edismax',
+                'qf': ' '.join(fields)
+            })
+
             url = f'{self.solr_url}/select?{query_params}'
             logging.info(f"Connecting to Solr URL: {url}")
             connection = urlopen(url)
             response = json.load(connection)
             logging.info(f"Received Solr response: {response}")
-            results = response['response']['docs']
 
+            results = response['response']['docs']
             if not results:
                 logging.info("No results found in Solr, attempting MongoDB search")
                 mongo_results = self.fetch_from_mongo(query)
-                if mongo_results:
-                    for document in mongo_results:
-                        self.index_data(document)
-                    return mongo_results
-                else:
-                    logging.info("No results found in MongoDB either.")
-                    return {"error": "No results found"}, 404
+                return mongo_results if mongo_results else {"error": "No results found"}, 404
 
             return results
         except Exception as e:

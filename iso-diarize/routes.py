@@ -24,7 +24,7 @@ logs_collection = db["logs"]
 camera_collection = db["cameras"]
 
 ###################################################### Create an instance of your class
-diarization_processor = SpeakerDiarizationProcessor(device="cuda")
+diarization_processor = SpeakerDiarizationProcessor(device="cpu")
 logger = configure_logging()
 
 # Setup Blueprint
@@ -36,19 +36,17 @@ active_requests = {}
 @audio_bp.route("/process-audio/", methods=["POST"])
 @jwt_required()
 def process_audio_route():
-    client_id = request.headers.get("X-Client-ID")
-    if not client_id:
-        return jsonify({"error": "Client ID is required"}), 400
-
-    if client_id in active_requests:
-        return jsonify({"error": "Another process is still running"}), 429
-
-    active_requests[client_id] = True
     try:
-        response = diarization_processor.process_audio(client_id)
-        return response
-    finally:
-        del active_requests[client_id] 
+        response = diarization_processor.process_audio()
+        return jsonify(response), 200  #
+    
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    
+    except Exception as e:
+        # General exception catch for unexpected errors
+        return jsonify({"error": "An error occurred while processing the audio.", "details": str(e)}), 500
+
 
 @audio_bp.route("/hello", methods=["GET"])
 @jwt_required()

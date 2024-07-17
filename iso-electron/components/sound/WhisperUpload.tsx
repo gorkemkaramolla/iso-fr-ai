@@ -76,6 +76,7 @@ function WhisperUpload() {
       // Store the response for future sessions or other component use
       let responses = JSON.parse(localStorage.getItem('responses') || '[]');
       responses.push(res.data);
+      console.log('responses:', responses);
       localStorage.setItem('responses', JSON.stringify(responses));
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -109,10 +110,10 @@ function WhisperUpload() {
         {error && <div className='text-red-500'>{error}</div>}
         {response && (
           <div className='rounded-xl p-4 w-full overflow-auto'>
-            <h3>Processed at: {response.created_at}</h3>
-            <h3>Language: {response.transcription.language}</h3>
+            <h3>Processed at: {response?.created_at}</h3>
+            <h3>Language: {response?.transcription?.language}</h3>
             <ul>
-              {response.transcription.segments.map((segment, index) => (
+              {response?.transcription?.segments?.map((segment, index) => (
                 <li key={index} className=''>
                   <span className='badge-primary'>
                     {segment?.speaker?.toUpperCase()}

@@ -1,3 +1,4 @@
+# routes.py
 import os
 from flask import Flask, Blueprint, request, jsonify
 from flask_jwt_extended import JWTManager, jwt_required
@@ -10,43 +11,28 @@ app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
+app.config["JWT_COOKIE_SECURE"] = False
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 CORS(app, origins="*")
 
 jwt = JWTManager(app)
 
-###################################################### Setup MongoDB
 client = MongoClient(os.environ.get("MONGO_DB_URI"))
 db = client[os.environ.get("MONGO_DB_NAME")]
 logs_collection = db["logs"]
 camera_collection = db["cameras"]
 
-###################################################### Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cpu")
 logger = configure_logging()
 
-# Setup Blueprint
 audio_bp = Blueprint("audio_bp", __name__)
-
-## START TRANSCRIPTION ROUTES
-active_requests = {}
 
 @audio_bp.route("/process-audio/", methods=["POST"])
 @jwt_required()
 def process_audio_route():
-    try:
-        response = diarization_processor.process_audio()
-        return jsonify(response), 200  #
-    
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    
-    except Exception as e:
-        # General exception catch for unexpected errors
-        return jsonify({"error": "An error occurred while processing the audio.", "details": str(e)}), 500
-
+    response = diarization_processor.process_audio()
+    return jsonify(response), 200 if "error" not in response else 500
 
 @audio_bp.route("/hello", methods=["GET"])
 @jwt_required()
@@ -57,23 +43,16 @@ def hello_route():
 @audio_bp.route("/transcriptions/<id>", methods=["GET"])
 @jwt_required()
 def get_transcription_route(id):
-    try:
-        if id is None:
-            response = diarization_processor.get_all_transcriptions()
-        else:
-            response = diarization_processor.get_transcription(id)
-        return jsonify(response)
-    except TypeError as e:
-        logger.error(f"TypeError in get_transcription_route: {e}")
-        return jsonify({"error": "Response is not JSON serializable"}), 500
-    except Exception as e:
-        logger.error(f"Unexpected error in get_transcription_route: {e}")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+    if id is None:
+        response = diarization_processor.get_all_transcriptions()
+    else:
+        response = diarization_processor.get_transcription(id)
+    return jsonify(response), 200 if "error" not in response else 500
 
 @audio_bp.route("/rename_segments/<transcription_id>/<old_name>/<new_name>", methods=["POST"])
 @jwt_required()
 def rename_segments_route(transcription_id, old_name, new_name):
-    result, status_code = diarization_processor.rename_segments(transcription_id, old_name, new_name)
-    return jsonify(result), status_code
+    result = diarization_processor.rename_segments(transcription_id, old_name, new_name)
+    return jsonify(result), 200
 
 app.register_blueprint(audio_bp)

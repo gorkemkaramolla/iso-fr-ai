@@ -11,7 +11,7 @@ from whisper_run import AudioProcessor
 
 from datetime import datetime
 from bson import ObjectId
-
+os.environ["CURL_CA_BUNDLE"] = ""
 
 class SpeakerDiarizationProcessor:
     def __init__(self, device):
@@ -169,6 +169,6 @@ class SpeakerDiarizationProcessor:
 
             return response_data
         except Exception as e:
-            self.logger.exception("Failed during processing")
+            self.logger.exception("Failed during processingx")
             self.emit_progress(0)
             return {"error": str(e)}

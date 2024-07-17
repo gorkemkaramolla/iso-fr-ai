@@ -1,23 +1,70 @@
-# Use an official Python runtime as a parent image
-FROM python:3.12.2-slim
-
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    libgomp1 \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+# Use an official NVIDIA CUDA runtime as a parent image
+FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
 
 # Set the working directory in the container
 WORKDIR /app
 
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Berlin
+
+# Install system dependencies in one layer and clean up afterwards to reduce layer size
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev unzip wget ca-certificates libgomp1 software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-distutils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install pip for Python 3.12
+RUN wget https://bootstrap.pypa.io/get-pip.py && \
+    python3.12 get-pip.py && \
+    rm get-pip.py
+
+# Update alternatives to set python3.12 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 && \
+    update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3.12 1
+
+# Install certifi and other required packages
+RUN python3.12 -m pip install --upgrade pip certifi six setuptools
+
 # Copy the current directory contents into the container at /app
 COPY . /app
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Ensure CUDA libraries are installed
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libcublas-11-0 libcusparse-11-0 libcudnn8=8.0.5.39-1+cuda11.1 libcublas-dev-11-0 libcusparse-dev-11-0 libcudnn8-dev=8.0.5.39-1+cuda11.1 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Make port 5003 available to the world outside this container
+# Update pip and install Python dependencies from the requirements.txt file
+RUN python3.12 -m pip install --upgrade pip && \
+    python3.12 -m pip install --no-cache-dir -r requirements.txt
+
+# Install transformers with the --use-feature=truststore option
+RUN python3.12 -m pip install transformers --use-feature=truststore
+
+# Install certificates
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl ca-certificates && \
+    update-ca-certificates
+
+# Ensure Python uses the correct certificates
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
+# Copy the provided local SSL certificate and key files into the container
+COPY mycert.crt /etc/ssl/certs/mycert.crt
+COPY mycert.key /etc/ssl/private/mycert.key
+
+# Additional step to update CA certificates and configure SSL properly
+RUN update-ca-certificates && \
+    mkdir -p /etc/pki/tls/certs && \
+    cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+
+# Inform Docker that the container listens on the specified port at runtime
 EXPOSE 5003
 
 # Run app.py when the container launches
-CMD ["python", "app.py"]
+CMD ["python3", "app.py"]

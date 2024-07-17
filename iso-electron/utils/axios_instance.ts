@@ -95,6 +95,7 @@ export default function createApi(
     baseURL,
     headers: {
       Authorization: `Bearer ${getAccessToken()}`,
+      'Access-Control-Allow-Origin': '*', // Allow all origins
     },
     withCredentials: true,
   });

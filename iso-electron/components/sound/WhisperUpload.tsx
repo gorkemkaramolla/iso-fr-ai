@@ -1,9 +1,8 @@
 'use client';
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import axios from 'axios';
+
 import io from 'socket.io-client';
 import useStore from '@/library/store';
-import api from '@/utils/axios_instance';
 import createApi from '@/utils/axios_instance';
 
 interface Segment {

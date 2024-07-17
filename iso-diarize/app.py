@@ -6,6 +6,9 @@ import flask.json.provider as provider
 from flask_jwt_extended import JWTManager
 from socketio_instance import socketio  # Ensure this is set up for your real-time features
 
+# Environment setup
+os.environ["CURL_CA_BUNDLE"] = ""
+
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
 CORS(app, origins="*", supports_credentials=True)
@@ -14,7 +17,7 @@ CORS(app, origins="*", supports_credentials=True)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-app.config["JWT_COOKIE_SECURE"] = False  # Set to False in production with HTTPS
+app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
 
 # Initialize JWT Manager
@@ -28,5 +31,6 @@ os.makedirs("temp", exist_ok=True)
 os.makedirs("logs", exist_ok=True)
 
 if __name__ == "__main__":
-    socketio.init_app(app)
-    socketio.run(app, debug=True, host="0.0.0.0", port=5003, allow_unsafe_werkzeug=True)
+    socketio.init_app(app, cors_allowed_origins="*")
+    context = ('/etc/ssl/certs/mycert.crt', '/etc/ssl/private/mycert.key')  # Ensure the correct paths to your .pem files
+    socketio.run(app, debug=True, host="0.0.0.0", port=5003, ssl_context=context, allow_unsafe_werkzeug=True)

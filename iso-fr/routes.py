@@ -41,7 +41,7 @@ camera_collection = db["cameras"]
 
 ###################################################### Create an instance of your class
 # camera_processor = CameraProcessor(device="cuda")
-stream_instance = Stream(device="cuda")
+stream_instance = Stream(device="cpu")
 logger = configure_logging()
 
 # Setup Blueprint

@@ -32,5 +32,4 @@ os.makedirs("logs", exist_ok=True)
 
 if __name__ == "__main__":
     socketio.init_app(app, cors_allowed_origins="*")
-    context = ('/etc/ssl/certs/mycert.crt', '/etc/ssl/private/mycert.key')  # Ensure the correct paths to your .pem files
-    socketio.run(app, debug=True, host="0.0.0.0", port=5003, ssl_context=context, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, host="0.0.0.0", port=5003, allow_unsafe_werkzeug=True)

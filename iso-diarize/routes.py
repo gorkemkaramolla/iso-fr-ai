@@ -23,7 +23,7 @@ db = client[os.environ.get("MONGO_DB_NAME")]
 logs_collection = db["logs"]
 camera_collection = db["cameras"]
 
-diarization_processor = SpeakerDiarizationProcessor(device="cuda")
+diarization_processor = SpeakerDiarizationProcessor(device="cpu")
 logger = configure_logging()
 
 audio_bp = Blueprint("audio_bp", __name__)

@@ -134,7 +134,7 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(30)
             self.emit_progress(50)
 
-            processor = AudioProcessor(self.file_path, self.device, self.hf_auth_token, "large-v3")
+            processor = AudioProcessor(self.file_path, self.device, "large-v3")
             transcription = processor.process()
             self.emit_progress(70)
             self.emit_progress(90)

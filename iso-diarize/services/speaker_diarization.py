@@ -133,8 +133,9 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(10)
             self.emit_progress(30)
             self.emit_progress(50)
-
-            processor = AudioProcessor(self.file_path, self.device, "large-v3")
+            # Assuming 'large-v3/' is a directory at the same level as 'speaker_diarization.py'
+            model_dir = os.path.join(os.path.dirname(__file__), "large-v3/")
+            processor = AudioProcessor(self.file_path, self.device, model_name=model_dir)
             transcription = processor.process()
             self.emit_progress(70)
             self.emit_progress(90)

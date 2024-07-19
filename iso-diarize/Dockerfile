@@ -13,7 +13,7 @@ RUN apt-get update && \
     ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev unzip wget ca-certificates libgomp1 software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
-    apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-distutils && \
+    apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-distutils curl unzip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -28,10 +28,6 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 
 # Install certifi and other required packages
 RUN python3.12 -m pip install --upgrade pip certifi six setuptools
-
-# Copy the current directory contents into the container at /app
-COPY . /app
-
 # Ensure CUDA libraries are installed
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -39,29 +35,14 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Copy the current directory contents into the container at /app
+COPY . /app
 # Update pip and install Python dependencies from the requirements.txt file
 RUN python3.12 -m pip install --upgrade pip && \
     python3.12 -m pip install --no-cache-dir -r requirements.txt
 
 # Install transformers with the --use-feature=truststore option
 RUN python3.12 -m pip install transformers --use-feature=truststore
-
-# Install certificates
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssl ca-certificates && \
-    update-ca-certificates
-
-# Ensure Python uses the correct certificates
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-
-# Copy the provided local SSL certificate and key files into the container
-COPY mycert.crt /etc/ssl/certs/mycert.crt
-COPY mycert.key /etc/ssl/private/mycert.key
-
-# Additional step to update CA certificates and configure SSL properly
-RUN update-ca-certificates && \
-    mkdir -p /etc/pki/tls/certs && \
-    cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 
 # Inform Docker that the container listens on the specified port at runtime
 EXPOSE 5003

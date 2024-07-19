@@ -63,6 +63,7 @@ interface Personel {
   birth_date: string;
   iso_phone: string;
   iso_phone2: string;
+  file_path: string;
 }
 interface RecogFace {
   _id: {

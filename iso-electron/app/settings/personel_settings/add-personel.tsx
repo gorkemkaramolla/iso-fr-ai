@@ -18,9 +18,9 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Geçersiz email adresi' }),
   gsm: z.string(),
   resume: z.string(),
-  birthDate: z.string(),
-  isoPhone: z.string(),
-  isoPhone2: z.string(),
+  birth_date: z.string(),
+  iso_phone: z.string(),
+  iso_phone2: z.string(),
   uploadedFile: z.any(),
 });
 
@@ -33,9 +33,9 @@ interface FormDataState {
   email: string;
   gsm: string;
   resume: string;
-  birthDate: string;
-  isoPhone: string;
-  isoPhone2: string;
+  birth_date: string;
+  iso_phone: string;
+  iso_phone2: string;
   uploadedFile: File | null;
 }
 
@@ -49,9 +49,9 @@ export default function AddPersonel() {
     email: '',
     gsm: '',
     resume: '',
-    birthDate: '',
-    isoPhone: '',
-    isoPhone2: '',
+    birth_date: '',
+    iso_phone: '',
+    iso_phone2: '',
     uploadedFile: null,
   });
 
@@ -103,9 +103,9 @@ export default function AddPersonel() {
       fd.append('email', formData.email);
       fd.append('gsm', formData.gsm);
       fd.append('resume', formData.resume);
-      fd.append('birthDate', formData.birthDate);
-      fd.append('isoPhone', formData.isoPhone);
-      fd.append('isoPhone2', formData.isoPhone2);
+      fd.append('birth_date', formData.birth_date);
+      fd.append('iso_phone', formData.iso_phone);
+      fd.append('iso_phone2', formData.iso_phone2);
 
       if (formData.uploadedFile) {
         fd.append('uploadedFile', formData.uploadedFile);
@@ -270,13 +270,13 @@ export default function AddPersonel() {
               </div>
               <div className='p-field flex flex-wrap gap-2'>
                 <div className='flex-1'>
-                  <label htmlFor='birthDate' className='text-sm'>
+                  <label htmlFor='birth_date' className='text-sm'>
                     Doğum Tarihi
                   </label>
                   <InputText
                     className='w-full p-1 text-sm'
-                    id='birthDate'
-                    value={formData.birthDate}
+                    id='birth_date'
+                    value={formData.birth_date}
                     type='date'
                     lang='tr'
                     onChange={handleChange}
@@ -286,24 +286,24 @@ export default function AddPersonel() {
             </div>
             <div className='p-field flex flex-wrap gap-2'>
               <div className='flex-1'>
-                <label htmlFor='isoPhone' className='text-sm'>
+                <label htmlFor='iso_phone' className='text-sm'>
                   ISO Telefon 1
                 </label>
                 <InputText
                   className='w-full p-1 text-sm'
-                  id='isoPhone'
-                  value={formData.isoPhone}
+                  id='iso_phone'
+                  value={formData.iso_phone}
                   onChange={handleChange}
                 />
               </div>
               <div className='flex-1'>
-                <label htmlFor='isoPhone2' className='text-sm'>
+                <label htmlFor='iso_phone2' className='text-sm'>
                   ISO Telefon 2
                 </label>
                 <InputText
                   className='w-full p-1 text-sm'
-                  id='isoPhone2'
-                  value={formData.isoPhone2}
+                  id='iso_phone2'
+                  value={formData.iso_phone2}
                   onChange={handleChange}
                 />
               </div>

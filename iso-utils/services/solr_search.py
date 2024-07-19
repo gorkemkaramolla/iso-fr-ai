@@ -27,23 +27,32 @@ class SolrSearcher:
             return {"error": "Query parameter is missing"}, 400
 
         try:
+            # Prepare query
             fields = ["id", "name", "lastname", "title", "address", "phone", "email", "gsm", "resume", "birth_date", "iso_phone", "iso_phone2", "_id"]
             field_query = " OR ".join([f"{field}:\"{query}\"" for field in fields])
+            
+            # Debug the query
+            logging.info(f"Search query: {field_query}")
 
+            # Query parameters
             query_params = urlencode({
                 'q': field_query,
                 'wt': 'json',
                 'defType': 'edismax',
                 'qf': ' '.join(fields)
             })
-
+            
+            # Solr URL
             url = f'{self.solr_url}/select?{query_params}'
             logging.info(f"Connecting to Solr URL: {url}")
+            
+            # Perform request
             connection = urlopen(url, timeout=10)
             response = json.load(connection)
             logging.info(f"Received Solr response: {response}")
 
-            results = response['response']['docs']
+            # Process results
+            results = response.get('response', {}).get('docs', [])
             if not results:
                 logging.info("No results found in Solr, attempting MongoDB search")
                 mongo_results = self.fetch_from_mongo(query)

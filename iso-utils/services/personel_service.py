@@ -13,6 +13,7 @@ class PersonelService:
         self.logger = configure_logging()
         self.db = db
         self.solr_searcher = SolrSearcher(db)
+        
     def add_personel(self, data, file):
         os.makedirs(self.IMAGE_DIRECTORY, exist_ok=True)
         try:

@@ -295,6 +295,88 @@
 # volumes:
 #   mongo_data:
 #   solr_data:
+# version: '3.8'
+
+# services:
+#   auth_service:
+#     build: ./iso-auth
+#     ports:
+#       - "5001:5001"
+#     env_file:
+#       - .env
+#     depends_on:
+#       - mongo
+
+#   face_recognition_service:
+#     build: ./iso-fr
+#     ports:
+#       - "5002:5002"
+#     env_file:
+#       - .env
+#     depends_on:
+#       - solr
+#       - mongo
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - capabilities: [gpu]
+#     volumes:
+#       - face_recognition_data:/app/data
+
+#   speaker_diarization_service:
+#     build: ./iso-diarize
+#     ports:
+#       - "5003:5003"
+#     env_file:
+#       - .env
+#     depends_on:
+#       - solr
+#       - mongo
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - capabilities: [gpu]
+
+#   utils_service:
+#     build: ./iso-utils
+#     ports:
+#       - "5004:5004"
+#     env_file:
+#       - .env
+#     depends_on:
+#       - solr
+#       - mongo
+#     volumes:
+#       - /Users/gorkemkaramolla/Documents/isoai-images
+
+#   mongo:
+#     image: mongo:latest
+#     ports:
+#       - "${MONGO_DB_PORT}:27017"
+#     volumes:
+#       - mongo_data:/data/db
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
+#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
+
+#   solr:
+#     image: solr:latest
+#     ports:
+#       - "8983:8983"
+#     volumes:
+#       - solr_data:/var/solr
+#     command:
+#       - solr-precreate
+#       - mycore
+#     environment:
+#       SOLR_HEAP: "512m"
+
+# volumes:
+#   mongo_data:
+#   solr_data:
+#   face_recognition_data:
 version: '3.8'
 
 services:
@@ -306,6 +388,8 @@ services:
       - .env
     depends_on:
       - mongo
+    networks:
+      - isoai-network
 
   face_recognition_service:
     build: ./iso-fr
@@ -323,6 +407,8 @@ services:
             - capabilities: [gpu]
     volumes:
       - face_recognition_data:/app/data
+    networks:
+      - isoai-network
 
   speaker_diarization_service:
     build: ./iso-diarize
@@ -338,6 +424,8 @@ services:
         reservations:
           devices:
             - capabilities: [gpu]
+    networks:
+      - isoai-network
 
   utils_service:
     build: ./iso-utils
@@ -349,7 +437,9 @@ services:
       - solr
       - mongo
     volumes:
-      - /Users/gorkemkaramolla/Documents/isoai-images
+      - personel_images:/app/personel_images
+    networks:
+      - isoai-network
 
   mongo:
     image: mongo:latest
@@ -360,6 +450,8 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
+    networks:
+      - isoai-network
 
   solr:
     image: solr:latest
@@ -367,16 +459,21 @@ services:
       - "8983:8983"
     volumes:
       - solr_data:/var/solr
-    command:
-      - solr-precreate
-      - mycore
+    command: ["solr-precreate", "isoai"]
     environment:
       SOLR_HEAP: "512m"
+    networks:
+      - isoai-network
 
 volumes:
   mongo_data:
   solr_data:
   face_recognition_data:
+  personel_images:
+
+networks:
+  isoai-network:
+    driver: bridge
 
 
 

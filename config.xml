@@ -1,1 +1,18 @@
-uploadfolder
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <database>
+        <host>localhost</host>
+        <port>27017</port>
+        <name>mydatabase</name>
+        <user>admin</user>
+        <password>password</password>
+    </database>
+    <solr>
+        <url>http://localhost:8983/solr</url>
+        <collection>isoai</collection>
+    </solr>
+    <logging>
+        <level>INFO</level>
+        <file>logs/app.log</file>
+    </logging>
+</configuration>

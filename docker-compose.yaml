@@ -295,88 +295,6 @@
 # volumes:
 #   mongo_data:
 #   solr_data:
-# version: '3.8'
-
-# services:
-#   auth_service:
-#     build: ./iso-auth
-#     ports:
-#       - "5001:5001"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - mongo
-
-#   face_recognition_service:
-#     build: ./iso-fr
-#     ports:
-#       - "5002:5002"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-#     deploy:
-#       resources:
-#         reservations:
-#           devices:
-#             - capabilities: [gpu]
-#     volumes:
-#       - face_recognition_data:/app/data
-
-#   speaker_diarization_service:
-#     build: ./iso-diarize
-#     ports:
-#       - "5003:5003"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-#     deploy:
-#       resources:
-#         reservations:
-#           devices:
-#             - capabilities: [gpu]
-
-#   utils_service:
-#     build: ./iso-utils
-#     ports:
-#       - "5004:5004"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-#     volumes:
-#       - /Users/gorkemkaramolla/Documents/isoai-images
-
-#   mongo:
-#     image: mongo:latest
-#     ports:
-#       - "${MONGO_DB_PORT}:27017"
-#     volumes:
-#       - mongo_data:/data/db
-#     environment:
-#       MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
-#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
-
-#   solr:
-#     image: solr:latest
-#     ports:
-#       - "8983:8983"
-#     volumes:
-#       - solr_data:/var/solr
-#     command:
-#       - solr-precreate
-#       - mycore
-#     environment:
-#       SOLR_HEAP: "512m"
-
-# volumes:
-#   mongo_data:
-#   solr_data:
-#   face_recognition_data:
 version: '3.8'
 
 services:
@@ -400,11 +318,6 @@ services:
     depends_on:
       - solr
       - mongo
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
     volumes:
       - face_recognition_data:/app/data
     networks:
@@ -419,11 +332,6 @@ services:
     depends_on:
       - solr
       - mongo
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
     networks:
       - isoai-network
 
@@ -438,6 +346,7 @@ services:
       - mongo
     volumes:
       - personel_images:/app/personel_images
+      - /var/run/docker.sock:/var/run/docker.sock  # Mount the host Docker socket
     networks:
       - isoai-network
 
@@ -459,7 +368,9 @@ services:
       - "8983:8983"
     volumes:
       - solr_data:/var/solr
-    command: ["solr-precreate", "isoai"]
+    command:
+      - solr-precreate
+      - isoai
     environment:
       SOLR_HEAP: "512m"
     networks:
@@ -474,7 +385,6 @@ volumes:
 networks:
   isoai-network:
     driver: bridge
-
 
 
 

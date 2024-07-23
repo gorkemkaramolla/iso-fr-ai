@@ -1,8 +1,9 @@
+requests==2.27.1
 Flask==3.0.3
 Flask-Cors==4.0.1
 pymongo==4.7.3
-torch==2.3.0
-torchvision==0.18.0
+# torch==2.3.0
+torchvision==0.18.0 
 whisper-run== 1.2.1
 python-dotenv==1.0.1
 Flask-SocketIO==5.3.6

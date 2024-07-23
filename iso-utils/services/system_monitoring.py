@@ -5,19 +5,32 @@ import psutil
 import xmltodict
 import time
 from threading import Thread
-# import wmi
 from logger import configure_logging
-# Configure logging
 from socketio_instance import socketio
-import  json
+import json
+import docker
+from docker.errors import DockerException
+
 class SystemMonitoring:
     def __init__(self):
         self.logger = configure_logging()
         self.socketio = socketio
-        thread = Thread(target=self.send_system_info)
-        
-        thread.start()
+        self.client = self.initialize_docker_client()
+        if self.client:
+            thread = Thread(target=self.send_system_info)
+            thread.start()
+        else:
+            self.logger.error("Failed to initialize Docker client. Monitoring not started.")
 
+    def initialize_docker_client(self):
+        try:
+            client = docker.from_env()
+            client.ping()
+            self.logger.info("Successfully connected to Docker daemon.")
+            return client
+        except DockerException as e:
+            self.logger.error(f"Failed to connect to Docker daemon: {e}")
+            return None
 
     def get_cpu_temp_linux(self):
         try:
@@ -28,27 +41,11 @@ class SystemMonitoring:
             if matches:
                 core_temps = {f"Core {i}": float(temp) for i, temp in enumerate(matches)}
                 avg_temp = sum(core_temps.values()) / len(core_temps)
-                # self.logger.info(f"Average CPU temperature: {avg_temp}°C")
                 return avg_temp
             else:
-                # self.logger.error("No CPU core temperatures found.")
                 return 'N/A'
         except Exception as e:
-            # self.logger.error(f"Failed to get CPU temperatures: {e}")
             return 'N/A'
-
-    
-    # def get_cpu_temp_windows(self):
-    #     try:
-    #         w = wmi.WMI(namespace="root\\OpenHardwareMonitor")
-    #         temperature_infos = w.Sensor()
-    #         for sensor in temperature_infos:
-    #             if sensor.SensorType == 'Temperature' and 'CPU' in sensor.Name:
-    #                 self.logger.info(f"Windows CPU temperature: {sensor.Value}°C")
-    #                 return sensor.Value
-    #     except Exception as e:
-    #         self.logger.error(f"Failed to get Windows CPU temperature: {e}")
-    #     return 'N/A'
 
     def get_cpu_temp(self):
         if platform.system() == 'Linux':
@@ -56,7 +53,6 @@ class SystemMonitoring:
         elif platform.system() == 'Windows':
             return self.get_cpu_temp_windows()
         else:
-            # self.logger.info(f"Unsupported platform: {platform.system()}")
             return 'N/A'
 
     def get_gpu_stats(self):
@@ -69,53 +65,87 @@ class SystemMonitoring:
             gpu_memory_total = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['total']
             gpu_memory_used = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['used']
             gpu_memory_usage = f"{gpu_memory_used} MiB / {gpu_memory_total} MiB"
-            # self.logger.info(f"GPU Temperature: {gpu_temp}°C")
-            # self.logger.info(f"GPU Usage: {gpu_usage}%")
-            # self.logger.info(f"GPU Memory Usage: {gpu_memory_usage}")
             return gpu_temp, gpu_usage, gpu_memory_usage
         except Exception as e:
-            # self.logger.error(f"Failed to get GPU stats: {e}")
             return 'N/A', 'N/A', 'N/A'
 
-    def send_system_info(self):
-        logs_file_path = './logs/audio_processing.json'  # Adjust this to your logs.json file path
+    def calculate_cpu_percent(self, cpu_stats, precpu_stats):
+        cpu_delta = cpu_stats['cpu_usage']['total_usage'] - precpu_stats['cpu_usage']['total_usage']
+        system_delta = cpu_stats['system_cpu_usage'] - precpu_stats['system_cpu_usage']
+        number_cpus = cpu_stats['online_cpus']
 
+        if system_delta > 0 and cpu_delta > 0:
+            cpu_percent = (cpu_delta / system_delta) * number_cpus * 100.0
+        else:
+            cpu_percent = 0.0
+        return cpu_percent
+
+    def get_container_stats(self):
+        container_stats = {}
+        total_cpu_percent = 0.0
+        if not self.client:
+            return container_stats, total_cpu_percent
+
+        try:
+            containers = self.client.containers.list()
+            for container in containers:
+                try:
+                    stats = container.stats(stream=False)
+                    cpu_stats = stats['cpu_stats']
+                    precpu_stats = stats['precpu_stats']
+                    self.logger.info(f"Stats for {container.name}: {stats}")
+                    cpu_percent = self.calculate_cpu_percent(cpu_stats, precpu_stats)
+                    total_cpu_percent += cpu_percent
+                    container_stats[container.name] = {
+                        'cpu_usage': f"{cpu_percent:.2f}%",
+                        'memory_usage': stats['memory_stats']['usage'] / (1024 ** 2),  # Convert bytes to MB
+                        'memory_limit': stats['memory_stats']['limit'] / (1024 ** 2),  # Convert bytes to MB
+                        'network_io': stats['networks'],
+                        'block_io': stats['blkio_stats']['io_service_bytes_recursive']
+                    }
+                    self.logger.info(f"Container {container.name} stats: {container_stats[container.name]}")
+                except KeyError as ke:
+                    self.logger.error(f"KeyError for container {container.name}: {ke}")
+                except Exception as e:
+                    self.logger.error(f"Error retrieving stats for container {container.name}: {e}")
+        except Exception as e:
+            self.logger.error(f"Failed to get container stats: {e}")
+        return container_stats, total_cpu_percent
+
+    def get_system_info(self):
+        cpu_temp = self.get_cpu_temp()
+        cpu_usage = psutil.cpu_percent(interval=1)
+        gpu_temp, gpu_usage, gpu_memory_usage = self.get_gpu_stats()
+        memory = psutil.virtual_memory()
+        memory_usage = f"{memory.used // (1024 ** 3)}GB / {memory.total // (1024 ** 3)}GB"
+        container_stats, total_cpu_percent = self.get_container_stats()
+        
+        system_info = {
+            'host_cpu_usage': f'{cpu_usage}%',
+            'host_gpu_usage': gpu_usage,
+            'host_gpu_temp': gpu_temp,
+            'host_cpu_temp': cpu_temp,
+            'host_memory_usage': memory_usage,
+            'total_container_cpu_usage': f'{total_cpu_percent:.2f}%',
+            'total_container_cpus': psutil.cpu_count(logical=True),
+            'container_info': [
+                {
+                    'container': name,
+                    'cpu': stats['cpu_usage'],
+                    'memory': f"{stats['memory_usage']:.2f}MB",
+                    'gpu': 'N/A'
+                }
+                for name, stats in container_stats.items()
+            ]
+        }
+        return system_info
+
+    def send_system_info(self):
         while True:
             try:
-                with open(logs_file_path, 'r') as file:
-                    logs_data = json.load(file)
-            except FileNotFoundError:
-                print(f"File {logs_file_path} not found.")
-                time.sleep(10)
-                continue
-            except json.JSONDecodeError:
-                print(f"Error decoding JSON from {logs_file_path}.")
-                time.sleep(10)
-                continue
-
-            try:
-                # Gather system stats
-                cpu_temp = self.get_cpu_temp()
-                cpu_usage = psutil.cpu_percent(interval=1)
-                gpu_temp, gpu_usage, gpu_memory_usage = self.get_gpu_stats()
-                memory = psutil.virtual_memory()
-                memory_usage = f"{memory.used // (1024 ** 3)}GB / {memory.total // (1024 ** 3)}GB"
-                
-                # Compile the data to be sent
-                system_info = {
-                    'cpu_temperature': cpu_temp,
-                    'cpu_usage': cpu_usage,
-                    'gpu_temperature': gpu_temp,
-                    'gpu_usage': gpu_usage,
-                    'gpu_memory_usage': gpu_memory_usage,
-                    'memory_usage': memory_usage,
-                    'logs_data': logs_data  # Add logs data
-                }
-
-                # Emit system info and logs data
+                system_info = self.get_system_info()
                 self.socketio.emit('system_info', system_info)
-                time.sleep(2)  # Adjustable interval for updates
+                time.sleep(2)
             except Exception as e:
-                print(f"Error during system monitoring: {e}")
-                # Handle exceptions, perhaps wait a bit longer if there's an error
+                self.logger.error(f"Error during system monitoring: {e}")
                 time.sleep(10)

@@ -55,6 +55,7 @@ class PersonelService:
         except Exception as e:
             self.logger.error(f"Error inserting into database: {e}")
             return {"status": "error", "message": str(e)}, 500
+
     def get_personel_image_path(self, user_id):
         try:
             personel = self.db["Personel"].find_one({"_id": ObjectId(user_id)})
@@ -68,3 +69,32 @@ class PersonelService:
         except Exception as e:
             self.logger.error(f"Error fetching image path: {e}")
             return None
+
+    def delete_personel(self, personel_id):
+        try:
+            personel = self.db["Personel"].find_one({"_id": ObjectId(personel_id)})
+            if not personel:
+                self.logger.error(f"Personel with id {personel_id} not found")
+                return {"status": "error", "message": "Personel not found"}, 404
+
+            # Delete the image file if it exists
+            if 'file_path' in personel and os.path.exists(personel['file_path']):
+                os.remove(personel['file_path'])
+                self.logger.info(f"Deleted image file {personel['file_path']}")
+
+            # Delete the document from MongoDB
+            self.db["Personel"].delete_one({"_id": ObjectId(personel_id)})
+            self.logger.info(f"Deleted personel with id {personel_id} from MongoDB")
+
+            # Delete the document from Solr
+            solr_response = self.solr_searcher.delete_record_from_solr(str(personel_id))
+
+            if solr_response['status'] == 'success':
+                return {"status": "success", "message": "Personel deleted successfully", "solr_response": solr_response}, 200
+            else:
+                self.logger.error("Error deleting data from Solr")
+                return {"status": "error", "message": "Error deleting data from Solr", "solr_response": solr_response}, 500
+
+        except Exception as e:
+            self.logger.error(f"Error deleting personel: {e}")
+            return {"status": "error", "message": str(e)}, 500

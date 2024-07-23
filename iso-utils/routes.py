@@ -8,7 +8,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required
 from bson import ObjectId
 from logger import configure_logging
-
+import requests
 import os
 app = Flask(__name__)
 CORS(app, origins="*")
@@ -49,6 +49,12 @@ def add_personel():
     result, status_code = personel_service.add_personel(data, file)
 
     return jsonify(result), status_code
+
+@personel_bp.route("/personel/<id>", methods=["DELETE"])
+def delete_personel(id):
+    result, status_code = personel_service.delete_personel(id)
+    return jsonify(result), status_code
+
 
 @personel_bp.route("/personel", methods=["GET"])
 def get_all_personel():
@@ -96,27 +102,28 @@ def get_user_images():
 app.register_blueprint(personel_bp)
 
 @solr_search_bp.route("/add_to_solr", methods=["POST"])
-def add_to_solr(self, data):
-    try:
-        headers = {'Content-Type': 'application/json'}
-        response = requests.post(f'{self.solr_url}/update?commit=true', headers=headers, data=json.dumps(data))
-        response.raise_for_status()
-        return {"status": "success", "message": "Document added to Solr"}
-    except requests.exceptions.RequestException as e:
-        return {"status": "error", "message": str(e)}
+def add_to_solr():
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "error", "message": "No data provided"}), 400
+    
+    result = searcher.add_record_to_solr(data)
+    return jsonify(result)
 
+    
 @solr_search_bp.route("/search", methods=["GET"])
 def search():
     query = request.args.get("query")
-    results = searcher.search(query)
+    results,status_code = searcher.search(query)
     if isinstance(results, dict) and 'error' in results:
         return jsonify(results), results.get('status', 400)
-    return jsonify(results), 200
+    return jsonify(results), status_code
+
 
 app.register_blueprint(solr_search_bp)
-@app.route("/system_check/", methods=["GET1"])
-@jwt_required()
+@system_check.route("/system_check/", methods=["GET"])
+# @jwt_required()
 def system_check_route():
-    system_info = monitoring_service.send_system_info()
+    system_info = monitoring_service.get_system_info()
     return jsonify(system_info)
 app.register_blueprint(system_check)

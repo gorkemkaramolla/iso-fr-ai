@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect, ChangeEvent } from 'react';
-
 import io from 'socket.io-client';
 import useStore from '@/library/store';
 import createApi from '@/utils/axios_instance';
@@ -34,7 +33,12 @@ function WhisperUpload() {
   const access_token = useStore((state) => state.accessToken);
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setFile(event.target.files ? event.target.files[0] : null);
+    const selectedFile = event.target.files ? event.target.files[0] : null;
+    if (selectedFile && selectedFile.size > 50 * 1024 * 1024) {
+      setError('File size should be less than 50MB');
+      return;
+    }
+    setFile(selectedFile);
     setError('');
   };
 
@@ -44,6 +48,7 @@ function WhisperUpload() {
       setProgress(data.progress);
     });
     return () => {
+      socket.off('progress');
       socket.close();
     };
   }, []);
@@ -72,10 +77,8 @@ function WhisperUpload() {
       setLoading(false);
       setProgress(100);
 
-      // Store the response for future sessions or other component use
       let responses = JSON.parse(localStorage.getItem('responses') || '[]');
       responses.push(res.data);
-      console.log('responses:', responses);
       localStorage.setItem('responses', JSON.stringify(responses));
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -89,36 +92,59 @@ function WhisperUpload() {
 
   return (
     <div className='w-full h-full overflow-auto'>
-      <div className='w-full my-0 absolute bottom-0  rounded-full'>
-        <div
-          className='h-2 bg-terminalGreen   rounded-full'
-          style={{ width: `${progress}%` }}
-        ></div>
+      <div className='w-full fixed top-16 left-0 z-50'>
+        <div className='bg-gray-200 h-2'>
+          <div
+            className='h-full bg-indigo-500 transition-all duration-300 ease-in-out'
+            style={{ width: `${progress}%` }}
+          >
+            {progress > 0 && progress < 100 && (
+              <div className='absolute top-0 right-0 bg-white text-blue-500 px-2 py-1 text-xs rounded-full shadow -mt-8 -mr-4'>
+                {progress.toFixed(0)}%
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      <div className='p-8  h-full  rounded-xl'>
-        <h1 className='my-1'>Dosya Yükleme</h1>
+      <div className='p-8 h-full rounded-xl'>
+        <h1 className='my-1'>File Upload</h1>
         <input
           type='file'
           onChange={onFileChange}
           className='file-input file-input-bordered w-full max-w-xs'
           accept='audio/*'
+          aria-label='Upload audio file'
         />
-        <button className='btn ' onClick={onFileUpload} disabled={loading}>
-          {loading ? 'Yükleniyor...' : 'Yükle'}
+        <button className='btn mt-2' onClick={onFileUpload} disabled={loading}>
+          {loading ? 'Uploading...' : 'Upload'}
         </button>
-        {error && <div className='text-red-500'>{error}</div>}
+        {error && <div className='text-red-500 mt-2'>{error}</div>}
         {response && (
-          <div className='rounded-xl p-4 w-full overflow-auto'>
-            <h3>Processed at: {response?.created_at}</h3>
-            <h3>Language: {response?.transcription?.language}</h3>
-            <ul>
-              {response?.transcription?.segments?.map((segment, index) => (
-                <li key={index} className=''>
-                  <span className='badge-primary'>
-                    {segment?.speaker?.toUpperCase()}
-                  </span>
-                  : {segment.start.toFixed(2)} -{segment.end.toFixed(2)} ={' '}
-                  {segment.text}
+          <div className='mt-4 border border-gray-200 rounded-lg w-full overflow-auto'>
+            <div className='px-4 py-2 bg-gray-50 border-b border-gray-200'>
+              <p className='text-sm text-gray-600'>
+                Processed on:
+                <span className='font-medium'>
+                  {new Date(response.created_at).toLocaleString()}
+                </span>
+                | Language:
+                <span className='font-medium'>
+                  {response.transcription.language}
+                </span>
+              </p>
+            </div>
+            <ul className='divide-y divide-gray-200'>
+              {response.transcription.segments.map((segment, index) => (
+                <li key={index} className='px-4 py-2 hover:bg-gray-50'>
+                  <div className='flex items-center space-x-2 text-sm'>
+                    <span className='font-semibold text-gray-700'>
+                      {segment.speaker.toUpperCase()}
+                    </span>
+                    <span className='text-gray-400'>
+                      {segment.start.toFixed(1)}s - {segment.end.toFixed(1)}s
+                    </span>
+                  </div>
+                  <p className='mt-1 text-gray-800'>{segment.text}</p>
                 </li>
               ))}
             </ul>

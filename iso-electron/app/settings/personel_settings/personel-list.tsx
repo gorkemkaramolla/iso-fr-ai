@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { InputText } from 'primereact/inputtext';
 import { Search, User, Mail, Briefcase } from 'lucide-react';
 import Image from 'next/image';
-import { Button } from '@mui/material';
+import DeletePersonel from './delete-personel';
 
 interface Personel {
   _id: string;
@@ -82,12 +82,16 @@ export default function ShowPersonel() {
   const actionBodyTemplate = (rowData: Personel) => {
     return (
       <div className='flex items-center'>
-        <span>
-          <Button>Sil</Button>
-        </span>
+        <DeletePersonel
+          onDeleteSuccess={() => {
+            alert('success');
+          }}
+          personelId={rowData._id}
+        />
       </div>
     );
   };
+
   const nameBodyTemplate = (rowData: Personel) => {
     return (
       <div className='flex items-center'>
@@ -142,11 +146,11 @@ export default function ShowPersonel() {
         />
         <Column
           body={titleBodyTemplate}
-          header='Ünvan'
+          header='Title'
           sortable
-          sortField='Ünvan'
+          sortField='title'
         />
-        <Column body={actionBodyTemplate} sortable />
+        <Column body={actionBodyTemplate} />
       </DataTable>
     </div>
   );

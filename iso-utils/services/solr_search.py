@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import uuid
 class SolrSearcher:
     def __init__(self, mongo_db, solr_url="http://solr:8983/solr/isoai"):
+        self.solr_logs_url="http://solr:8983/solr/logs"
         self.mongo_db = mongo_db
         self.mongo_collection = self.mongo_db["Personel"]
         self.solr_url = solr_url
@@ -158,3 +159,45 @@ class SolrSearcher:
         except Exception as e:
             logging.error(f"Error deleting document {document_id} from Solr: {e}")
             return {"status": "error", "message": str(e)}
+        
+        
+        
+    def search_logs(self, query=None):
+        try:
+            # Prepare query
+            fields = ["time", "level", "message", "name", "container_id", "container_name", "source", "log", "id"]
+            field_query = " OR ".join([f"{field}:\"{query}\"" for field in fields]) if query else "*:*"
+            
+            # Debug the query
+            logging.info(f"Search query for logs: {field_query}")
+
+            # Query parameters
+            query_params = urlencode({
+                'q': field_query,
+                'wt': 'json',
+                'defType': 'edismax',
+                'qf': ' '.join(fields)
+            }) if query else "q=*:*&wt=json"
+            
+            # Solr URL for logs core
+            url = f'{self.solr_logs_url}/select?{query_params}'
+            logging.info(f"Connecting to Solr logs URL: {url}")
+            # Perform request
+            connection = urlopen(url, timeout=10)
+            response = json.load(connection)
+
+            # Process results
+            results = response.get('response', {}).get('docs', [])
+            if not results:
+                return {"error": "No results found"}, 404
+
+            return results, 200
+        except HTTPError as e:
+            logging.error(f"HTTPError during logs search: {e.code} {e.reason}")
+            return {"error": f"HTTPError: {e.reason}", "details": e.read().decode()}, 500
+        except URLError as e:
+            logging.error(f"URLError during logs search: {e.reason}")
+            return {"error": f"URLError: {e.reason}"}, 500
+        except Exception as e:
+            logging.exception("Exception during logs search")
+            return {"error": "An error occurred during logs search", "details": str(e)}, 500

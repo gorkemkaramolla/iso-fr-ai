@@ -37,3 +37,8 @@ def configure_logging(log_level=logging.INFO):
 
     return logger
 
+if __name__ == "__main__":
+    logger = configure_logging()
+    logger.info("This is an info log message.")
+    logger.error("This is an error log message.")
+  

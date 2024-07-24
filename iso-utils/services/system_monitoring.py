@@ -10,9 +10,10 @@ from socketio_instance import socketio
 import json
 import docker
 from docker.errors import DockerException
-
+import logging
 class SystemMonitoring:
     def __init__(self):
+    
         self.logger = configure_logging()
         self.socketio = socketio
         self.client = self.initialize_docker_client()

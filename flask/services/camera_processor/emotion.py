@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 class EmotionDetector:
-    def __init__(self, model_path: str, providers=["CUDAExecutionProvider"]):
+    def __init__(self, model_path: str, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]):
         onnxruntime.set_default_logger_severity(3)  # Disable onnxruntime logging
         self.model_path = os.path.expanduser(model_path)
         assert os.path.exists(self.model_path), f"Model file not found: {self.model_path}"

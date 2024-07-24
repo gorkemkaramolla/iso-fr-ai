@@ -42,3 +42,4 @@ iso-diarize/mycert.key
 iso-diarize/ssl-cert-sclerlk
 iso-diarize/services/large-v3
 iso-diarize/services/models
+flask/services/camera_processor/face-images

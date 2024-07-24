@@ -41,7 +41,7 @@ const ChatSideMenu: React.FC = () => {
   const totalPages = Math.ceil(responses.length / itemsPerPage);
 
   return (
-    <div className='h-full sticky top-0 bg-white border-r border-gray-200 overflow-y-auto'>
+    <div className='h-full sticky top-0 bg-white  border-gray-200 overflow-y-auto'>
       <div className='py-4 px-4'>
         <h2 className='text-lg font-semibold mb-4 text-gray-700'>
           Transkriptler

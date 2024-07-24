@@ -10,7 +10,7 @@ import 'primeicons/primeicons.css'; //icons
 import { Camera, User } from 'lucide-react';
 export default function SettingsPage() {
   return (
-    <div className='container mx-auto flex flex-col gap-4 h-[92vh] w-screen overflow-hidden p-4'>
+    <div className='container mx-auto flex flex-col gap-4 h-[92vh] overflow-hidden p-4'>
       <Panel header='Ayalar' className='h-full overflow-y-scroll'>
         <div className='flex flex-col gap-4'>
           <Link href='/settings/camera_settings'>

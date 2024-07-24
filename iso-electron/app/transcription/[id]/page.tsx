@@ -89,14 +89,14 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     await api.post(`/rename_segments/${id}/${oldName}/${newName}`, {});
   };
 
-  const getSpeakerColor = (speaker: string) => {
+  const getSpeakerBackgroundColor = (speaker: string) => {
     const colors = [
+      'bg-gray-200',
+      'bg-stone-100',
       'bg-blue-100',
-      'bg-green-100',
-      'bg-yellow-100',
-      'bg-red-100',
-      'bg-purple-100',
-      'bg-pink-100',
+      'bg-indigo-50',
+      'bg-slate-100',
+      'bg-amber-50',
     ];
     const hash = speaker
       .split('')
@@ -133,98 +133,96 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   }
 
   return (
-    <div className='flex md:flex-row flex-col transition-all'>
-      <div className='flex flex-col p-4 w-full md:w-10/12 mx-auto'>
-        <div className='flex items-center justify-between'>
+    <div className='flex flex-col  lg:flex-row min-h-screen bg-gray-50'>
+      <div className='flex-grow p-4 lg:w-3/4'>
+        <div className='bg-white rounded shadow p-4 mb-4'>
           <MusicPlayer
             audioSrc='/test.wav'
             title='Meclis 1'
             date={transcription.created_at}
           />
-          <div className='mb-4 flex flex-col justify-end px-4 gap-2'>
-            <Button
-              label='Get Excel'
-              icon='pi pi-file-excel'
-              className='p-button-success w-full'
-              onClick={handleGetExcel}
-            />
-            <Button
-              label='Get JSON'
-              icon='pi pi-file'
-              className='p-button-info w-full'
-              onClick={handleGetJSON}
-            />
-          </div>
         </div>
 
-        <Dialog
-          header='Rename Speaker'
-          visible={showModal}
-          onHide={() => setShowModal(false)}
-          style={{ width: '300px' }}
-        >
-          <div className='flex flex-col gap-2'>
-            <InputText
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className='p-2 text-sm'
-            />
-            <div className='mt-4 flex justify-end'>
-              <Button
-                label='Cancel'
-                className='p-button-text p-button-sm mr-2'
-                onClick={() => setShowModal(false)}
-              />
-              <Button
-                label='Save'
-                icon='pi pi-check'
-                className='p-button-sm'
-                onClick={() => renameSpeaker(newName)}
-              />
-            </div>
-          </div>
-        </Dialog>
+        <div className='flex justify-end space-x-2 mb-4'>
+          <Button
+            label='Get Excel'
+            icon='pi pi-file-excel'
+            className='p-button-sm'
+            onClick={handleGetExcel}
+          />
+          <Button
+            label='Get JSON'
+            icon='pi pi-file'
+            className='p-button-sm'
+            onClick={handleGetJSON}
+          />
+        </div>
 
         <div
           ref={transcriptionRef}
-          className='bg-gray-100 p-4 rounded-lg shadow-md overflow-y-auto'
-          style={{ maxHeight: '50vh' }}
+          className='bg-white rounded shadow p-4 overflow-y-auto'
+          style={{ maxHeight: 'calc(100vh - 250px)' }}
         >
-          {transcription.segments.map((segment, index) => (
+          {transcription.segments.map((segment) => (
             <div
               key={segment.segment_id}
-              className={`mb-4 flex segment ${
-                index % 2 === 0 ? 'justify-start' : 'justify-end'
-              }`}
+              className={`mb-2 p-2 rounded segment ${getSpeakerBackgroundColor(
+                segment.speaker
+              )}`}
               data-start-time={segment.start_time}
               data-end-time={segment.end_time}
             >
-              <div
-                className={`max-w-[70%] ${getSpeakerColor(
-                  segment.speaker
-                )} rounded-lg p-3 shadow`}
-              >
-                <div className='flex justify-between items-center mb-2'>
-                  <span
-                    className='font-bold cursor-pointer hover:underline'
-                    onClick={() => handleSpeakerClick(segment)}
-                  >
-                    {segment.speaker}
-                  </span>
-                  <span className='text-xs text-gray-500'>
-                    {segment.start_time.toFixed(2)}s -{' '}
-                    {segment.end_time.toFixed(2)}s
-                  </span>
-                </div>
-                <p>{segment.transcribed_text}</p>
+              <div className='flex justify-between items-center text-sm text-gray-600 mb-1'>
+                <span
+                  className='font-semibold cursor-pointer hover:underline'
+                  onClick={() => handleSpeakerClick(segment)}
+                >
+                  {segment.speaker}
+                </span>
+                <span>
+                  {segment.start_time.toFixed(2)}s -{' '}
+                  {segment.end_time.toFixed(2)}s
+                </span>
               </div>
+              <p className='text-sm text-gray-800'>
+                {segment.transcribed_text}
+              </p>
             </div>
           ))}
         </div>
       </div>
-      <div className='md:w-2/12 w-full'>
+
+      <div className='lg:w-1/4 '>
         <TranscriptionHistory />
       </div>
+
+      <Dialog
+        header='Rename Speaker'
+        visible={showModal}
+        onHide={() => setShowModal(false)}
+        className='w-80'
+      >
+        <div className='flex flex-col gap-4'>
+          <InputText
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className='p-2 text-sm'
+          />
+          <div className='flex justify-end space-x-2'>
+            <Button
+              label='Cancel'
+              className='p-button-text p-button-sm'
+              onClick={() => setShowModal(false)}
+            />
+            <Button
+              label='Save'
+              icon='pi pi-check'
+              className='p-button-sm'
+              onClick={() => renameSpeaker(newName)}
+            />
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };

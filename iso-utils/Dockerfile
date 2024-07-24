@@ -10,10 +10,14 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install Docker CLI using the official Docker installation script
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://get.docker.com -o get-docker.sh && \
+    sh get-docker.sh
+
 # Make port 5004 available to the world outside this container
 EXPOSE 5004
-
-
 
 # Run app.py when the container launches
 CMD ["python", "app.py"]

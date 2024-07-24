@@ -24,7 +24,7 @@ export default function RootLayout({
 
   return (
     <html lang='tr' data-theme='light' className={'w-screen '}>
-      <body className={inter.className + ' light flex justify-center'}>
+      <body className={inter.className + '  flex justify-center'}>
         <PrimeReactProvider>
           <div className='w-full h-[100dvh]'>
             <Provider>a</Provider>

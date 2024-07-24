@@ -5,17 +5,18 @@ from logger import configure_logging
 from bson import ObjectId
 import os
 from logger import configure_logging
+from services.solr_search import SolrSearcher
 
 class PersonelService:
     def __init__(self, db):
         self.IMAGE_DIRECTORY = '/app/personel_images'
         self.logger = configure_logging()
         self.db = db
-
+        self.solr_searcher = SolrSearcher(db)
+        
     def add_personel(self, data, file):
         os.makedirs(self.IMAGE_DIRECTORY, exist_ok=True)
         try:
-            # Insert the personel data into the database to get the MongoDB ID
             result = self.db["Personel"].insert_one(data)
             personel_id = result.inserted_id
             data['_id'] = str(personel_id)
@@ -27,23 +28,29 @@ class PersonelService:
                     file.save(file_path)
                     self.logger.info(f"Saved file to {file_path}")
 
-                    # Update the personel record with the file path
                     self.db["Personel"].update_one(
                         {"_id": ObjectId(personel_id)}, 
                         {"$set": {"file_path": file_path}}
                     )
                     data['file_path'] = file_path
                     data['id'] = str(personel_id)
-                    self.logger.info("Updated personel data with file path")
-                    return {"status": "success", "message": "Personel added successfully", "file_path": file_path, "data": data}, 201
+
+                    self.logger.info("Updated personnel data with file path")
 
                 except Exception as e:
                     self.logger.error(f"Error saving file: {e}")
                     return {"status": "error", "message": str(e)}, 500
-
             else:
                 self.logger.error("No valid image file provided")
                 return {"status": "error", "message": "No valid image file provided"}, 400
+
+            solr_response = self.solr_searcher.add_record_to_solr(data)
+
+            if solr_response['status'] == 'success':
+                return {"status": "success", "message": "Personnel added successfully", "file_path": file_path, "data": data, "solr_response": solr_response}, 201
+            else:
+                self.logger.error("Error adding data to Solr")
+                return {"status": "error", "message": "Error adding data to Solr", "solr_response": solr_response}, 500
 
         except Exception as e:
             self.logger.error(f"Error inserting into database: {e}")
@@ -62,3 +69,32 @@ class PersonelService:
         except Exception as e:
             self.logger.error(f"Error fetching image path: {e}")
             return None
+
+    def delete_personel(self, personel_id):
+        try:
+            personel = self.db["Personel"].find_one({"_id": ObjectId(personel_id)})
+            if not personel:
+                self.logger.error(f"Personel with id {personel_id} not found")
+                return {"status": "error", "message": "Personel not found"}, 404
+
+            # Delete the image file if it exists
+            if 'file_path' in personel and os.path.exists(personel['file_path']):
+                os.remove(personel['file_path'])
+                self.logger.info(f"Deleted image file {personel['file_path']}")
+
+            # Delete the document from MongoDB
+            self.db["Personel"].delete_one({"_id": ObjectId(personel_id)})
+            self.logger.info(f"Deleted personel with id {personel_id} from MongoDB")
+
+            # Delete the document from Solr
+            solr_response = self.solr_searcher.delete_record_from_solr(str(personel_id))
+
+            if solr_response['status'] == 'success':
+                return {"status": "success", "message": "Personel deleted successfully", "solr_response": solr_response}, 200
+            else:
+                self.logger.error("Error deleting data from Solr")
+                return {"status": "error", "message": "Error deleting data from Solr", "solr_response": solr_response}, 500
+
+        except Exception as e:
+            self.logger.error(f"Error deleting personel: {e}")
+            return {"status": "error", "message": str(e)}, 500

@@ -1,4 +1,3 @@
-# speaker_diarization.py
 import logging
 from db import mongo_client, mongo_db
 from socketio_instance import socketio
@@ -8,7 +7,7 @@ from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 import os
 from whisper_run import AudioProcessor
-
+import requests
 from datetime import datetime
 from bson import ObjectId
 os.environ["CURL_CA_BUNDLE"] = ""
@@ -43,7 +42,8 @@ class SpeakerDiarizationProcessor:
             cursor = collection.find({})
             all_transcriptions = [
                 {
-                    "transcription_id": str(doc["_id"]),
+                    "name":doc["name"],
+                    "transcription_id": str(doc["_id"]),  # Convert ObjectId to string here
                     "created_at": doc["created_at"],
                     "full_text": doc.get("full_text", ""),
                 }
@@ -54,20 +54,6 @@ class SpeakerDiarizationProcessor:
         except Exception as e:
             self.logger.info(f"Database error: {str(e)}")
             return {"error": str(e)}
-
-    def safe_parse_date(self, date_value):
-        if not date_value:
-            return None
-        if isinstance(date_value, str):
-            return date_value
-        try:
-            return date_value.isoformat() if date_value else None
-        except ValueError as e:
-            self.logger.error(f"Invalid date encountered: {e}, Date Value: {date_value}")
-            return None
-        except AttributeError as e:
-            self.logger.error(f"Attribute error: {e}, Date Value: {date_value}")
-            return None
 
     def get_transcription(self, id):
         try:
@@ -85,7 +71,7 @@ class SpeakerDiarizationProcessor:
 
             segments_data = [
                 {
-                    "segment_id": str(segment["_id"]),
+                    "segment_id": str(segment["_id"]),  # Convert ObjectId to string here
                     "start_time": segment["start_time"],
                     "end_time": segment["end_time"],
                     "speaker": segment["speaker"],
@@ -95,7 +81,7 @@ class SpeakerDiarizationProcessor:
             ]
 
             result = {
-                "transcription_id": str(transcription["_id"]),
+                "transcription_id": str(transcription["_id"]),  # Convert ObjectId to string here
                 "created_at": transcription["created_at"],
                 "full_text": transcription.get("full_text", ""),
                 "segments": segments_data,
@@ -141,21 +127,29 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(90)
 
             created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            transcript_id = str(ObjectId())
+            transcript_id = str(ObjectId())  # Ensure ObjectId is converted to string here
 
             response_data = {
                 "id": transcript_id,
+                "name":filename,
                 "transcription": transcription,
                 "created_at": created_at,
             }
 
             self.mongo_db.transcripts.insert_one(
                 {
-                    "_id": transcript_id,
+                    "_id": transcript_id,  # Ensure ObjectId is converted to string here
+                    "name": filename,
                     "created_at": created_at,
                     "full_text": transcription["text"],
                 }
             )
+            try:
+                response = requests.post('http://utils_service:5004/add_to_solr', json=response_data)
+                response.raise_for_status()  
+                print("Successfully added data to Solr")
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to add data to Solr: {e}")
 
             for segment in transcription["segments"]:
                 self.mongo_db.segments.insert_one(
@@ -170,6 +164,6 @@ class SpeakerDiarizationProcessor:
 
             return response_data
         except Exception as e:
-            self.logger.exception("Failed during processingx")
+            self.logger.exception("Failed during processing")
             self.emit_progress(0)
             return {"error": str(e)}

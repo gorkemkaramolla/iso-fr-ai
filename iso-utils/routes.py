@@ -8,7 +8,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required
 from bson import ObjectId
 from logger import configure_logging
-
+import requests
 import os
 app = Flask(__name__)
 CORS(app, origins="*")
@@ -19,8 +19,8 @@ client = MongoClient(os.environ.get("MONGO_DB_URI"))
 db = client[os.environ.get("MONGO_DB_NAME")]
 
 # Setup Solr Searcher
-solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/isoai")
-searcher = SolrSearcher(client, db, solr_url)
+solr_url = os.environ.get("SOLR_URL", "http://solr:8983/solr/isoai")
+searcher = SolrSearcher(db, solr_url)
 
 # Create an instance of your class
 logger = configure_logging()
@@ -30,7 +30,6 @@ personel_service = PersonelService(db)
 solr_search_bp = Blueprint("solar_search_bp", __name__)
 system_check = Blueprint("system_check", __name__)
 personel_bp = Blueprint("personel_bp", __name__)
-
 
 
 
@@ -50,6 +49,24 @@ def add_personel():
     result, status_code = personel_service.add_personel(data, file)
 
     return jsonify(result), status_code
+
+@personel_bp.route("/personel/<id>", methods=["DELETE"])
+def delete_personel(id):
+    result, status_code = personel_service.delete_personel(id)
+    return jsonify(result), status_code
+
+
+@personel_bp.route("/personel", methods=["GET"])
+def get_all_personel():
+    try:
+        persons = list(db["Personel"].find())
+        
+        for person in persons:
+            person["_id"] = str(person["_id"])
+        
+        return jsonify(persons), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 
 @personel_bp.route("/personel/<id>", methods=["GET"])
@@ -84,98 +101,29 @@ def get_user_images():
         return image_paths;
 app.register_blueprint(personel_bp)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @solr_search_bp.route("/add_to_solr", methods=["POST"])
 def add_to_solr():
-    UPLOAD_FOLDER = '/app/personel_images' 
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    data = request.form.to_dict()
-    files = request.files.getlist('files')
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "error", "message": "No data provided"}), 400
+    
+    result = searcher.add_record_to_solr(data)
+    return jsonify(result)
 
-    saved_files = []
-    for file in files:
-        if file and file.filename.endswith(('.png', '.jpg', '.jpeg')):
-            try:
-                # Generate a unique filename
-                filename = str(uuid.uuid4()) + os.path.splitext(file.filename)[-1]
-
-                # Save the file to the 'personel_images' directory
-                file_path = os.path.join(UPLOAD_FOLDER, filename)
-                file.save(file_path)
-                saved_files.append(file_path)
-
-                # Add the file path to the data (or convert to base64 if needed)
-                data['file_path'] = file_path
-
-            except Exception as e:
-                return jsonify({"status": "error", "message": str(e)}), 500
-        else:
-            return jsonify({"status": "error", "message": "No valid image file provided"}), 400
-
-    # Additional code to add the data to Solr goes here...
-
-    return jsonify({"status": "success", "message": "Files uploaded successfully", "files": saved_files}), 200
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
 @solr_search_bp.route("/search", methods=["GET"])
 def search():
     query = request.args.get("query")
-    results = searcher.search(query)
+    results,status_code = searcher.search(query)
     if isinstance(results, dict) and 'error' in results:
         return jsonify(results), results.get('status', 400)
-    return jsonify(results), 200
+    return jsonify(results), status_code
+
 
 app.register_blueprint(solr_search_bp)
-@app.route("/system_check/", methods=["GET"])
-@jwt_required()
+@system_check.route("/system_check/", methods=["GET"])
+# @jwt_required()
 def system_check_route():
-    system_info = monitoring_service.send_system_info()
+    system_info = monitoring_service.get_system_info()
     return jsonify(system_info)
 app.register_blueprint(system_check)
-
-
-if __name__ == "__main__":
-    app.run(debug=True, port=5004)

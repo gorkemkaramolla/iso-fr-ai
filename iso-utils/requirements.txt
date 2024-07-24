@@ -9,4 +9,5 @@ xmltodict==0.13.0
 
 pillow==10.3.0
 numpy==1.26.4
-requests==2.32.3
+requests==2.27.1
+docker==7.1.0

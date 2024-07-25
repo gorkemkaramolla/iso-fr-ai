@@ -94,7 +94,6 @@ class SystemMonitoring:
                     stats = container.stats(stream=False)
                     cpu_stats = stats['cpu_stats']
                     precpu_stats = stats['precpu_stats']
-                    self.logger.info(f"Stats for {container.name}: {stats}")
                     cpu_percent = self.calculate_cpu_percent(cpu_stats, precpu_stats)
                     total_cpu_percent += cpu_percent
                     container_stats[container.name] = {
@@ -104,7 +103,6 @@ class SystemMonitoring:
                         'network_io': stats['networks'],
                         'block_io': stats['blkio_stats']['io_service_bytes_recursive']
                     }
-                    self.logger.info(f"Container {container.name} stats: {container_stats[container.name]}")
                 except KeyError as ke:
                     self.logger.error(f"KeyError for container {container.name}: {ke}")
                 except Exception as e:

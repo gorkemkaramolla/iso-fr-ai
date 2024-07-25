@@ -1,13 +1,13 @@
 interface Segment {
-  id: number;
-  start: number;
-  end: number;
-  text: string;
+  segment_id: string;
+  start_time: number;
+  end_time: number;
   speaker: string;
+  transcribed_text: string;
 }
-
 interface Transcript {
-  text: string;
+  name: string;
+  created_at: string;
   segments: Segment[];
   language: string;
 }

@@ -12,13 +12,13 @@ class JsonFormatter(logging.Formatter):
         }
         if record.exc_info:
             log_record['exception'] = self.formatException(record.exc_info)
-        return log_record  # Return dictionary formatted log record.
+        return log_record
 
 class JsonConsoleHandler(logging.StreamHandler):
     def emit(self, record):
         try:
-            log_entry = self.format(record)  # This returns a dictionary.
-            print(json.dumps(log_entry))  # Print the JSON string.
+            log_entry = self.format(record)
+            print(json.dumps(log_entry))
         except Exception as e:
             self.handleError(record)
 
@@ -37,3 +37,4 @@ def configure_logging(log_level=logging.INFO):
 
     return logger
 
+logger = configure_logging()

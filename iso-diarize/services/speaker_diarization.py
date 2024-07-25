@@ -8,7 +8,9 @@ from pydub import AudioSegment
 import os
 from whisper_run import AudioProcessor
 import requests
-from datetime import datetime
+from datetime import datetime,timezone
+
+
 from bson import ObjectId
 os.environ["CURL_CA_BUNDLE"] = ""
 
@@ -126,7 +128,8 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(70)
             self.emit_progress(90)
 
-            created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            created_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
             transcript_id = str(ObjectId())  # Ensure ObjectId is converted to string here
 
             response_data = {
@@ -145,8 +148,10 @@ class SpeakerDiarizationProcessor:
                 }
             )
             try:
-                response = requests.post('http://utils_service:5004/add_to_solr', json=response_data)
-                response.raise_for_status()  
+           
+                        
+                # response = requests.post('http://utils_service:5004/add_to_solr', json=response_data)
+                # response.raise_for_status()  
                 print("Successfully added data to Solr")
             except requests.exceptions.RequestException as e:
                 print(f"Failed to add data to Solr: {e}")

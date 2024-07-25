@@ -1,18 +1,31 @@
 'use client';
-
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState, useMemo } from 'react';
+import { ROUTES } from '@/config/routes';
+import { useRouter, usePathname } from 'next/navigation';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  KeyboardEvent,
+} from 'react';
 import {
   Search,
   User,
   Briefcase,
   Clock2,
+  Speech,
   MapPin,
   Phone,
   X,
   Mail,
+  Settings,
+  Tv,
+  Home,
+  Edit,
+  Cpu,
 } from 'lucide-react';
 import Link from 'next/link';
+import ShowPersonel from './settings/personel_settings/personel-list';
 
 const getLatestSearches = (): string[] => {
   return JSON.parse(localStorage.getItem('latestSearches') || '[]');
@@ -23,8 +36,6 @@ const addSearchTerm = (query: string) => {
   if (!latestSearches.includes(query)) {
     latestSearches.push(query);
   }
-  const MAX_SEARCHES = 10;
-  latestSearches = latestSearches.slice(-MAX_SEARCHES);
   localStorage.setItem('latestSearches', JSON.stringify(latestSearches));
 };
 
@@ -55,19 +66,52 @@ const Page: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Personel[]>([]);
   const [query, setQuery] = useState<string>('');
   const [showLatestSearches, setShowLatestSearches] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const router = useRouter();
+  const pathname = usePathname();
   const latestSearches = getLatestSearches();
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const filteredLatestSearches = useMemo(() => {
-    if (!query) return latestSearches;
-    return latestSearches.filter((search) =>
-      search.toLowerCase().includes(query.toLowerCase())
+  const currentRoute =
+    Object.entries(ROUTES).find(([_, value]) => value.path === pathname)?.[0] ||
+    '';
+
+  const allRouteLinks = useMemo(() => {
+    return Object.values(ROUTES).flatMap((route) =>
+      Object.entries(route.links).map(([name, path]) => ({ name, path }))
     );
-  }, [query, latestSearches]);
+  }, []);
+
+  const filteredSearches = useMemo(() => {
+    if (!query)
+      return [...latestSearches, ...allRouteLinks.map((link) => link.name)];
+
+    const routeSpecificLinks = currentRoute
+      ? Object.keys(ROUTES[currentRoute as keyof typeof ROUTES].links)
+      : [];
+
+    if (Object.keys(ROUTES).includes(query.toLowerCase())) {
+      return [
+        query,
+        ...Object.keys(
+          ROUTES[query.toLowerCase() as keyof typeof ROUTES].links
+        ),
+      ];
+    }
+
+    return [
+      ...allRouteLinks
+        .filter((link) => link.name.toLowerCase().includes(query.toLowerCase()))
+        .map((link) => link.name),
+      ...latestSearches.filter((search) =>
+        search.toLowerCase().includes(query.toLowerCase())
+      ),
+    ];
+  }, [query, latestSearches, currentRoute, allRouteLinks]);
 
   useEffect(() => {
     const fetchSearchData = async () => {
-      if (query) {
+      if (query && !allRouteLinks.some((link) => link.name === query)) {
         try {
           const res = await fetchSearchResults(query);
           setSearchResults(res);
@@ -84,6 +128,10 @@ const Page: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(debounce);
+  }, [query, allRouteLinks]);
+
+  useEffect(() => {
+    setSelectedIndex(-1);
   }, [query]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,8 +149,56 @@ const Page: React.FC = () => {
     setSearchResults([]);
   };
 
+  const getIcon = (name: string) => {
+    switch (name.toLowerCase()) {
+      case 'home':
+      case 'dashboard':
+        return <Home className='w-4 h-4 text-gray-400' />;
+      case 'ayarlar':
+      case 'kişi ayarları':
+        return <Settings className='w-4 h-4 text-gray-400' />;
+      case 'konuşmalar':
+        return <Speech className='w-4 h-4 text-gray-400' />;
+      case 'yayın':
+        return <Tv className='w-4 h-4 text-gray-400' />;
+      case 'izlence':
+        return <Cpu className='w-4 h-4 text-gray-400' />;
+      case 'profile':
+      case 'edit profile':
+        return <Edit className='w-4 h-4 text-gray-400' />;
+      default:
+        return <Clock2 className='w-4 h-4 text-gray-400' />;
+    }
+  };
+
+  const getLinkPath = (linkName: string) => {
+    const link = allRouteLinks.find((link) => link.name === linkName);
+    return link ? link.path : '#';
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prevIndex) =>
+        prevIndex < filteredSearches.length - 1 ? prevIndex + 1 : prevIndex
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : -1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < filteredSearches.length) {
+        const selectedItem = filteredSearches[selectedIndex];
+        router.push(getLinkPath(selectedItem));
+      }
+    }
+  };
+
   return (
     <div className='min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
+      <div className='container mx-auto'>
+        <ShowPersonel />
+      </div>
       <div className='max-w-3xl mx-auto'>
         <div className='relative'>
           <div className='relative'>
@@ -112,8 +208,10 @@ const Page: React.FC = () => {
               onChange={handleSearchChange}
               onFocus={() => setShowLatestSearches(true)}
               onBlur={() => setTimeout(() => setShowLatestSearches(false), 200)}
+              onKeyDown={handleKeyDown}
               placeholder='Search'
               className='w-full px-4 py-3 pl-10 pr-10 text-gray-700 bg-white border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+              ref={searchRef}
             />
             <Search className='absolute left-3 top-3.5 text-gray-400 w-5 h-5' />
             {query && (
@@ -125,32 +223,42 @@ const Page: React.FC = () => {
               </button>
             )}
           </div>
-          {showLatestSearches && filteredLatestSearches.length > 0 && (
+          {showLatestSearches && filteredSearches.length > 0 && (
             <div className='absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg'>
-              {filteredLatestSearches.map((search: string, index: number) => (
-                <div
-                  key={index}
-                  className='flex px-4 py-2 hover:bg-gray-100 justify-between items-center'
-                >
+              {filteredSearches.map((search: string, index: number) => {
+                const isRouteLink = allRouteLinks.some(
+                  (link) => link.name === search
+                );
+                return (
                   <div
-                    onClick={() => setQuery(search)}
-                    className='flex cursor-pointer gap-2 items-center'
+                    key={index}
+                    className={`flex px-4 py-2 hover:bg-gray-100 justify-between items-center ${
+                      index === selectedIndex ? 'bg-gray-100' : ''
+                    }`}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    onClick={() => router.push(getLinkPath(search))}
                   >
-                    <Clock2 className='w-4 h-4 text-gray-400' />
-                    <span className='text-gray-700'>{search}</span>
+                    <div className='flex cursor-pointer gap-2 items-center'>
+                      {getIcon(search)}
+                      <span className='text-gray-700'>{search}</span>
+                    </div>
+                    {!isRouteLink && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveSearchTerm(search);
+                        }}
+                        className='text-gray-400 hover:text-gray-600'
+                      >
+                        <X className='w-4 h-4' />
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => handleRemoveSearchTerm(search)}
-                    className='text-gray-400 hover:text-gray-600'
-                  >
-                    <X className='w-4 h-4' />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-
         {searchResults.length > 0 && (
           <div className='mt-8'>
             <h2 className='text-2xl font-semibold text-gray-800 mb-4'>
@@ -193,11 +301,13 @@ const Page: React.FC = () => {
           </div>
         )}
 
-        {query && searchResults.length === 0 && (
-          <div className='mt-8 text-center text-gray-600'>
-            {query} ile ilgili sonuç bulunamadı.
-          </div>
-        )}
+        {query &&
+          searchResults.length === 0 &&
+          !allRouteLinks.some((link) => link.name === query) && (
+            <div className='mt-8 text-center text-gray-600'>
+              {query} ile ilgili sonuç bulunamadı.
+            </div>
+          )}
       </div>
     </div>
   );

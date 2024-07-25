@@ -12,19 +12,6 @@ import useStore from '@/library/store';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
-interface Segment {
-  segment_id: string;
-  start_time: number;
-  end_time: number;
-  speaker: string;
-  transcribed_text: string;
-}
-
-interface TranscriptionData {
-  segments: Segment[];
-  created_at: string;
-}
-
 interface Props {
   params: {
     id: string;
@@ -32,9 +19,7 @@ interface Props {
 }
 
 const Transcription: React.FC<Props> = ({ params: { id } }) => {
-  const [transcription, setTranscription] = useState<TranscriptionData | null>(
-    null
-  );
+  const [transcription, setTranscription] = useState<Transcript | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState({ id: '', name: '' });
   const [newName, setNewName] = useState('');
@@ -135,6 +120,8 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   return (
     <div className='flex flex-col  lg:flex-row min-h-screen bg-gray-50'>
       <div className='flex-grow p-4 lg:w-3/4'>
+        <h1 className='bg-red-500'>{}</h1>
+
         <div className='bg-white rounded shadow p-4 mb-4'>
           <MusicPlayer
             audioSrc='/test.wav'
@@ -145,13 +132,13 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
 
         <div className='flex justify-end space-x-2 mb-4'>
           <Button
-            label='Get Excel'
+            label='Excel Olarak İndir'
             icon='pi pi-file-excel'
             className='p-button-sm'
             onClick={handleGetExcel}
           />
           <Button
-            label='Get JSON'
+            label='JSON Olarak İndir'
             icon='pi pi-file'
             className='p-button-sm'
             onClick={handleGetJSON}

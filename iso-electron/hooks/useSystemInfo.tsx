@@ -42,7 +42,7 @@ const useSystemInfo = () => {
 
   useEffect(() => {
     axios
-      .get(`${process.env.NEXT_PUBLIC_UTILS_URL}/search_logs?query=${'2024'}`)
+      .get(`${process.env.NEXT_PUBLIC_UTILS_URL}/search_logs?query=`)
       .then((res) => {
         console.log(res.data);
         setSystemInfo((prev) => ({ ...prev, logs_data: res.data }));

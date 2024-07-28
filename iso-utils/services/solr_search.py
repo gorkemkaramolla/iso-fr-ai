@@ -165,23 +165,31 @@ class SolrSearcher:
     def search_logs(self, query=None):
         try:
             # Prepare query
-            fields = ["time", "level", "message", "name", "container_id", "container_name", "source", "log", "id"]
+            fields = ["date", "log", "source", "id", "container_name", "container_id"]
             field_query = " OR ".join([f"{field}:\"{query}\"" for field in fields]) if query else "*:*"
             
             # Debug the query
             logging.info(f"Search query for logs: {field_query}")
 
             # Query parameters
-            query_params = urlencode({
-                'q': field_query,
-                'wt': 'json',
-                'defType': 'edismax',
-                'qf': ' '.join(fields)
-            }) if query else "q=*:*&wt=json"
+            if query:
+                query_params = urlencode({
+                    'q': field_query,
+                    'wt': 'json',
+                    'defType': 'edismax',
+                    'qf': ' '.join(fields)
+                })
+            else:
+                query_params = urlencode({
+                    'q': '*:*',
+                    'wt': 'json',
+                    'rows': 200
+                })
             
             # Solr URL for logs core
             url = f'{self.solr_logs_url}/select?{query_params}'
             logging.info(f"Connecting to Solr logs URL: {url}")
+
             # Perform request
             connection = urlopen(url, timeout=10)
             response = json.load(connection)
@@ -191,6 +199,7 @@ class SolrSearcher:
             if not results:
                 return {"error": "No results found"}, 404
 
+            logging.info(f"Search results: {results}")
             return results, 200
         except HTTPError as e:
             logging.error(f"HTTPError during logs search: {e.code} {e.reason}")

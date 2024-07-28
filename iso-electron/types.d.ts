@@ -10,6 +10,7 @@ interface Transcript {
   created_at: string;
   segments: Segment[];
   language: string;
+  transcription_id: string;
 }
 
 interface ApiResponse {

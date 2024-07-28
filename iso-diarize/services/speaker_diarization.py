@@ -51,7 +51,7 @@ class SpeakerDiarizationProcessor:
                 }
                 for doc in cursor
             ]
-            self.logger.info(f"Transcriptions: {all_transcriptions} successfully fetched from database")
+            # self.logger.info(f"Transcriptions: {all_transcriptions} successfully fetched from database")
             return all_transcriptions
         except Exception as e:
             self.logger.info(f"Database error: {str(e)}")
@@ -83,12 +83,13 @@ class SpeakerDiarizationProcessor:
             ]
 
             result = {
+                "name":str(transcription["name"]),
                 "transcription_id": str(transcription["_id"]),  # Convert ObjectId to string here
                 "created_at": transcription["created_at"],
                 "full_text": transcription.get("full_text", ""),
                 "segments": segments_data,
             }
-            self.logger.info(f"get_transcription: {result} successfully fetched from database")
+            # self.logger.info(f"get_transcription: {result} successfully fetched from database")
             return result
         except Exception as e:
             error_message = f"Error during transcription retrieval: {e}"
@@ -96,7 +97,7 @@ class SpeakerDiarizationProcessor:
             return {"error": "An error occurred while retrieving the transcription"}
 
     def process_audio(self):
-        self.logger.info("New transcription request received")
+        # self.logger.info("New transcription request received")
         if "file" not in request.files:
             self.logger.error("No file part in request")
             return {"error": "No file part"}

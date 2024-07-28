@@ -11,5 +11,9 @@ function modify_record(tag, timestamp, record)
     if type(record["log"]) == "table" then
         record["log"] = record["log"][1]
     end
+    
+    -- Generate a unique ID
+    record["id"] = record["container_name"] .. "-" .. tostring(timestamp)
+    
     return 1, timestamp, record
 end

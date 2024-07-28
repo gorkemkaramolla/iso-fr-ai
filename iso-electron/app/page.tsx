@@ -189,7 +189,17 @@ const Page: React.FC = () => {
       e.preventDefault();
       if (selectedIndex >= 0 && selectedIndex < filteredSearches.length) {
         const selectedItem = filteredSearches[selectedIndex];
-        router.push(getLinkPath(selectedItem));
+        const linkPath = getLinkPath(selectedItem);
+        if (linkPath !== '#') {
+          router.push(linkPath);
+        } else {
+          setQuery(selectedItem);
+          // Trigger search with the selected latest search term
+          fetchSearchResults(selectedItem).then(setSearchResults);
+        }
+      } else if (query) {
+        // If no item is selected but there's a query, perform the search
+        fetchSearchResults(query).then(setSearchResults);
       }
     }
   };
@@ -236,7 +246,15 @@ const Page: React.FC = () => {
                       index === selectedIndex ? 'bg-gray-100' : ''
                     }`}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    onClick={() => router.push(getLinkPath(search))}
+                    onClick={() => {
+                      const linkPath = getLinkPath(search);
+                      if (linkPath !== '#') {
+                        router.push(linkPath);
+                      } else {
+                        setQuery(search);
+                        fetchSearchResults(search).then(setSearchResults);
+                      }
+                    }}
                   >
                     <div className='flex cursor-pointer gap-2 items-center'>
                       {getIcon(search)}

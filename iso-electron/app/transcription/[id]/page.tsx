@@ -7,10 +7,11 @@ import createApi from '@/utils/axios_instance';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
-import MusicPlayer from '@/components/sound/music-player';
+import WaveAudio from '@/components/sound/wave-audio';
 import useStore from '@/library/store';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import SkeletonLoader from '@/components/ui/transcript-skeleton';
 
 interface Props {
   params: {
@@ -25,15 +26,21 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   const [newName, setNewName] = useState('');
   const currentTime = useStore((state) => state.currentTime);
   const transcriptionRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getTranscription = async () => {
+      setLoading(true);
       try {
         const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
         const response = await api.get(`/transcriptions/${String(id)}`);
-        if (response) setTranscription(response.data);
+        if (response) {
+          setTranscription(response.data);
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error fetching transcription:', error);
+        setLoading(false);
       }
     };
     getTranscription();
@@ -113,103 +120,105 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     }
   };
 
-  if (!transcription) {
-    return <LogoSpinner />;
-  }
-
   return (
-    <div className='flex flex-col  lg:flex-row min-h-screen bg-gray-50'>
-      <div className='flex-grow p-4 lg:w-3/4'>
-        <h1 className='bg-red-500'>{}</h1>
-
-        <div className='bg-white rounded shadow p-4 mb-4'>
-          <MusicPlayer
-            audioSrc='/test.wav'
-            title='Meclis 1'
-            date={transcription.created_at}
-          />
-        </div>
-
-        <div className='flex justify-end space-x-2 mb-4'>
-          <Button
-            label='Excel Olarak İndir'
-            icon='pi pi-file-excel'
-            className='p-button-sm'
-            onClick={handleGetExcel}
-          />
-          <Button
-            label='JSON Olarak İndir'
-            icon='pi pi-file'
-            className='p-button-sm'
-            onClick={handleGetJSON}
-          />
-        </div>
-
-        <div
-          ref={transcriptionRef}
-          className='bg-white rounded shadow p-4 overflow-y-auto'
-          style={{ maxHeight: 'calc(100vh - 250px)' }}
-        >
-          {transcription.segments.map((segment) => (
-            <div
-              key={segment.segment_id}
-              className={`mb-2 p-2 rounded segment ${getSpeakerBackgroundColor(
-                segment.speaker
-              )}`}
-              data-start-time={segment.start_time}
-              data-end-time={segment.end_time}
-            >
-              <div className='flex justify-between items-center text-sm text-gray-600 mb-1'>
-                <span
-                  className='font-semibold cursor-pointer hover:underline'
-                  onClick={() => handleSpeakerClick(segment)}
-                >
-                  {segment.speaker}
-                </span>
-                <span>
-                  {segment.start_time.toFixed(2)}s -{' '}
-                  {segment.end_time.toFixed(2)}s
-                </span>
+    <div>
+      {loading ? (
+        <SkeletonLoader />
+      ) : (
+        <div>
+          <h1 className='text-xl font-extrabold p-4'>{transcription?.name}</h1>
+          <div className='flex flex-col lg:flex-row min-h-screen bg-gray-50'>
+            <div className='flex-grow p-4 lg:w-3/4'>
+              <div className='bg-white rounded shadow p-4 mb-4'>
+                <WaveAudio audio_name='/test.wav' />{' '}
+                {/* Use WaveAudio component */}
               </div>
-              <p className='text-sm text-gray-800'>
-                {segment.transcribed_text}
-              </p>
+
+              <div className='flex justify-end space-x-2 mb-4'>
+                <Button
+                  label='Excel Olarak İndir'
+                  icon='pi pi-file-excel'
+                  className='p-button-sm'
+                  onClick={handleGetExcel}
+                />
+                <Button
+                  label='JSON Olarak İndir'
+                  icon='pi pi-file'
+                  className='p-button-sm'
+                  onClick={handleGetJSON}
+                />
+              </div>
+
+              <div
+                ref={transcriptionRef}
+                className='bg-white rounded shadow p-4 overflow-y-auto'
+                style={{ maxHeight: 'calc(100vh - 250px)' }}
+              >
+                {transcription?.segments.map((segment) => (
+                  <div
+                    key={segment.segment_id}
+                    className={`mb-2 p-2 rounded segment ${getSpeakerBackgroundColor(
+                      segment.speaker
+                    )}`}
+                    data-start-time={segment.start_time}
+                    data-end-time={segment.end_time}
+                  >
+                    <div className='flex justify-between items-center text-sm text-gray-600 mb-1'>
+                      <span
+                        className='font-semibold cursor-pointer hover:underline'
+                        onClick={() => handleSpeakerClick(segment)}
+                      >
+                        {segment.speaker}
+                      </span>
+                      <span>
+                        {segment.start_time.toFixed(2)}s -{' '}
+                        {segment.end_time.toFixed(2)}s
+                      </span>
+                    </div>
+                    <p className='text-sm text-gray-800'>
+                      {segment.transcribed_text}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className='lg:w-1/4 '>
-        <TranscriptionHistory />
-      </div>
+            <div className='lg:w-1/4'>
+              <TranscriptionHistory
+                activePageId={transcription?.transcription_id}
+              />
+            </div>
 
-      <Dialog
-        header='Rename Speaker'
-        visible={showModal}
-        onHide={() => setShowModal(false)}
-        className='w-80'
-      >
-        <div className='flex flex-col gap-4'>
-          <InputText
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className='p-2 text-sm'
-          />
-          <div className='flex justify-end space-x-2'>
-            <Button
-              label='Cancel'
-              className='p-button-text p-button-sm'
-              onClick={() => setShowModal(false)}
-            />
-            <Button
-              label='Save'
-              icon='pi pi-check'
-              className='p-button-sm'
-              onClick={() => renameSpeaker(newName)}
-            />
+            <Dialog
+              header='Rename Speaker'
+              visible={showModal}
+              onHide={() => setShowModal(false)}
+              className='w-80'
+            >
+              <div className='flex flex-col gap-4'>
+                <InputText
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className='p-2 text-sm'
+                />
+                <div className='flex justify-end space-x-2'>
+                  <Button
+                    label='Cancel'
+                    className='p-button-text p-button-sm'
+                    onClick={() => setShowModal(false)}
+                  />
+                  <Button
+                    label='Save'
+                    icon='pi pi-check'
+                    className='p-button-sm'
+                    onClick={() => renameSpeaker(newName)}
+                  />
+                </div>
+              </div>
+            </Dialog>
           </div>
         </div>
-      </Dialog>
+      )}
     </div>
   );
 };

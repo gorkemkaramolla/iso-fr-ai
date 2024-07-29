@@ -10,14 +10,21 @@ const ChatSideMenuSkeleton = () => {
 
       {/* List Items Skeleton */}
       <div className='space-y-2'>
-        <Skeleton height={40} width='100%' />
-        <Skeleton height={40} width='100%' />
-        <Skeleton height={40} width='100%' />
-        <Skeleton height={40} width='100%' />
-        <Skeleton height={40} width='100%' />
-        <Skeleton height={40} width='100%' />
-        <Skeleton height={40} width='100%' />
-        <Skeleton height={40} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
+        <Skeleton height={39} width='100%' />
       </div>
 
       {/* Pagination Buttons Skeleton */}

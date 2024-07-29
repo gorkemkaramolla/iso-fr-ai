@@ -100,7 +100,7 @@ const WhisperUpload: React.FC = () => {
   };
 
   return (
-    <div className='w-full min-h-screen p-8'>
+    <div className='w-full min-h-screen p-8   h-[500px] overflow-y-scroll'>
       <div className='max-w-3xl mx-auto'>
         <h1 className='text-3xl font-bold  mb-8'>Konuşma Sentezleyici</h1>
 
@@ -214,7 +214,7 @@ const WhisperUpload: React.FC = () => {
         <AnimatePresence>
           {response && (
             <motion.div
-              className='bg-white rounded-lg shadow-lg overflow-hidden'
+              className='bg-white rounded-lg shadow-lg  overflow-hidden'
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}

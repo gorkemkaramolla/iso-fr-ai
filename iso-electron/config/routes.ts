@@ -5,7 +5,7 @@ const ROUTE_LINKS = {
       'Ana Sayfa': '/',
       Konuşmalar: '/speech',
       Yayın: '/stream',
-      İzlence: '/monitoring',
+      Izlence: '/monitoring',
     },
   },
   settings: {

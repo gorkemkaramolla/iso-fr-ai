@@ -64,8 +64,8 @@ const VideoStream: React.FC = () => {
       socket.off('new_camera');
     };
   }, []);
-   // Step 3: Load `isGrid` from localStorage when the component mounts
-   useEffect(() => {
+  // Step 3: Load `isGrid` from localStorage when the component mounts
+  useEffect(() => {
     const storedIsGrid = localStorage.getItem('isGrid');
     if (storedIsGrid) {
       setIsGrid(JSON.parse(storedIsGrid));
@@ -84,7 +84,11 @@ const VideoStream: React.FC = () => {
       const newCameraStream = {
         id: newId,
         selectedCamera: camera,
-        streamSrc: isLocalCamera ? '' : `${BASE_URL}/stream/${newId}?camera=${selectedCamera?.url}&quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
+        streamSrc: isLocalCamera
+          ? ''
+          : `${BASE_URL}/stream/${newId}?camera=${
+              selectedCamera?.url
+            }&quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
         selectedQuality: Object.keys(Quality)[0],
         isPlaying: true,
         isLoading: true,
@@ -93,18 +97,21 @@ const VideoStream: React.FC = () => {
         size: { width: '100%', height: '100%' },
         isLocalCamera: isLocalCamera, // Add a flag for local camera
       };
-  
+
       setCameraStreams([...cameraStreams, newCameraStream]);
       if (typeof window !== 'undefined') {
         // Retrieve the existing list of cameraStreams from localStorage
         const savedStreams = localStorage.getItem('cameraStreams');
         let cameraStreamsList = savedStreams ? JSON.parse(savedStreams) : [];
-  
+
         // Append the new cameraStream to the list
         cameraStreamsList.push(newCameraStream);
-  
+
         // Save the updated list back to localStorage
-        localStorage.setItem('cameraStreams', JSON.stringify(cameraStreamsList));
+        localStorage.setItem(
+          'cameraStreams',
+          JSON.stringify(cameraStreamsList)
+        );
       }
       setSelectedCamera(undefined);
     }
@@ -184,98 +191,115 @@ const VideoStream: React.FC = () => {
     <div className='h-full w-full overflow-auto'>
       <Toaster />
       <div className='container mx-auto mb-20'>
-      <div className='flex items-center'>
-        <div className='flex flex-grow items-center justify-center'>
-          <AddCameraButton
-            showAddCamera={showAddCamera}
-            setShowAddCamera={setShowAddCamera}
-            disabled={false}
-          />
-          <CameraDropdown
-            selectedCamera={selectedCamera}
-            setSelectedCamera={setSelectedCamera}
-            cameraStreams={cameraStreams}
-            cameraUrls={cameraUrls}
-            addCameraStream={addCameraStream}
-            showAddCamera={showAddCamera}
+        <div className='flex items-center'>
+          <div className='flex flex-grow items-center justify-center'>
+            <AddCameraButton
+              showAddCamera={showAddCamera}
+              setShowAddCamera={setShowAddCamera}
+              disabled={false}
+            />
+            <CameraDropdown
+              selectedCamera={selectedCamera}
+              setSelectedCamera={setSelectedCamera}
+              cameraStreams={cameraStreams}
+              cameraUrls={cameraUrls}
+              addCameraStream={addCameraStream}
+              showAddCamera={showAddCamera}
+            />
+          </div>
+
+          <StreamUtilButtons
+            isModified={isModified}
+            resetCameraStreams={resetCameraStreams}
+            deleteAllCameraStreams={deleteAllCameraStreams}
+            setIsGrid={setIsGrid}
+            isGrid={isGrid}
+            cameraStreamsLength={cameraStreams.length}
           />
         </div>
-
-        <StreamUtilButtons
-          isModified={isModified}
-          resetCameraStreams={resetCameraStreams}
-          deleteAllCameraStreams={deleteAllCameraStreams}
-          setIsGrid={setIsGrid}
-          isGrid={isGrid}
-          cameraStreamsLength={cameraStreams.length}
-        />
-      </div>
-      <div className={`grid grid-cols-12  gap-4`}>
-        <div className={`col-span-9 `}>
-          <div className={`grid gap-4 ${isGrid ? 'grid-cols-2 grid-rows-2' : ''}`}>
-            {cameraStreams.length > 0 &&
-              cameraStreams
-                .sort((a, b) => a.id - b.id)
-                .map((camera) => {
-                  return (
-                    <Draggable
-                      key={camera.id}
-                      position={camera.position || { x: 0, y: 0 }}
-                      handle='.drag-handle'
-                      bounds='parent'
-                      onStop={(e, data) =>
-                        saveCameraStreamPosition(camera.id, {
-                          x: data.x,
-                          y: data.y,
-                        })
-                      }
-                      disabled={isGrid}
-                    >
-                      <Resizable
+        <div className={`grid grid-cols-12  gap-4`}>
+          <div className={`col-span-9 `}>
+            <div
+              className={`grid gap-4 ${
+                isGrid ? 'grid-cols-2 grid-rows-2' : ''
+              }`}
+            >
+              {cameraStreams.length > 0 &&
+                cameraStreams
+                  .sort((a, b) => a.id - b.id)
+                  .map((camera) => {
+                    return (
+                      <Draggable
                         key={camera.id}
-                        size={camera.size || { width: '100%', height: '100%' }}
-                        minHeight={350}
-                        minWidth={550}
-                        maxWidth={'100%'}
-                        maxHeight={'100%'}
-                        className='bg-slate-100 rounded-lg border border-slate-400 shadow-lg'
-                        onResizeStop={(e, direction, ref) =>
-                          saveCameraStreamSize(camera.id, {
-                            width: ref.style.width,
-                            height: ref.style.height,
+                        position={camera.position || { x: 0, y: 0 }}
+                        handle='.drag-handle'
+                        bounds='parent'
+                        onStop={(e, data) =>
+                          saveCameraStreamPosition(camera.id, {
+                            x: data.x,
+                            y: data.y,
                           })
                         }
-                        enable={isGrid ? { top: false, right: false, bottom: false, left: false, topRight: false, bottomRight: false, bottomLeft: false, topLeft: false } : undefined}
+                        disabled={isGrid}
                       >
-                        <CameraStreamControl
-                          id={camera.id}
-                          cameraUrls={cameraUrls}
-                          selectedCamera={camera.selectedCamera}
-                          selectedQuality={camera.selectedQuality}
-                          isPlaying={camera.isPlaying}
-                          isLoading={camera.isLoading}
-                          isRecording={camera.isRecording}
-                          streamSrc={camera.streamSrc}
-                          availableIds={availableIds}
-                          setAvailableIds={setAvailableIds}
-                          cameraStreams={cameraStreams}
-                          setCameraStreams={setCameraStreams}
-                          isLocalCamera={camera.isLocalCamera}
-                        />
-                      </Resizable>
-                    </Draggable>
-                  );
-                })}
+                        <Resizable
+                          key={camera.id}
+                          size={
+                            camera.size || { width: '100%', height: '100%' }
+                          }
+                          minHeight={350}
+                          minWidth={550}
+                          maxWidth={'100%'}
+                          maxHeight={'100%'}
+                          className='bg-slate-100 rounded-lg border border-slate-400 shadow-lg'
+                          onResizeStop={(e, direction, ref) =>
+                            saveCameraStreamSize(camera.id, {
+                              width: ref.style.width,
+                              height: ref.style.height,
+                            })
+                          }
+                          enable={
+                            isGrid
+                              ? {
+                                  top: false,
+                                  right: false,
+                                  bottom: false,
+                                  left: false,
+                                  topRight: false,
+                                  bottomRight: false,
+                                  bottomLeft: false,
+                                  topLeft: false,
+                                }
+                              : undefined
+                          }
+                        >
+                          <CameraStreamControl
+                            id={camera.id}
+                            cameraUrls={cameraUrls}
+                            selectedCamera={camera.selectedCamera}
+                            selectedQuality={camera.selectedQuality}
+                            isPlaying={camera.isPlaying}
+                            isLoading={camera.isLoading}
+                            isRecording={camera.isRecording}
+                            streamSrc={camera.streamSrc}
+                            availableIds={availableIds}
+                            setAvailableIds={setAvailableIds}
+                            cameraStreams={cameraStreams}
+                            setCameraStreams={setCameraStreams}
+                            isLocalCamera={camera.isLocalCamera}
+                          />
+                        </Resizable>
+                      </Draggable>
+                    );
+                  })}
+            </div>
+          </div>
+          <div className={`col-span-3`}>
+            <RecogFaces />
           </div>
         </div>
-        <div className={`col-span-3`}>
-          <RecogFaces />
-        </div>
-       </div>
       </div>
     </div>
-     
- 
   );
 };
 

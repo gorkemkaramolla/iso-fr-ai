@@ -128,7 +128,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
         <div>
           <h1 className='text-xl font-extrabold p-4'>{transcription?.name}</h1>
           <div className='flex flex-col lg:flex-row min-h-screen bg-gray-50'>
-            <div className='flex-grow p-4 lg:w-3/4'>
+            <div className='flex-grow p-4 lg:w-9/12'>
               <div className='bg-white rounded shadow p-4 mb-4'>
                 <WaveAudio audio_name='/test.wav' />{' '}
                 {/* Use WaveAudio component */}
@@ -183,14 +183,14 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
               </div>
             </div>
 
-            <div className='lg:w-1/4'>
+            <div className='lg:w-3/12'>
               <TranscriptionHistory
                 activePageId={transcription?.transcription_id}
               />
             </div>
 
             <Dialog
-              header='Rename Speaker'
+              header='Konuşmacı Adını Değiştir'
               visible={showModal}
               onHide={() => setShowModal(false)}
               className='w-80'

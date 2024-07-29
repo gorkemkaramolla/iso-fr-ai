@@ -24,6 +24,7 @@ from bson.objectid import ObjectId
 import io
 import binascii
 import numpy as np
+import cv2
 
 from config import BINARY_MATCH
 
@@ -37,7 +38,7 @@ app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
 app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
 app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection in production
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=int(os.getenv("JWT_EXPIRE_SECONDS")) )
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=int(os.getenv("JWT_EXPIRE_SECONDS")))
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)
 
 jwt = JWTManager(app)
@@ -85,19 +86,12 @@ def get_user_images():
 @users_bp.route('/testix', methods=['GET'])
 @jwt_required()
 def testix():
-    # Access the 'Cookie' header directly
     cookie_header = request.headers.get('Cookie', 'Unknown')
-    
-    # Access cookies using request.cookies, which is a dictionary
     cookies = request.cookies  # This is a dictionary of all cookies
-    
-    # Prepare the response data
     response_data = {
         'CookieHeader': cookie_header,
         'Cookies': cookies
     }
-    
-    # Return the data as a JSON response
     return jsonify(response_data), 200
 
 @users_bp.route("/users", methods=["GET"])
@@ -129,10 +123,12 @@ def register():
     data = request.json
     username = data.get("username")
     password = data.get("password")
-    if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
+    email = data.get("email")
+    role = data.get("role", "user")
+    if not username or not password or not email:
+        return jsonify({"error": "Username, password, and email are required"}), 400
 
-    response = auth_provider.register(username, password)
+    response = auth_provider.register(username, password, email, role)
     return response
 
 @auth_bp.route("/login", methods=["POST"])
@@ -144,19 +140,75 @@ def login():
         return jsonify({"error": "Username and password are required"}), 400
 
     tokens = auth_provider.login(username, password)
-    if tokens is None:
-        return jsonify({"error": "Invalid username or password"}), 401
-    
+    if isinstance(tokens, tuple):  # Check if tokens is a tuple indicating an error
+        return tokens
+
     response = jsonify({"message": "Login successful"})
-    
-    set_access_cookies(response, tokens["access_token"], max_age=int(os.getenv("JWT_EXPIRE_SECONDS") ))
+    set_access_cookies(response, tokens["access_token"], max_age=int(os.getenv("JWT_EXPIRE_SECONDS")))
+    set_refresh_cookies(response, tokens["refresh_token"])
     return response, 200
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    response = jsonify()
+    response = jsonify({"message": "Logout successful"})
     unset_jwt_cookies(response)
     return response, 200
 
-app.register_blueprint(auth_bp)
+@auth_bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    response = auth_provider.refresh_token()
+    set_access_cookies(response, response.get_json()["access_token"])
+    return response
 
+@auth_bp.route("/add_user", methods=["POST"])
+@jwt_required()
+def add_user():
+    current_user = get_jwt_identity()
+    if current_user["role"] != "admin":
+        return jsonify({"error": "Permission denied"}), 403
+
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    email = data.get("email")
+    role = data.get("role", "user")
+    if not username or not password or not email:
+        return jsonify({"error": "Username, password, and email are required"}), 400
+
+    response = auth_provider.add_user(username, password, email, role)
+    return response
+
+@auth_bp.route("/delete_user", methods=["DELETE"])
+@jwt_required()
+def delete_user():
+    current_user = get_jwt_identity()
+    if current_user["role"] != "admin":
+        return jsonify({"error": "Permission denied"}), 403
+
+    data = request.json
+    username = data.get("username")
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    response = auth_provider.delete_user(username)
+    return response
+
+@auth_bp.route("/update_user", methods=["PUT"])
+@jwt_required()
+def update_user():
+    current_user = get_jwt_identity()
+    if current_user["role"] != "admin":
+        return jsonify({"error": "Permission denied"}), 403
+
+    data = request.json
+    username = data.get("username")
+    new_password = data.get("new_password")
+    new_email = data.get("new_email")
+    if not username or not new_password:
+        return jsonify({"error": "Username and new password are required"}), 400
+
+    response = auth_provider.update_user(username, new_password, new_email)
+    return response
+
+app.register_blueprint(auth_bp)

@@ -84,6 +84,8 @@ services:
       - "5003:5003"
     env_file:
       - .env
+    volumes:
+      - audio_data:/app/temp
     networks:
       - isoai-network
     logging:
@@ -122,6 +124,7 @@ volumes:
   solr_data:
   face_recognition_data:
   personel_images:
+  audio_data:
 
 networks:
   isoai-network:

@@ -83,23 +83,31 @@ def get_user_images():
             continue
     return "Images saved", 200
 
-@users_bp.route('/testix', methods=['GET'])
-@jwt_required()
-def testix():
-    cookie_header = request.headers.get('Cookie', 'Unknown')
-    cookies = request.cookies  # This is a dictionary of all cookies
-    response_data = {
-        'CookieHeader': cookie_header,
-        'Cookies': cookies
-    }
-    return jsonify(response_data), 200
+# @users_bp.route('/testix', methods=['GET'])
+# @jwt_required()
+# def testix():
+#     cookie_header = request.headers.get('Cookie', 'Unknown')
+#     cookies = request.cookies  # This is a dictionary of all cookies
+#     response_data = {
+#         'CookieHeader': cookie_header,
+#         'Cookies': cookies
+#     }
+#     return jsonify(response_data), 200
 
 @users_bp.route("/users", methods=["GET"])
+@jwt_required() 
 def get_users():
-    personel = list(db.get_collection("Personel").find())
-    for person in personel:
-        person.pop("_id", None)  # Remove _id from the dictionary
-    return jsonify(personel), 200
+    current_user = get_jwt_identity()
+    if not current_user.get('role') == 'admin':
+        return jsonify({"msg": "Access forbidden: Admins only"}), 403
+
+    users = list(db.get_collection("users").find())
+    
+    for user in users:
+        user.pop("_id", None)  
+        user.pop("password", None)  
+
+    return jsonify(users), 200
 
 app.register_blueprint(users_bp)
 

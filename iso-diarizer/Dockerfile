@@ -1,6 +1,4 @@
 # Use an official NVIDIA CUDA runtime as a parent image
-# FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
-# FROM pytorch/pytorch:2.3.0-cuda11.8-cudnn8-runtime
 FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
 
 # Set the working directory in the container
@@ -12,7 +10,7 @@ ENV TZ=Europe/Berlin
 # Install system dependencies in one layer and clean up afterwards to reduce layer size
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev unzip wget libgomp1 software-properties-common && \
+    ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev unzip wget ca-certificates libgomp1 software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-distutils && \
@@ -31,9 +29,6 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 # Install certifi and other required packages
 RUN python3.12 -m pip install --upgrade pip certifi six setuptools
 
-# Copy the current directory contents into the container at /app
-COPY . /app
-
 # Ensure CUDA libraries are installed
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -41,12 +36,15 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Copy the current directory contents into the container at /app
+COPY . /app
 # Update pip and install Python dependencies from the requirements.txt file
 RUN python3.12 -m pip install --upgrade pip && \
     python3.12 -m pip install --no-cache-dir -r requirements.txt
 
 # Install transformers with the --use-feature=truststore option
 RUN python3.12 -m pip install transformers --use-feature=truststore
+
 
 # Inform Docker that the container listens on the specified port at runtime
 EXPOSE 5003

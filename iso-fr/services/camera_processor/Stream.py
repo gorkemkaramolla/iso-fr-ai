@@ -19,9 +19,11 @@ class Stream:
     def __init__(self, device: str = "cuda") -> None:
         self.device = torch.device(device)
         onnxruntime.set_default_logger_severity(3)  # 3: INFO, 2: WARNING, 1: ERROR
-        onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models"))
+        onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models/buffalo_l"))
+        print(f"ONNX Models Directory: {onnx_models_dir}")
         # Face Detection
-        face_detector_model = os.path.join(onnx_models_dir, "det_10g.onnx")
+        face_detector_model = os.path.expanduser(os.path.join(onnx_models_dir, "det_10g.onnx"))
+        print(f"Face Detector Model: {face_detector_model}")
         
         self.face_detector = SCRFD(face_detector_model)
         self.face_detector.prepare(0 if device == "cuda" else -1)

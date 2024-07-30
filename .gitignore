@@ -36,7 +36,8 @@ flask/recognized_faces_log.csv
 flask/face-images
 mac-venv
 iso-fr-2
-iso-diarizer
+iso-diarizer/large-v3
+iso-diarizer/segmentation-3.0.onnx
 iso-diarize/mycert.crt
 iso-diarize/mycert.key
 iso-diarize/ssl-cert-sclerlk

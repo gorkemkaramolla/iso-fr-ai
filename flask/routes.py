@@ -12,7 +12,7 @@ from pymongo import ASCENDING, DESCENDING, MongoClient
 from services.camera_processor.Stream import Stream
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from services.system_monitoring import SystemMonitoring
-from services.camera_processor.camera_processor import CameraProcessor
+# from services.camera_processor.camera_processor import CameraProcessor
 from services.camera_processor.enums.camera import Camera
 # from services.elastic_search import ElasticSearcher
 from logger import configure_logging
@@ -51,7 +51,7 @@ camera_collection = db["cameras"]
 
 ###################################################### Create an instance of your class
 diarization_processor = SpeakerDiarizationProcessor(device="cuda")
-camera_processor = CameraProcessor(device="cuda")
+# camera_processor = CameraProcessor(device="cuda")
 stream_instance = Stream(device="cuda")
 logger = configure_logging()
 system_monitoring_instance = SystemMonitoring()

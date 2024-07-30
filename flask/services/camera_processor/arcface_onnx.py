@@ -42,7 +42,9 @@ class ArcFaceONNX:
         self.input_std = input_std
         #print('input mean and std:', self.input_mean, self.input_std)
         if self.session is None:
-            self.session = onnxruntime.InferenceSession(self.model_file, providers=['CUDAExecutionProvider'])
+            self.session = onnxruntime.InferenceSession(
+                self.model_file, providers=["CoreMLExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"]
+            )
         input_cfg = self.session.get_inputs()[0]
         input_shape = input_cfg.shape
         input_name = input_cfg.name
@@ -60,7 +62,8 @@ class ArcFaceONNX:
     def prepare(self, ctx_id, **kwargs):
         if ctx_id<0:
             self.session.set_providers(['CPUExecutionProvider'])
-
+        else:
+            self.session.set_providers(["CoreMLExecutionProvider", "CUDAExecutionProvider"])
     def get(self, img, kps):
         aimg = face_align.norm_crop(img, landmark=kps, image_size=self.input_size[0])
         embedding = self.get_feat(aimg).flatten()

@@ -77,7 +77,7 @@ class SCRFD:
             assert self.model_file is not None
             assert osp.exists(self.model_file)
             self.session = onnxruntime.InferenceSession(
-                self.model_file, providers=["CUDAExecutionProvider"]
+                self.model_file, providers=["CoreMLExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"]
             )
         self.center_cache = {}
         self.nms_thresh = 0.4
@@ -130,6 +130,8 @@ class SCRFD:
     def prepare(self, ctx_id, **kwargs):
         if ctx_id < 0:
             self.session.set_providers(["CPUExecutionProvider"])
+        else:
+            self.session.set_providers(["CoreMLExecutionProvider", "CUDAExecutionProvider"])
         nms_thresh = kwargs.get("nms_thresh", None)
         if nms_thresh is not None:
             self.nms_thresh = nms_thresh
@@ -224,7 +226,7 @@ class SCRFD:
                 kpss_list.append(pos_kpss)
         return scores_list, bboxes_list, kpss_list
 
-    def detect(self, img, input_size=None, thresh=None, max_num=0, metric="default"):
+    def detect(self, img, input_size=(640, 640), thresh=None, max_num=0, metric="default") -> (np.array, np.array):
         try:
             assert input_size is not None or self.input_size is not None
             input_size = self.input_size if input_size is None else input_size
@@ -252,6 +254,7 @@ class SCRFD:
             bboxes = np.vstack(bboxes_list) / det_scale
             if self.use_kps:
                 kpss = np.vstack(kpss_list) / det_scale
+
             pre_det = np.hstack((bboxes, scores)).astype(np.float32, copy=False)
             pre_det = pre_det[order, :]
             keep = self.nms(pre_det)
@@ -261,6 +264,7 @@ class SCRFD:
                 kpss = kpss[keep, :, :]
             else:
                 kpss = None
+
             if max_num > 0 and det.shape[0] > max_num:
                 area = (det[:, 2] - det[:, 0]) * (det[:, 3] - det[:, 1])
                 img_center = img.shape[0] // 2, img.shape[1] // 2
@@ -279,15 +283,28 @@ class SCRFD:
                     )  # some extra weight on the centering
                 bindex = np.argsort(values)[::-1]  # some extra weight on the cientering
                 bindex = bindex[0:max_num]
-                det = det[bindex, :]
+                bboxes = np.array(det[bindex, :])
                 if kpss is not None:
-                    kpss = kpss[bindex, :]
-            return det, kpss
+                    kpss = np.array(kpss[bindex, :])
+            return bboxes, kpss
         except ZeroDivisionError:
-            print("Warning: Image height is zero, cannot perform detection.")
+            print("Error: Division by zero encountered in the image height or width calculation.")
+            return [], None
+        except AssertionError:
+            print("Error: Input size is not provided.")
+            return [], None
+        except cv2.error as e:
+            print(f"OpenCV Error: {e}")
+            return [], None
+        except ValueError as e:
+            print(f"Value Error: {e}")
+            return [], None
+        except TypeError as e:
+            print(f"Type Error: {e}")
             return [], None
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print("An unexpected error occurred:")
+            traceback.print_exc()
             return [], None
 
     # def detect(self, img, input_size=None, thresh=None, max_num=0, metric="default"):
@@ -350,9 +367,13 @@ class SCRFD:
 
     def autodetect(self, img, max_num=0, metric="max"):
 
-        bboxes, kpss = self.detect(img, input_size=(640, 640), thresh=0.8)
-        bboxes2, kpss2 = self.detect(img, input_size=(128, 128), thresh=0.8)
+        bboxes, kpss = self.detect(img, input_size=(640, 640), thresh=0.2)
+        bboxes2, kpss2 = self.detect(img, input_size=(128, 128), thresh=0.2)
+        print(bboxes)
+        print("--------")
+        print(bboxes2)
         bboxes_all = np.concatenate([bboxes, bboxes2], axis=0)
+        
         kpss_all = np.concatenate([kpss, kpss2], axis=0)
         keep = self.nms(bboxes_all)
         det = bboxes_all[keep, :]

@@ -162,3 +162,7 @@ td {
   width: 100%;
   height: 128px; /* Adjust as needed */
 }
+.highlightedText {
+  background-color: yellow;
+  color: black;
+}

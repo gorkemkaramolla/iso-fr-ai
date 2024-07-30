@@ -34,13 +34,44 @@ export default function AdminPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof User, string>>>({});
   const [users, setUsers] = useState<ApiUser[]>([]);
 
+  const handleAddNewUser = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+
+    try {
+      userSchema.parse(newUser);
+      setErrors({});
+    } catch (e) {
+      if (e instanceof ZodError) {
+        const validationErrors: Partial<Record<keyof User, string>> = {};
+        e.errors.forEach((error) => {
+          if (error.path.length > 0) {
+            const path = error.path[0] as keyof User;
+            validationErrors[path] = error.message;
+          }
+        });
+        setErrors(validationErrors);
+        return;
+      }
+    }
+
+    try {
+      const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
+      await api.post('/add_user', newUser, { withCredentials: true });
+      setMessage('User added successfully!');
+      setNewUser({ username: '', email: '', password: '', role: 'user' });
+      fetchUsers();
+    } catch (error) {
+      setMessage('Error adding user: ' + (error as Error).message);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
     try {
-      const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+      const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
       const response = await api.get<ApiUser[]>('/users', {
         withCredentials: true,
       });
@@ -87,6 +118,7 @@ export default function AdminPage() {
       setMessage('Error adding user: ' + (error as Error).message);
     }
   };
+
   const pageVariants = {
     initial: { opacity: 0, y: -20 },
     in: { opacity: 1, y: 0 },
@@ -112,6 +144,10 @@ export default function AdminPage() {
       variants={pageVariants}
       transition={pageTransition}
       className='min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-12 px-4 sm:px-6 lg:px-8'
+      style={{
+        backgroundImage:
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+      }}
     >
       <div className='max-w-7xl mx-auto'>
         <motion.h1
@@ -120,10 +156,10 @@ export default function AdminPage() {
           transition={{ delay: 0.2, duration: 0.8 }}
           className='text-4xl font-extrabold text-gray-900 text-center mb-12'
         >
-          Admin Dashboard
+          Admin Kontrol Paneli
         </motion.h1>
 
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+        <div className='flex flex-col gap-8'>
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -132,9 +168,9 @@ export default function AdminPage() {
           >
             <div className='px-4 py-5 sm:p-6'>
               <h2 className='text-2xl font-bold text-gray-900 mb-6'>
-                Add New User
+                Yeni Kullanıcı Ekle
               </h2>
-              <form onSubmit={handleSubmit} className='space-y-6'>
+              <form onSubmit={handleSubmit} className='space-y-4'>
                 {['username', 'email', 'password', 'role'].map(
                   (field, index) => (
                     <motion.div
@@ -175,7 +211,7 @@ export default function AdminPage() {
                                   ? 'border-red-300'
                                   : 'border-gray-300'
                               } rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                              placeholder={`Enter ${field}`}
+                              placeholder={`${field} giriniz`}
                             />
                           </>
                         ) : (
@@ -216,6 +252,7 @@ export default function AdminPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <button
+                    onClick={handleAddNewUser}
                     type='submit'
                     className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                   >
@@ -247,21 +284,24 @@ export default function AdminPage() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className='bg-white overflow-hidden shadow-xl rounded-lg'
+            className='bg-white overflow-hidden shadow-xl rounded-lg flex flex-col'
           >
-            <div className='px-4 py-5 sm:p-6'>
+            <div className='px-4 py-5 sm:p-6 flex-grow'>
               <h2 className='text-2xl font-bold text-gray-900 mb-6'>
-                User List
+                Kullanıcı Listesi
               </h2>
-              <div className='overflow-x-auto'>
+              <div
+                className='overflow-y-auto'
+                style={{ maxHeight: 'calc(100vh - 300px)' }}
+              >
                 <table className='min-w-full divide-y divide-gray-200'>
-                  <thead className='bg-gray-50'>
+                  <thead className='bg-gray-50 sticky top-0'>
                     <tr>
                       <th
                         scope='col'
                         className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
                       >
-                        Username
+                        Kullanıcı Adı
                       </th>
                       <th
                         scope='col'
@@ -273,7 +313,7 @@ export default function AdminPage() {
                         scope='col'
                         className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
                       >
-                        Role
+                        Rol
                       </th>
                     </tr>
                   </thead>

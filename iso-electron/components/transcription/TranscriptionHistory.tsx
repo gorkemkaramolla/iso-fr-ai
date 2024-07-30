@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import createApi from '@/utils/axios_instance';
@@ -36,9 +34,12 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setResponses(sortedData);
-      setLoading(false);
+      if (sortedData.length < 8) {
+        setCurrentPage(1);
+      }
     } catch (error) {
       console.error('Transkriptler getirilemedi:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -74,29 +75,35 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
             Transkriptler
           </h2>
           <ul className='space-y-2'>
-            {currentItems.map((response) => (
-              <li key={response.transcription_id}>
-                <Link href={`/transcription/${response.transcription_id}`}>
-                  <div
-                    className={`p-2 hover:bg-gray-100 rounded transition-colors ${
-                      response.transcription_id === activePageId
-                        ? 'bg-gray-200'
-                        : ''
-                    }`}
-                  >
-                    <p className='text-sm font-medium text-gray-800 truncate'>
-                      {response.name}
-                    </p>
-                    <p className='text-sm font-medium text-gray-600 truncate'>
-                      {response.transcription_id}
-                    </p>
-                    <p className='text-xs text-gray-500 mt-1'>
-                      {formatDate(response.created_at)}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
+            {currentItems.length === 0 ? (
+              <p className='text-center text-sm text-gray-500'>
+                Henüz kayıt yok.
+              </p>
+            ) : (
+              currentItems.map((response) => (
+                <li key={response.transcription_id}>
+                  <Link href={`/transcription/${response.transcription_id}`}>
+                    <div
+                      className={`p-2 hover:bg-gray-100 rounded transition-colors ${
+                        response.transcription_id === activePageId
+                          ? 'bg-gray-200'
+                          : ''
+                      }`}
+                    >
+                      <p className='text-sm font-medium text-gray-800 truncate'>
+                        {response.name}
+                      </p>
+                      <p className='text-sm font-medium text-gray-600 truncate'>
+                        {response.transcription_id}
+                      </p>
+                      <p className='text-xs text-gray-500 mt-1'>
+                        {formatDate(response.created_at)}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              ))
+            )}
           </ul>
           {totalPages > 1 && (
             <div className='mt-4 flex justify-between text-sm text-gray-600'>

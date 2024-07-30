@@ -100,7 +100,7 @@ const WhisperUpload: React.FC = () => {
   };
 
   return (
-    <div className='w-full min-h-screen p-8   h-[500px] overflow-y-scroll'>
+    <div className='w-full min-h-screen p-8   '>
       <div className='max-w-3xl mx-auto'>
         <h1 className='text-3xl font-bold  mb-8'>Konuşma Sentezleyici</h1>
 
@@ -140,11 +140,13 @@ const WhisperUpload: React.FC = () => {
                   <div className='flex flex-col items-center justify-center pt-5 pb-6'>
                     <FiUploadCloud className='w-10 h-10 mb-3 text-indigo-500' />
                     <p className='mb-2 text-sm text-indigo-600'>
-                      <span className='font-semibold'>Click to upload</span> or
-                      drag and drop
+                      <span className='font-semibold'>
+                        Karşıya yükleme için tıklayın
+                      </span>{' '}
+                      veya sürükleyip bırakın
                     </p>
                     <p className='text-xs text-indigo-500'>
-                      Audio file (max. 50MB)
+                      Ses veya video dosyası (max. 50MB)
                     </p>
                   </div>
                   <input
@@ -219,7 +221,7 @@ const WhisperUpload: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className='px-6 py-4 bg-indigo-600 text-white'>
+              <div className='px-6 py-4  bg-indigo-600 text-white'>
                 <h2 className='text-xl font-semibold'>Konuşma Sentezi</h2>
                 <p className='text-sm opacity-80'>
                   Bu tarihte işlendi:{' '}
@@ -227,7 +229,7 @@ const WhisperUpload: React.FC = () => {
                   Dil: {response.transcription.language}
                 </p>
               </div>
-              <ul className='divide-y divide-gray-200'>
+              <ul className='divide-y h-[500px] pb-24 overflow-y-scroll divide-gray-200'>
                 {response.transcription.segments.map((segment, index) => (
                   <li
                     key={index}

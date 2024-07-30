@@ -1,19 +1,21 @@
-'use client';
-
 import React, { useEffect, useRef, useState } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { FiPlay, FiPause } from 'react-icons/fi';
+import axios from 'axios';
+import useStore from '@/library/store';
 
 interface WaveAudioProps {
-  audio_name: string;
+  audio_name?: string;
+  transcript_id?: string;
 }
 
-const WaveAudio: React.FC<WaveAudioProps> = ({ audio_name }) => {
+const WaveAudio: React.FC<WaveAudioProps> = ({ audio_name, transcript_id }) => {
   const waveAudioRef = useRef<WaveSurfer | null>(null);
   const audioContainerRef = useRef<HTMLDivElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const setStoreCurrentTime = useStore((state) => state.setCurrentTime);
 
   const handleClick = () => {
     if (waveAudioRef.current) {
@@ -26,41 +28,69 @@ const WaveAudio: React.FC<WaveAudioProps> = ({ audio_name }) => {
   };
 
   useEffect(() => {
-    if (audioContainerRef.current) {
-      const waveform = WaveSurfer.create({
-        container: audioContainerRef.current,
-        waveColor: '#818cf8',
-        progressColor: '#4f46e5',
-        cursorColor: '#4f46e5',
-        barWidth: 2,
-        barRadius: 3,
-        height: 60,
-        normalize: true,
-      });
+    const fetchAudio = async () => {
+      if (audioContainerRef.current) {
+        try {
+          const audioUrl = audio_name
+            ? audio_name
+            : `${process.env.NEXT_PUBLIC_DIARIZE_URL}/stream-audio/${transcript_id}`;
 
-      waveform.load(audio_name);
-      waveAudioRef.current = waveform;
+          const response = await axios.get(audioUrl, {
+            withCredentials: true,
+            responseType: 'blob',
+          });
 
-      waveform.on('ready', () => {
-        setDuration(waveform.getDuration());
-      });
+          const blobUrl = URL.createObjectURL(response.data);
 
-      waveform.on('audioprocess', () => {
-        setCurrentTime(waveform.getCurrentTime());
-      });
+          if (waveAudioRef.current) {
+            waveAudioRef.current.destroy();
+          }
 
-      //   waveform.on('seek', () => {
-      //     setCurrentTime(waveform.getCurrentTime());
-      //   });
+          const waveform = WaveSurfer.create({
+            container: audioContainerRef.current,
+            waveColor: '#818cf8',
+            progressColor: '#4f46e5',
+            cursorColor: '#4f46e5',
+            barWidth: 2,
+            barRadius: 3,
+            height: 60,
+            normalize: true,
+          });
 
-      waveform.on('play', () => setIsPlaying(true));
-      waveform.on('pause', () => setIsPlaying(false));
+          waveform.load(blobUrl);
+          waveAudioRef.current = waveform;
 
-      return () => {
-        waveform.destroy();
-      };
-    }
-  }, [audio_name]);
+          waveform.on('ready', () => {
+            setDuration(waveform.getDuration());
+          });
+
+          waveform.on('audioprocess', () => {
+            const current = waveform.getCurrentTime();
+            setCurrentTime(current);
+            setStoreCurrentTime(current);
+          });
+
+          waveform.on('play', () => setIsPlaying(true));
+          waveform.on('pause', () => setIsPlaying(false));
+
+          return () => {
+            waveform.destroy();
+            URL.revokeObjectURL(blobUrl);
+          };
+        } catch (error) {
+          console.error('Failed to fetch audio:', error);
+        }
+      }
+    };
+
+    fetchAudio();
+
+    return () => {
+      if (waveAudioRef.current) {
+        waveAudioRef.current.destroy();
+      }
+    };
+  }, [audio_name, transcript_id, setStoreCurrentTime]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);

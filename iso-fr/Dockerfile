@@ -43,27 +43,19 @@ RUN mkdir -p /app/services/models && \
     echo "Listing contents of the model directory:" && \
     ls -la /app/services/models/
 
-# Copy the local directory contents to the container's working directory
-COPY . /app
-
 # Ensure CUDA libraries are installed
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libcublas-11-0 libcusparse-11-0 libcudnn8=8.0.5.39-1+cuda11.1 libcublas-dev-11-0 libcusparse-dev-11-0 libcudnn8-dev=8.0.5.39-1+cuda11.1 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    
+# Copy the local directory contents to the container's working directory
+COPY . /app
 
 # Update pip and install Python dependencies from the requirements.txt file
 RUN python3 -m pip install --upgrade pip && \
     pip3 install --no-cache-dir -r requirements.txt
-
-# Install certificates
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssl ca-certificates && \
-    update-ca-certificates
-
-# Ensure Python uses the correct certificates
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # Inform Docker that the container listens on the specified port at runtime
 EXPOSE 5002

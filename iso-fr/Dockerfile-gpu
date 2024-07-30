@@ -1,7 +1,7 @@
 # Use a specific version of the Python image
-FROM python:3.12.4-slim
+# FROM python:3.12.4-slim
 # Use the NVIDIA CUDA image as the base image
-# FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
+FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
 
 # Set the working directory inside the container
 WORKDIR /app

@@ -1,450 +1,37 @@
-# version: "3.7"
-# services:
-#   es01:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9200:9200"
-#       - "9300:9300"
-#     environment:
-#       node.name: es01
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es01:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://localhost:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   es02:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9201:9200"
-#       - "9301:9300"
-#     environment:
-#       node.name: es02
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es02:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://localhost:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   es03:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9202:9200"
-#       - "9303:9300"
-#     environment:
-#       node.name: es03
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es03:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://localhost:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   kibana:
-#     image: docker.elastic.co/kibana/kibana-oss:7.10.2
-#     depends_on:
-#       es01:
-#         condition: service_healthy
-#       es02:
-#         condition: service_healthy
-#       es03:
-#         condition: service_healthy
-#     ports:
-#       - "5601:5601"
-#     environment:
-#       - 'ELASTICSEARCH_HOSTS=["http://es01:9200","http://es02:9200","http://es03:9200"]'
-# volumes:
-#   es-data-es01:
-#   es-data-es02:
-#   es-data-es03:
-
-
-
-##################################################################################
-# version: '3.8'
-
-# services:
-#   auth_service:
-#     build: ./iso-auth
-#     ports:
-#       - "5001:5000"
-#     env_file:
-#       - .env
-
-#   face_recognition_service:
-#     build: ./iso-fr
-#     ports:
-#       - "5002:5000"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - es01
-#     environment:
-#       - ES_HOST=http://es01:9200
-
-#   speaker_diarization_service:
-#     build: ./iso-diarize
-#     ports:
-#       - "5003:5000"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - es01
-
-#   utils_service:
-#     build: ./iso-utils
-#     ports:
-#       - "5004:5000"
-#     env_file:
-#       - .env
-
-#   mongo:
-#     image: mongo:latest
-#     ports:
-#       - "${MONGO_DB_PORT}:27017"
-#     volumes:
-#       - mongo_data:/data/db
-#     environment:
-#       MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
-#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
-
-#   es01:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9200:9200"
-#       - "9300:9300"
-#     environment:
-#       node.name: es01
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es01:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://localhost:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-
-#   es02:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9201:9200"
-#       - "9301:9300"
-#     environment:
-#       node.name: es02
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es02:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://es01:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   es03:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9202:9200"
-#       - "9302:9300"
-#     environment:
-#       node.name: es03
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es03:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://es01:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   kibana:
-#     image: docker.elastic.co/kibana/kibana-oss:7.10.2
-#     depends_on:
-#       es01:
-#         condition: service_healthy
-#       es02:
-#         condition: service_healthy
-#       es03:
-#         condition: service_healthy
-#     ports:
-#       - "5601:5601"
-#     environment:
-#       ELASTICSEARCH_HOSTS: '["http://es01:9200", "http://es02:9200", "http://es03:9200"]'
-
-# volumes:
-#   mongo_data:
-#   es-data-es01:
-#   es-data-es02:
-#   es-data-es03:
-###################################################################################################
-
-# version: '3.8'
-
-# services:
-#   auth_service:
-#     build: ./iso-auth
-#     ports:
-#       - "5001:5001"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - mongo
-
-#   face_recognition_service:
-#     build: ./iso-fr
-#     ports:
-#       - "5002:5002"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-
-#   speaker_diarization_service:
-#     build: ./iso-diarize
-#     ports:
-#       - "5003:5003"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-
-#   utils_service:
-#     build: ./iso-utils
-#     ports:
-#       - "5004:5004"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-
-#   mongo:
-#     image: mongo:latest
-#     ports:
-#       - "${MONGO_DB_PORT}:27017"
-#     volumes:
-#       - mongo_data:/data/db
-#     environment:
-#       MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
-#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
-
-#   solr:
-#     image: solr:latest
-#     ports:
-#       - "8983:8983"
-#     volumes:
-#       - solr_data:/var/solr
-#     command:
-#       - solr-precreate
-#       - mycore
-#     environment:
-#       SOLR_HEAP: "512m"
-
-# volumes:
-#   mongo_data:
-#   solr_data:
-# version: '3.8'
-
-# services:
-#   auth_service:
-#     build: ./iso-auth
-#     ports:
-#       - "5001:5001"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - mongo
-
-#   face_recognition_service:
-#     build: ./iso-fr
-#     ports:
-#       - "5002:5002"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-#     deploy:
-#       resources:
-#         reservations:
-#           devices:
-#             - capabilities: [gpu]
-#     volumes:
-#       - face_recognition_data:/app/data
-
-#   speaker_diarization_service:
-#     build: ./iso-diarize
-#     ports:
-#       - "5003:5003"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-#     deploy:
-#       resources:
-#         reservations:
-#           devices:
-#             - capabilities: [gpu]
-
-#   utils_service:
-#     build: ./iso-utils
-#     ports:
-#       - "5004:5004"
-#     env_file:
-#       - .env
-#     depends_on:
-#       - solr
-#       - mongo
-#     volumes:
-#       - /Users/gorkemkaramolla/Documents/isoai-images
-
-#   mongo:
-#     image: mongo:latest
-#     ports:
-#       - "${MONGO_DB_PORT}:27017"
-#     volumes:
-#       - mongo_data:/data/db
-#     environment:
-#       MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
-#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
-
-#   solr:
-#     image: solr:latest
-#     ports:
-#       - "8983:8983"
-#     volumes:
-#       - solr_data:/var/solr
-#     command:
-#       - solr-precreate
-#       - mycore
-#     environment:
-#       SOLR_HEAP: "512m"
-
-# volumes:
-#   mongo_data:
-#   solr_data:
-#   face_recognition_data:
 version: '3.8'
 
 services:
-  auth_service:
-    build: ./iso-auth
-    ports:
-      - "5001:5001"
-    env_file:
-      - .env
-    depends_on:
-      - mongo
-    networks:
-      - isoai-network
-
-  face_recognition_service:
-    build: ./iso-fr
-    ports:
-      - "5002:5002"
-    env_file:
-      - .env
-    depends_on:
-      - solr
-      - mongo
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+  fluentbit:
+    image: fluent/fluent-bit:latest
     volumes:
-      - face_recognition_data:/app/data
+      - ./fluent-bit/config:/fluent-bit/etc
+    ports:
+      - "24224:24224"
     networks:
       - isoai-network
-
-  speaker_diarization_service:
-    build: ./iso-diarize
-    ports:
-      - "5003:5003"
-    env_file:
-      - .env
     depends_on:
       - solr
-      - mongo
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
-    networks:
-      - isoai-network
 
-  utils_service:
-    build: ./iso-utils
+  solr:
+    image: solr:latest
     ports:
-      - "5004:5004"
-    env_file:
-      - .env
-    depends_on:
-      - solr
-      - mongo
+      - "8983:8983"
     volumes:
-      - personel_images:/app/personel_images
+      - solr_data:/var/solr
+    command:
+      - solr-precreate
+      - logs
+    environment:
+      SOLR_HEAP: "1500m"
     networks:
       - isoai-network
+    depends_on:
+      - mongo
 
   mongo:
     image: mongo:latest
     ports:
-      - "${MONGO_DB_PORT}:27017"
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
     environment:
@@ -453,147 +40,92 @@ services:
     networks:
       - isoai-network
 
-  solr:
-    image: solr:latest
+  auth_service:
+    build: ./iso-auth
     ports:
-      - "8983:8983"
-    volumes:
-      - solr_data:/var/solr
-    command: ["solr-precreate", "isoai"]
-    environment:
-      SOLR_HEAP: "512m"
+      - "5001:5001"
+    env_file:
+      - .env
     networks:
       - isoai-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: auth_service
+    depends_on:
+      - mongo
+      - solr
+      - fluentbit
+
+  face_recognition_service:
+    build: ./iso-fr
+    ports:
+      - "5002:5002"
+    env_file:
+      - .env
+    volumes:
+      - face_recognition_data:/app/data
+    networks:
+      - isoai-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: face_recognition_service
+    depends_on:
+      - mongo
+      - solr
+      - fluentbit
+
+  speaker_diarization_service:
+    build: ./iso-diarize
+    ports:
+      - "5003:5003"
+    env_file:
+      - .env
+    volumes:
+      - audio_data:/app/temp
+    networks:
+      - isoai-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: speaker_diarization_service
+    depends_on:
+      - mongo
+      - solr
+      - fluentbit
+
+  utils_service:
+    build: ./iso-utils
+    ports:
+      - "5004:5004"
+    env_file:
+      - .env
+    volumes:
+      - personel_images:/app/personel_images
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - isoai-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: utils_service
+    depends_on:
+      - mongo
+      - solr
+      - fluentbit
 
 volumes:
   mongo_data:
   solr_data:
   face_recognition_data:
   personel_images:
+  audio_data:
 
 networks:
   isoai-network:
     driver: bridge
-
-
-
-
-
-
-# version: "3.7"
-# services:
-#   es01:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9200:9200"
-#       - "9300:9300"
-#     environment:
-#       node.name: es01
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es01:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://es01:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   es02:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9201:9200"
-#       - "9301:9300"
-#     environment:
-#       node.name: es02
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es02:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://es01:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   es03:
-#     image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
-#     ports:
-#       - "9202:9200"
-#       - "9303:9300"
-#     environment:
-#       node.name: es03
-#       discovery.seed_hosts: es01,es02,es03
-#       cluster.initial_master_nodes: es01,es02,es03
-#       cluster.name: mycluster
-#       bootstrap.memory_lock: "true"
-#       ES_JAVA_OPTS: -Xms256m -Xmx256m
-#     volumes:
-#       - "es-data-es03:/usr/share/elasticsearch/data"
-#     ulimits:
-#       memlock:
-#         soft: -1
-#         hard: -1
-#     healthcheck:
-#       test: ["CMD-SHELL", "curl http://es01:9200"]
-#       interval: 10s
-#       timeout: 10s
-#       retries: 120
-#   kibana:
-#     image: docker.elastic.co/kibana/kibana-oss:7.10.2
-#     depends_on:
-#       es01:
-#         condition: service_healthy
-#       es02:
-#         condition: service_healthy
-#       es03:
-#         condition: service_healthy
-#     ports:
-#       - "5601:5601"
-#     environment:
-#       - 'ELASTICSEARCH_HOSTS=["http://es01:9200","http://es02:9200","http://es03:9200"]'
-#   mongodb:
-#     image: mongo:latest
-#     ports:
-#       - "27018:27017"  # Changed host port to 27018
-#     volumes:
-#       - mongo-data:/data/db
-
-  
-#   flask-backend:
-#     build: ./flask
-#     ports:
-#       - "5004:5000"
-#     depends_on:
-#       - mongodb
-#       - es01
-#     environment:
-#       JWT_SECRET_KEY: isoai
-#       MONGO_DB_URI: mongodb://localhost:27018/
-#       ELASTICSEARCH_URL: http://es01:9200
-#       MONGO_DB_NAME: isoai
-#       HF_AUTH_TOKEN: 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
-#       ES_HOST: http://es01:9200/
-#   nextjs-frontend:
-#     build: ./iso-electron
-#     ports:
-#       - "3000:3000"
-#     depends_on:
-#       - flask-backend
-# volumes:
-#   es-data-es01:
-#   es-data-es02:
-#   es-data-es03:
-#   mongo-data:

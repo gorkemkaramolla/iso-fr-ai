@@ -7,22 +7,8 @@ import { ConfirmDialog } from 'primereact/confirmdialog';
 import { Toast } from 'primereact/toast';
 import { z } from 'zod';
 import FileUploader from '@/components/FileUploader';
-import { redirect, useRouter } from 'next/navigation';
-
-const formSchema = z.object({
-  name: z.string().nonempty({ message: 'İsim boş bırakılmamalı' }),
-  lastname: z.string().nonempty({ message: 'Soyisim boş bırakılmamalı' }),
-  title: z.string(),
-  address: z.string(),
-  phone: z.string(),
-  email: z.string().email({ message: 'Geçersiz email adresi' }),
-  gsm: z.string(),
-  resume: z.string(),
-  birth_date: z.string(),
-  iso_phone: z.string(),
-  iso_phone2: z.string(),
-  uploadedFile: z.any(),
-});
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FormDataState {
   name: string;
@@ -38,6 +24,24 @@ interface FormDataState {
   iso_phone2: string;
   uploadedFile: File | null;
 }
+
+const formSchema = z.object({
+  name: z.string().nonempty({ message: 'İsim boş bırakılmamalı' }),
+  lastname: z.string().nonempty({ message: 'Soyisim boş bırakılmamalı' }),
+  title: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email({ message: 'Geçersiz email adresi' }),
+  gsm: z
+    .string()
+    .regex(/^\d+$/, { message: 'GSM sadece rakam içermelidir' })
+    .optional(),
+  resume: z.string().optional(),
+  birth_date: z.string().optional(),
+  iso_phone: z.string().optional(),
+  iso_phone2: z.string().optional(),
+  uploadedFile: z.any().optional(),
+});
 
 export default function AddPersonel() {
   const [formData, setFormData] = useState<FormDataState>({
@@ -58,6 +62,7 @@ export default function AddPersonel() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const toast = useRef<Toast>(null);
   const router = useRouter();
+
   const showError = (error: string) => {
     toast.current?.show({
       severity: 'error',
@@ -95,21 +100,11 @@ export default function AddPersonel() {
       const apiUrl = `${process.env.NEXT_PUBLIC_UTILS_URL}/personel`;
 
       const fd = new FormData();
-      fd.append('name', formData.name);
-      fd.append('lastname', formData.lastname);
-      fd.append('title', formData.title);
-      fd.append('address', formData.address);
-      fd.append('phone', formData.phone);
-      fd.append('email', formData.email);
-      fd.append('gsm', formData.gsm);
-      fd.append('resume', formData.resume);
-      fd.append('birth_date', formData.birth_date);
-      fd.append('iso_phone', formData.iso_phone);
-      fd.append('iso_phone2', formData.iso_phone2);
-
-      if (formData.uploadedFile) {
-        fd.append('uploadedFile', formData.uploadedFile);
-      }
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null) {
+          fd.append(key, value as Blob);
+        }
+      });
 
       fetch(apiUrl, {
         method: 'POST',
@@ -122,15 +117,10 @@ export default function AddPersonel() {
             router.push(`/profiles/${data.data._id}`);
           } else {
             showError(data.message || 'Bir hata oluştu.');
-            console.error(
-              'Error adding personel:',
-              data.message || 'Bir hata oluştu.'
-            );
           }
         })
         .catch((error) => {
           showError(error.message || 'Bir hata oluştu.');
-          console.error('Error adding personel:', error);
         });
     } catch (e) {
       if (e instanceof z.ZodError) {
@@ -147,184 +137,259 @@ export default function AddPersonel() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        when: 'beforeChildren',
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: 'spring', damping: 12, stiffness: 100 },
+    },
+  };
+
   return (
-    <div className=''>
-      <Toast ref={toast}></Toast>
+    <motion.div
+      className='  '
+      variants={containerVariants}
+      initial='hidden'
+      animate='visible'
+    >
+      <Toast ref={toast} />
 
-      <div className='flex items-center justify-between p-2'>
-        <h1 className='text-xl font-bold'>Personel Ayarları</h1>
-        <Button
-          onClick={handleSubmit}
-          label='Yeni Personel Ekle'
-          icon='pi pi-plus'
-          className='p-button-sm'
-        />
-      </div>
-
-      <div className='flex flex-col gap-2'>
-        <div className='w-full flex md:flex-row flex-col gap-4'>
-          <div className='w-full md:w-1/2'>
-            <FileUploader onFileUpload={handleFileUpload} />
-          </div>
-          <div className='flex-col flex w-full md:w-1/2'>
-            <div className='p-field flex flex-wrap gap-2'>
-              <div className='flex-1'>
-                <label htmlFor='name' className='text-sm'>
-                  İsim
-                </label>
-                <InputText
-                  className={`w-full p-1 text-sm ${
-                    errors.name ? 'border-red-500' : ''
-                  }`}
-                  id='name'
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-                {errors.name && (
-                  <small className='p-error'>{errors.name}</small>
-                )}
-              </div>
-              <div className='flex-1'>
-                <label htmlFor='lastname' className='text-sm'>
-                  Soyisim
-                </label>
-                <InputText
-                  className={`w-full p-1 text-sm ${
-                    errors.lastname ? 'border-red-500' : ''
-                  }`}
-                  id='lastname'
-                  value={formData.lastname}
-                  onChange={handleChange}
-                />
-                {errors.lastname && (
-                  <small className='p-error'>{errors.lastname}</small>
-                )}
-              </div>
-            </div>
-            <div className='p-field flex flex-wrap gap-2'>
-              <div className='flex-1'>
-                <label htmlFor='title' className='text-sm'>
-                  Unvan
-                </label>
-                <InputText
-                  className='w-full p-1 text-sm'
-                  id='title'
-                  value={formData.title}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-            <div className='p-field flex flex-wrap gap-2'>
-              <div className='flex-1'>
-                <label htmlFor='address' className='text-sm'>
-                  Adres
-                </label>
-                <InputTextarea
-                  className='w-full p-1 text-sm'
-                  id='address'
-                  value={formData.address}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-            <div className='p-field flex flex-wrap gap-2'>
-              <div className='flex-1'>
-                <label htmlFor='phone' className='text-sm'>
-                  Telefon
-                </label>
-                <InputText
-                  className='w-full p-1 text-sm'
-                  id='phone'
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className='flex-1'>
-                <label htmlFor='email' className='text-sm'>
-                  Email
-                </label>
-                <InputText
-                  className={`w-full p-1 text-sm ${
-                    errors.email ? 'border-red-500' : ''
-                  }`}
-                  id='email'
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-                {errors.email && (
-                  <small className='p-error'>{errors.email}</small>
-                )}
-              </div>
-            </div>
-            <div className='p-field flex flex-wrap gap-2'>
-              <div className='flex-1'>
-                <label htmlFor='gsm' className='text-sm'>
-                  GSM
-                </label>
-                <InputText
-                  className='w-full p-1 text-sm'
-                  id='gsm'
-                  value={formData.gsm}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className='p-field flex flex-wrap gap-2'>
-                <div className='flex-1'>
-                  <label htmlFor='birth_date' className='text-sm'>
-                    Doğum Tarihi
-                  </label>
-                  <InputText
-                    className='w-full p-1 text-sm'
-                    id='birth_date'
-                    value={formData.birth_date}
-                    type='date'
-                    lang='tr'
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className='p-field flex flex-wrap gap-2'>
-              <div className='flex-1'>
-                <label htmlFor='iso_phone' className='text-sm'>
-                  ISO Telefon 1
-                </label>
-                <InputText
-                  className='w-full p-1 text-sm'
-                  id='iso_phone'
-                  value={formData.iso_phone}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className='flex-1'>
-                <label htmlFor='iso_phone2' className='text-sm'>
-                  ISO Telefon 2
-                </label>
-                <InputText
-                  className='w-full p-1 text-sm'
-                  id='iso_phone2'
-                  value={formData.iso_phone2}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-            <div className='p-field flex flex-wrap gap-2'>
-              <div className='flex-1'>
-                <label htmlFor='resume' className='text-sm'>
-                  Özgeçmiş
-                </label>
-                <InputTextarea
-                  className='w-full p-1 text-sm'
-                  id='resume'
-                  value={formData.resume}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-          </div>
+      <motion.div
+        className='max-w-4xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden'
+        variants={itemVariants}
+      >
+        <div className='bg-indigo-600 text-white py-6 px-8'>
+          <h1 className='text-3xl font-bold'>Personel Ayarları</h1>
+          <p className='mt-2 text-indigo-200'>
+            Yeni personel bilgilerini ekleyin
+          </p>
         </div>
-      </div>
+
+        <div className='p-8'>
+          <motion.div className='mb-8' variants={itemVariants}>
+            <FileUploader onFileUpload={handleFileUpload} />
+          </motion.div>
+
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='name'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                İsim
+              </label>
+              <InputText
+                id='name'
+                value={formData.name}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-md ${
+                  errors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.name && (
+                <p className='mt-1 text-sm text-red-500'>{errors.name}</p>
+              )}
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='lastname'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                Soyisim
+              </label>
+              <InputText
+                id='lastname'
+                value={formData.lastname}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-md ${
+                  errors.lastname ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.lastname && (
+                <p className='mt-1 text-sm text-red-500'>{errors.lastname}</p>
+              )}
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='title'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                Unvan
+              </label>
+              <InputText
+                id='title'
+                value={formData.title}
+                onChange={handleChange}
+                className='w-full p-3 border border-gray-300 rounded-md'
+              />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='email'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                Email
+              </label>
+              <InputText
+                id='email'
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-md ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.email && (
+                <p className='mt-1 text-sm text-red-500'>{errors.email}</p>
+              )}
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='phone'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                Telefon
+              </label>
+              <InputText
+                id='phone'
+                value={formData.phone}
+                onChange={handleChange}
+                className='w-full p-3 border border-gray-300 rounded-md'
+              />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='gsm'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                GSM
+              </label>
+              <InputText
+                id='gsm'
+                value={formData.gsm}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-md ${
+                  errors.gsm ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.gsm && (
+                <p className='mt-1 text-sm text-red-500'>{errors.gsm}</p>
+              )}
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='birth_date'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                Doğum Tarihi
+              </label>
+              <InputText
+                id='birth_date'
+                value={formData.birth_date}
+                onChange={handleChange}
+                type='date'
+                lang='tr'
+                className='w-full p-3 border border-gray-300 rounded-md'
+              />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='iso_phone'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                ISO Telefon 1
+              </label>
+              <InputText
+                id='iso_phone'
+                value={formData.iso_phone}
+                onChange={handleChange}
+                className='w-full p-3 border border-gray-300 rounded-md'
+              />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <label
+                htmlFor='iso_phone2'
+                className='block text-sm font-medium text-gray-700 mb-1'
+              >
+                ISO Telefon 2
+              </label>
+              <InputText
+                id='iso_phone2'
+                value={formData.iso_phone2}
+                onChange={handleChange}
+                className='w-full p-3 border border-gray-300 rounded-md'
+              />
+            </motion.div>
+          </div>
+
+          <motion.div className='mt-6' variants={itemVariants}>
+            <label
+              htmlFor='address'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              Adres
+            </label>
+            <InputTextarea
+              id='address'
+              value={formData.address}
+              onChange={handleChange}
+              rows={3}
+              className='w-full p-3 border border-gray-300 rounded-md'
+            />
+          </motion.div>
+
+          <motion.div className='mt-6' variants={itemVariants}>
+            <label
+              htmlFor='resume'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              Özgeçmiş
+            </label>
+            <InputTextarea
+              id='resume'
+              value={formData.resume}
+              onChange={handleChange}
+              rows={5}
+              className='w-full p-3 border border-gray-300 rounded-md'
+            />
+          </motion.div>
+
+          <motion.div
+            className='mt-8 flex justify-end'
+            variants={itemVariants}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button
+              onClick={handleSubmit}
+              label='Yeni Personel Ekle'
+              icon='pi pi-user-plus'
+              className='p-button-lg bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
+            />
+          </motion.div>
+        </div>
+      </motion.div>
       <ConfirmDialog />
-    </div>
+    </motion.div>
   );
 }

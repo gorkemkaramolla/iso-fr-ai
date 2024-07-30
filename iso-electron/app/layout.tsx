@@ -24,12 +24,17 @@ export default function RootLayout({
 
   return (
     <html lang='tr' data-theme='light' className={'w-screen '}>
-      <body className={inter.className + ' light flex justify-center'}>
+      <body
+        className={
+          inter.className +
+          ' w-full max-w-screen overflow-x-hidden flex justify-center'
+        }
+      >
         <PrimeReactProvider>
           <div className='w-full h-[100dvh]'>
-            <Provider>a</Provider>
+            <Provider></Provider>
 
-            <div className='grow h-[93dvh]'>{children}</div>
+            <div className=' '>{children}</div>
           </div>
         </PrimeReactProvider>
       </body>

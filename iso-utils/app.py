@@ -13,11 +13,18 @@ from datetime import timedelta
 
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
-CORS(app, origins="*")
+CORS(app, origins="*", supports_credentials=True)
+
+# Configure JWT
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["JWT_TOKEN_LOCATION"] = ["headers"]
-app.config["JWT_HEADER_NAME"] = "Authorization"
-app.config["JWT_HEADER_TYPE"] = "Bearer"
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
+
+
+
+
 jwt = JWTManager(app)
 app.register_blueprint(system_check)
 app.register_blueprint(solr_search_bp)

@@ -1,4 +1,3 @@
-# speaker_diarization.py
 import logging
 from db import mongo_client, mongo_db
 from socketio_instance import socketio
@@ -8,11 +7,12 @@ from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 import os
 from whisper_run import AudioProcessor
+import requests
+from datetime import datetime,timezone
 
-from datetime import datetime
+
 from bson import ObjectId
 os.environ["CURL_CA_BUNDLE"] = ""
-
 class SpeakerDiarizationProcessor:
     def __init__(self, device):
         self.mongo_client = mongo_client
@@ -25,14 +25,83 @@ class SpeakerDiarizationProcessor:
     def emit_progress(self, progress):
         socketio.emit("progress", {"progress": progress})
 
-    def rename_segments(self, transcription_id, old_name, new_name):
+    def rename_segments(self, transcription_id, old_names, new_name):
         collection = self.mongo_db["segments"]
         update_result = collection.update_many(
-            {"speaker": old_name, "transcript_id": transcription_id},
+            {"speaker": {"$in": old_names}, "transcript_id": transcription_id},
             {"$set": {"speaker": new_name}},
         )
 
         if update_result.modified_count > 0:
+            return {"status": "success"}
+        else:
+            return {"status": "no changes made"}
+
+    def rename_selected_segments(self, transcription_id, old_names, new_name, segment_ids):
+        collection = self.mongo_db["segments"]
+        update_result = collection.update_many(
+            {"_id": {"$in": [ObjectId(segment_id) for segment_id in segment_ids]},
+             "speaker": {"$in": old_names},
+             "transcript_id": transcription_id},
+            {"$set": {"speaker": new_name}},
+        )
+
+        if update_result.modified_count > 0:
+            return {"status": "success"}
+        else:
+            return {"status": "no changes made"}
+
+    def rename_transcribed_text(self, transcription_id, old_texts, new_text):
+        segments_collection = self.mongo_db["segments"]
+        transcripts_collection = self.mongo_db["transcripts"]
+
+        segments_update_result = segments_collection.update_many(
+            {"transcribed_text": {"$in": old_texts}, "transcript_id": transcription_id},
+            {"$set": {"transcribed_text": new_text}},
+        )
+
+        transcripts_update_result = transcripts_collection.update_many(
+            {"transcription_id": transcription_id, "full_text": {"$regex": "|".join(old_texts)}},
+            {"$set": {"full_text": self.replace_text_in_full_text(transcripts_collection, transcription_id, old_texts, new_text)}},
+        )
+
+        if segments_update_result.modified_count > 0 or transcripts_update_result.modified_count > 0:
+            return {"status": "success"}
+        else:
+            return {"status": "no changes made"}
+
+    def rename_selected_texts(self, transcription_id, old_texts, new_text, segment_ids):
+        segments_collection = self.mongo_db["segments"]
+
+        segments_update_result = segments_collection.update_many(
+            {"_id": {"$in": [ObjectId(segment_id) for segment_id in segment_ids]},
+             "transcribed_text": {"$in": old_texts},
+             "transcript_id": transcription_id},
+            {"$set": {"transcribed_text": new_text}},
+        )
+
+        if segments_update_result.modified_count > 0:
+            return {"status": "success"}
+        else:
+            return {"status": "no changes made"}
+
+    def replace_text_in_full_text(self, transcripts_collection, transcription_id, old_texts, new_text):
+        transcript = transcripts_collection.find_one({"transcription_id": transcription_id})
+        if transcript:
+            full_text = transcript.get("full_text", "")
+            for old_text in old_texts:
+                full_text = full_text.replace(old_text, new_text)
+            return full_text
+        return ""
+
+    def delete_segments(self, transcription_id, segment_ids):
+        collection = self.mongo_db["segments"]
+        delete_result = collection.delete_many(
+            {"_id": {"$in": [ObjectId(segment_id) for segment_id in segment_ids]},
+             "transcript_id": transcription_id}
+        )
+
+        if delete_result.deleted_count > 0:
             return {"status": "success"}
         else:
             return {"status": "no changes made"}
@@ -43,31 +112,17 @@ class SpeakerDiarizationProcessor:
             cursor = collection.find({})
             all_transcriptions = [
                 {
-                    "transcription_id": str(doc["_id"]),
+                    "name": doc["name"],
+                    "transcription_id": str(doc["_id"]),  # Convert ObjectId to string here
                     "created_at": doc["created_at"],
                     "full_text": doc.get("full_text", ""),
                 }
                 for doc in cursor
             ]
-            self.logger.info(f"Transcriptions: {all_transcriptions} successfully fetched from database")
             return all_transcriptions
         except Exception as e:
             self.logger.info(f"Database error: {str(e)}")
             return {"error": str(e)}
-
-    def safe_parse_date(self, date_value):
-        if not date_value:
-            return None
-        if isinstance(date_value, str):
-            return date_value
-        try:
-            return date_value.isoformat() if date_value else None
-        except ValueError as e:
-            self.logger.error(f"Invalid date encountered: {e}, Date Value: {date_value}")
-            return None
-        except AttributeError as e:
-            self.logger.error(f"Attribute error: {e}, Date Value: {date_value}")
-            return None
 
     def get_transcription(self, id):
         try:
@@ -85,7 +140,7 @@ class SpeakerDiarizationProcessor:
 
             segments_data = [
                 {
-                    "segment_id": str(segment["_id"]),
+                    "segment_id": str(segment["_id"]),  # Convert ObjectId to string here
                     "start_time": segment["start_time"],
                     "end_time": segment["end_time"],
                     "speaker": segment["speaker"],
@@ -95,12 +150,12 @@ class SpeakerDiarizationProcessor:
             ]
 
             result = {
-                "transcription_id": str(transcription["_id"]),
+                "name": str(transcription["name"]),
+                "transcription_id": str(transcription["_id"]),  # Convert ObjectId to string here
                 "created_at": transcription["created_at"],
                 "full_text": transcription.get("full_text", ""),
                 "segments": segments_data,
             }
-            self.logger.info(f"get_transcription: {result} successfully fetched from database")
             return result
         except Exception as e:
             error_message = f"Error during transcription retrieval: {e}"
@@ -108,7 +163,6 @@ class SpeakerDiarizationProcessor:
             return {"error": "An error occurred while retrieving the transcription"}
 
     def process_audio(self):
-        self.logger.info("New transcription request received")
         if "file" not in request.files:
             self.logger.error("No file part in request")
             return {"error": "No file part"}
@@ -118,33 +172,43 @@ class SpeakerDiarizationProcessor:
             self.logger.error("No file selected")
             return {"error": "No selected file"}
 
-        filename = secure_filename(file.filename)
-        self.file_path = os.path.join("temp", filename)
-        file.save(self.file_path)
-
         try:
-            if filename.endswith((".mp4", ".mp3", ".avi")):
-                original = AudioSegment.from_file(self.file_path)
-                wav_path = f"{os.path.splitext(self.file_path)[0]}.wav"
-                original.export(wav_path, format="wav")
-                self.file_path = wav_path
+            # Generate transcript ID before saving the file
+            transcript_id = str(ObjectId())
+            wav_filename = f"{transcript_id}.wav"
+            wav_file_path = os.path.join("temp", wav_filename)
+            
+            # Save the original file temporarily for conversion
+            original_file_path = os.path.join("temp", secure_filename(file.filename))
+            file.save(original_file_path)
+
+            # Convert the file to WAV format if necessary
+            if original_file_path.endswith((".mp4", ".mp3", ".avi")):
+                original = AudioSegment.from_file(original_file_path)
+                original.export(wav_file_path, format="wav")
+                os.remove(original_file_path)  # Remove the original file after conversion
+            else:
+                # If the file is already in WAV format, just rename it
+                os.rename(original_file_path, wav_file_path)
+
+            self.file_path = wav_file_path
 
             self.emit_progress(100)
             self.emit_progress(10)
             self.emit_progress(30)
             self.emit_progress(50)
-            # Assuming 'large-v3/' is a directory at the same level as 'speaker_diarization.py'
+            
             model_dir = os.path.join(os.path.dirname(__file__), "large-v3/")
             processor = AudioProcessor(self.file_path, self.device, model_name=model_dir)
             transcription = processor.process()
             self.emit_progress(70)
             self.emit_progress(90)
 
-            created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            transcript_id = str(ObjectId())
+            created_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
             response_data = {
                 "id": transcript_id,
+                "name": wav_filename,
                 "transcription": transcription,
                 "created_at": created_at,
             }
@@ -152,10 +216,18 @@ class SpeakerDiarizationProcessor:
             self.mongo_db.transcripts.insert_one(
                 {
                     "_id": transcript_id,
+                    "name": wav_filename,
                     "created_at": created_at,
                     "full_text": transcription["text"],
                 }
             )
+
+            try:
+                # response = requests.post('http://utils_service:5004/add_to_solr', json=response_data)
+                # response.raise_for_status()
+                print("Successfully added data to Solr")
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to add data to Solr: {e}")
 
             for segment in transcription["segments"]:
                 self.mongo_db.segments.insert_one(
@@ -170,6 +242,6 @@ class SpeakerDiarizationProcessor:
 
             return response_data
         except Exception as e:
-            self.logger.exception("Failed during processingx")
+            self.logger.exception("Failed during processing")
             self.emit_progress(0)
             return {"error": str(e)}

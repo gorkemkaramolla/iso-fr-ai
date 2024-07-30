@@ -36,8 +36,8 @@ class Stream:
         # Face Recognition
         self.use_face_recognition = use_face_recognition
         self.face_recognizer = None
+        self.last_recognitions: Dict[str, datetime.datetime] = {}
         if use_face_recognition:
-            self.last_recognitions: Dict[str, datetime.datetime] = {}
             self.similarity_threshold: float = 0.2
             face_rec_model = os.path.join(onnx_models_dir, "w600k_r50.onnx")
             self.face_recognizer = ArcFaceONNX(face_rec_model)
@@ -340,9 +340,9 @@ def main():
     logging.basicConfig(level=logging.INFO)
     stream = Stream(
         device="cuda",
-        use_face_recognition=False,
-        use_gender_age=False,
-        use_emotion=False
+        use_face_recognition=True,
+        use_gender_age=True,
+        use_emotion=True
     )
 
     stream.open_local_camera()

@@ -7,22 +7,7 @@ import { ConfirmDialog } from 'primereact/confirmdialog';
 import { Toast } from 'primereact/toast';
 import { z } from 'zod';
 import FileUploader from '@/components/FileUploader';
-import { redirect, useRouter } from 'next/navigation';
-
-const formSchema = z.object({
-  name: z.string().nonempty({ message: 'İsim boş bırakılmamalı' }),
-  lastname: z.string().nonempty({ message: 'Soyisim boş bırakılmamalı' }),
-  title: z.string(),
-  address: z.string(),
-  phone: z.string(),
-  email: z.string().email({ message: 'Geçersiz email adresi' }),
-  gsm: z.string(),
-  resume: z.string(),
-  birth_date: z.string(),
-  iso_phone: z.string(),
-  iso_phone2: z.string(),
-  uploadedFile: z.any(),
-});
+import { useRouter } from 'next/navigation';
 
 interface FormDataState {
   name: string;
@@ -38,6 +23,24 @@ interface FormDataState {
   iso_phone2: string;
   uploadedFile: File | null;
 }
+
+const formSchema = z.object({
+  name: z.string().nonempty({ message: 'İsim boş bırakılmamalı' }),
+  lastname: z.string().nonempty({ message: 'Soyisim boş bırakılmamalı' }),
+  title: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email({ message: 'Geçersiz email adresi' }),
+  gsm: z
+    .string()
+    .regex(/^\d+$/, { message: 'GSM sadece rakam içermelidir' })
+    .optional(),
+  resume: z.string().optional(),
+  birth_date: z.string().optional(),
+  iso_phone: z.string().optional(),
+  iso_phone2: z.string().optional(),
+  uploadedFile: z.any().optional(),
+});
 
 export default function AddPersonel() {
   const [formData, setFormData] = useState<FormDataState>({
@@ -58,6 +61,7 @@ export default function AddPersonel() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const toast = useRef<Toast>(null);
   const router = useRouter();
+
   const showError = (error: string) => {
     toast.current?.show({
       severity: 'error',
@@ -95,21 +99,11 @@ export default function AddPersonel() {
       const apiUrl = `${process.env.NEXT_PUBLIC_UTILS_URL}/personel`;
 
       const fd = new FormData();
-      fd.append('name', formData.name);
-      fd.append('lastname', formData.lastname);
-      fd.append('title', formData.title);
-      fd.append('address', formData.address);
-      fd.append('phone', formData.phone);
-      fd.append('email', formData.email);
-      fd.append('gsm', formData.gsm);
-      fd.append('resume', formData.resume);
-      fd.append('birth_date', formData.birth_date);
-      fd.append('iso_phone', formData.iso_phone);
-      fd.append('iso_phone2', formData.iso_phone2);
-
-      if (formData.uploadedFile) {
-        fd.append('uploadedFile', formData.uploadedFile);
-      }
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null) {
+          fd.append(key, value as Blob);
+        }
+      });
 
       fetch(apiUrl, {
         method: 'POST',
@@ -122,15 +116,10 @@ export default function AddPersonel() {
             router.push(`/profiles/${data.data._id}`);
           } else {
             showError(data.message || 'Bir hata oluştu.');
-            console.error(
-              'Error adding personel:',
-              data.message || 'Bir hata oluştu.'
-            );
           }
         })
         .catch((error) => {
           showError(error.message || 'Bir hata oluştu.');
-          console.error('Error adding personel:', error);
         });
     } catch (e) {
       if (e instanceof z.ZodError) {
@@ -262,26 +251,29 @@ export default function AddPersonel() {
                   GSM
                 </label>
                 <InputText
-                  className='w-full p-1 text-sm'
+                  className={`w-full p-1 text-sm ${
+                    errors.gsm ? 'border-red-500' : ''
+                  }`}
                   id='gsm'
                   value={formData.gsm}
                   onChange={handleChange}
                 />
+                {errors.gsm && <small className='p-error'>{errors.gsm}</small>}
               </div>
-              <div className='p-field flex flex-wrap gap-2'>
-                <div className='flex-1'>
-                  <label htmlFor='birth_date' className='text-sm'>
-                    Doğum Tarihi
-                  </label>
-                  <InputText
-                    className='w-full p-1 text-sm'
-                    id='birth_date'
-                    value={formData.birth_date}
-                    type='date'
-                    lang='tr'
-                    onChange={handleChange}
-                  />
-                </div>
+            </div>
+            <div className='p-field flex flex-wrap gap-2'>
+              <div className='flex-1'>
+                <label htmlFor='birth_date' className='text-sm'>
+                  Doğum Tarihi
+                </label>
+                <InputText
+                  className='w-full p-1 text-sm'
+                  id='birth_date'
+                  value={formData.birth_date}
+                  type='date'
+                  lang='tr'
+                  onChange={handleChange}
+                />
               </div>
             </div>
             <div className='p-field flex flex-wrap gap-2'>

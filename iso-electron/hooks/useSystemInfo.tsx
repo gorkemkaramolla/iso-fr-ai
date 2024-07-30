@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
@@ -39,6 +40,17 @@ const useSystemInfo = () => {
   const [cpuUsageData, setCpuUsageData] = useState<UsageData[]>([]);
   const [gpuUsageData, setGpuUsageData] = useState<UsageData[]>([]);
 
+  useEffect(() => {
+    axios
+      .get(`${process.env.NEXT_PUBLIC_UTILS_URL}/search_logs?query=`)
+      .then((res) => {
+        console.log(res.data);
+        setSystemInfo((prev) => ({ ...prev, logs_data: res.data }));
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
   useEffect(() => {
     const socket = io('http://localhost:5004');
 

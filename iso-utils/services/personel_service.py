@@ -14,6 +14,23 @@ class PersonelService:
         self.db = db
         self.solr_searcher = SolrSearcher(db)
         
+    def update_personel(self, personel_id, data):
+            try:
+                # Remove '_id' if it exists in the update data
+                update_data = {k: v for k, v in data.items() if k != '_id' and v is not None}
+                result = self.db["Personel"].update_one(
+                    {"_id": ObjectId(personel_id)},
+                    {"$set": update_data}
+                )
+                if result.matched_count > 0:
+                    self.logger.info(f"Updated personel with id {personel_id}")
+                    return {"status": "success", "message": "Personnel updated successfully"}, 200
+                else:
+                    self.logger.error(f"Personel with id {personel_id} not found")
+                    return {"status": "error", "message": "Personel not found"}, 404
+            except Exception as e:
+                self.logger.error(f"Error updating personel: {e}")
+                return {"status": "error", "message": str(e)}, 500
     def add_personel(self, data, file):
         os.makedirs(self.IMAGE_DIRECTORY, exist_ok=True)
         try:

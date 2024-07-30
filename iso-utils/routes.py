@@ -11,8 +11,12 @@ import requests
 import os
 
 app = Flask(__name__)
-CORS(app, origins="*")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+app.config["JWT_COOKIE_SECURE"] = False
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+CORS(app, supports_credentials=True, origins="*")
 
 # Setup MongoDB
 client = MongoClient(os.environ.get("MONGO_DB_URI"))
@@ -73,6 +77,13 @@ def get_personel_by_id(id):
             return jsonify({"status": "error", "message": "Person not found"}), 404
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
+#########UPDATE PERSONEL
+@personel_bp.route('/personel/<personel_id>', methods=['PUT'])
+@jwt_required()
+def update_personel_route(personel_id):
+    data = request.get_json()
+    result, status = personel_service.update_personel(personel_id, data)
+    return jsonify(result), status
 
 @personel_bp.route('/personel/image/', methods=['GET'])
 def get_user_images():

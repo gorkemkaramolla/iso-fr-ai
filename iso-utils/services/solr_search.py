@@ -183,7 +183,7 @@ class SolrSearcher:
                 query_params = urlencode({
                     'q': '*:*',
                     'wt': 'json',
-                    'rows': 200
+                    'rows': 1000
                 })
             
             # Solr URL for logs core

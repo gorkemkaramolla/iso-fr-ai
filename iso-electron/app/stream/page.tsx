@@ -217,8 +217,8 @@ const VideoStream: React.FC = () => {
             cameraStreamsLength={cameraStreams.length}
           />
         </div>
-        <div className={`grid grid-cols-12  gap-4`}>
-          <div className={`col-span-9 `}>
+        <div className={`grid grid-cols-12  gap-4 relative`}>
+          <div className={`relative col-span-9 `}>
             <div
               className={`grid gap-4 ${
                 isGrid ? 'grid-cols-2 grid-rows-2' : ''
@@ -274,6 +274,7 @@ const VideoStream: React.FC = () => {
                           }
                         >
                           <CameraStreamControl
+                            size={camera.size}
                             id={camera.id}
                             cameraUrls={cameraUrls}
                             selectedCamera={camera.selectedCamera}
@@ -294,7 +295,7 @@ const VideoStream: React.FC = () => {
                   })}
             </div>
           </div>
-          <div className={`col-span-3`}>
+          <div className={`col-span-3 fixed top-20 right-16`}>
             <RecogFaces />
           </div>
         </div>

@@ -27,7 +27,9 @@ const updateRecogName = async (id: string, newName: string) => {
 };
 
 const RecogFaces: React.FC = () => {
-  const [groupedRecogFaces, setGroupedRecogFaces] = useState<GroupedRecogFaces[]>([]);
+  const [groupedRecogFaces, setGroupedRecogFaces] = useState<
+    GroupedRecogFaces[]
+  >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -48,9 +50,14 @@ const RecogFaces: React.FC = () => {
 
     const uniqueMerged = merged.map((group) => ({
       ...group,
-      faces: Array.from(new Set(group.faces.map((face) => JSON.stringify(face))))
+      faces: Array.from(
+        new Set(group.faces.map((face) => JSON.stringify(face)))
+      )
         .map((face) => JSON.parse(face))
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
+        .sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        ),
     }));
 
     return uniqueMerged;
@@ -67,26 +74,33 @@ const RecogFaces: React.FC = () => {
             new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
 
-        const grouped = faces.reduce((acc: GroupedRecogFaces[], face: RecogFace) => {
-          const group = acc.find((g) => g.name === face.label);
-          if (group) {
-            group.faces.push(face);
-          } else {
-            acc.unshift({
-              name: face.label,
-              faces: [face],
-              isCollapsed: true,
-            });
-          }
-          return acc;
-        }, []);
+        const grouped = faces.reduce(
+          (acc: GroupedRecogFaces[], face: RecogFace) => {
+            const group = acc.find((g) => g.name === face.label);
+            if (group) {
+              group.faces.push(face);
+            } else {
+              acc.unshift({
+                name: face.label,
+                faces: [face],
+                isCollapsed: true,
+              });
+            }
+            return acc;
+          },
+          []
+        );
 
         const sortedGrouped = mergeGroups(grouped).sort((a, b) => {
           const aLatestTimestamp = new Date(
-            Math.max(...a.faces.map((face) => new Date(face.timestamp).getTime()))
+            Math.max(
+              ...a.faces.map((face) => new Date(face.timestamp).getTime())
+            )
           ).getTime();
           const bLatestTimestamp = new Date(
-            Math.max(...b.faces.map((face) => new Date(face.timestamp).getTime()))
+            Math.max(
+              ...b.faces.map((face) => new Date(face.timestamp).getTime())
+            )
           ).getTime();
           return bLatestTimestamp - aLatestTimestamp;
         });
@@ -103,7 +117,9 @@ const RecogFaces: React.FC = () => {
 
     socket.on('new_face', (newFace) => {
       setGroupedRecogFaces((prevGroups) => {
-        const groupIndex = prevGroups.findIndex((g) => g.name === newFace.label);
+        const groupIndex = prevGroups.findIndex(
+          (g) => g.name === newFace.label
+        );
         if (groupIndex !== -1) {
           const group = prevGroups[groupIndex];
           group.faces.unshift(newFace);
@@ -131,7 +147,9 @@ const RecogFaces: React.FC = () => {
   const handleToggle = (name: string) => {
     setGroupedRecogFaces((prevGroups) =>
       prevGroups.map((group) =>
-        group.name === name ? { ...group, isCollapsed: !group.isCollapsed } : group
+        group.name === name
+          ? { ...group, isCollapsed: !group.isCollapsed }
+          : group
       )
     );
   };
@@ -190,7 +208,7 @@ const RecogFaces: React.FC = () => {
   if (error) return <div>{error}</div>;
 
   return (
-    <div>
+    <div className='backdrop-blur-lg p-4 rounded-xl'>
       <h1 className='text-3xl font-bold mb-2'>Tanınan Yüzler</h1>
       <label className='input input-bordered flex items-center gap-2 mb-2'>
         <input
@@ -213,7 +231,7 @@ const RecogFaces: React.FC = () => {
           <SearchIcon className={`opacity-70 ${searchQuery ? 'hidden' : ''}`} />
         </div>
       </label>
-      <div className='max-h-[70svh] overflow-scroll w-full pr-2'>
+      <div className='max-h-[70svh] overflow-scroll w-full p-1 pr-3'>
         {filteredGroups.map((group) => (
           <div key={group.name} className='mb-2 flex flex-col gap-2 w-full'>
             <div
@@ -276,7 +294,7 @@ const RecogFaces: React.FC = () => {
             {!group.isCollapsed && (
               <div
                 className='flex flex-wrap gap-2 items-start justify-start p-2 pt-4 border
-              border-gray-200 rounded-xl shadow-md '
+              border-gray-200 rounded-xl shadow-md max-w-96'
               >
                 {group.faces
                   .sort(
@@ -293,7 +311,9 @@ const RecogFaces: React.FC = () => {
                         onClick={() => {
                           setSelectedFace(face);
                           (
-                            document.getElementById(`modal-${index}`) as HTMLDialogElement
+                            document.getElementById(
+                              `modal-${index}`
+                            ) as HTMLDialogElement
                           ).showModal();
                         }}
                       />
@@ -315,13 +335,33 @@ const RecogFaces: React.FC = () => {
                                 alt='Selected Face'
                                 className='object-cover w-full h-full rounded-md mb-4'
                               />
-                              <p><strong>Tarih:</strong> {new Date(selectedFace.timestamp).toLocaleString()}</p>
-                              <p><strong>İsim:</strong> {selectedFace.label}</p>
-                              <p><strong>Benzerlik:</strong> {selectedFace.similarity}</p>
-                              <p><strong>Duygu:</strong> {selectedFace.emotion}</p>
-                              <p><strong>Cinsiyet:</strong> {selectedFace.gender == 1 ? "Erkek" : "Kadın"}</p>
-                              <p><strong>Yaş:</strong> {selectedFace.age}</p>
-                              <p><strong>Fotoğraf Adresi:</strong> {selectedFace.image_path}</p>
+                              <p>
+                                <strong>Tarih:</strong>{' '}
+                                {new Date(
+                                  selectedFace.timestamp
+                                ).toLocaleString()}
+                              </p>
+                              <p>
+                                <strong>İsim:</strong> {selectedFace.label}
+                              </p>
+                              <p>
+                                <strong>Benzerlik:</strong>{' '}
+                                {selectedFace.similarity}
+                              </p>
+                              <p>
+                                <strong>Duygu:</strong> {selectedFace.emotion}
+                              </p>
+                              <p>
+                                <strong>Cinsiyet:</strong>{' '}
+                                {selectedFace.gender == 1 ? 'Erkek' : 'Kadın'}
+                              </p>
+                              <p>
+                                <strong>Yaş:</strong> {selectedFace.age}
+                              </p>
+                              <p>
+                                <strong>Fotoğraf Adresi:</strong>{' '}
+                                {selectedFace.image_path}
+                              </p>
                             </div>
                           )}
                         </div>

@@ -1,3 +1,5 @@
+'use client';
+import { motion } from 'framer-motion';
 import AddPersonel from './add-personel';
 import PersonelList from './personel-list';
 

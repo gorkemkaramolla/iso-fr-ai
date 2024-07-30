@@ -65,7 +65,7 @@ const UsageChart: React.FC<UsageChartProps> = ({ cpuData, gpuData }) => {
     labels: cpuData.map((d) => d.name),
     datasets: [
       {
-        label: 'CPU Usage',
+        label: 'İşlemci Kullanımı',
         data: cpuData.map((d) => d.usage),
         borderColor: '#007bff',
         backgroundColor: function (context: { chart: any }) {
@@ -88,7 +88,7 @@ const UsageChart: React.FC<UsageChartProps> = ({ cpuData, gpuData }) => {
         borderWidth: 2,
       },
       {
-        label: 'GPU Usage',
+        label: 'Ekran Kartı Kullanımı',
         data: gpuData.map((d) => d.usage),
         borderColor: '#ff6347',
         backgroundColor: function (context: { chart: any }) {
@@ -138,7 +138,7 @@ const UsageChart: React.FC<UsageChartProps> = ({ cpuData, gpuData }) => {
         max: 100, // Set maximum value of y-axis to 100
         title: {
           display: true,
-          text: 'Usage (%)', // You can modify this title to fit your data context
+          text: 'Kullanım (%)', // You can modify this title to fit your data context
           color: '#666',
           font: {
             size: 14,

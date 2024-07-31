@@ -65,17 +65,79 @@ class Stream:
     def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, np.ndarray]:
         database: Dict[str, np.ndarray] = {}
         for filename in os.listdir(image_folder):
-            if filename.endswith((".jpg", ".png")):
+            if filename.endswith((".jpg", ".jpeg", ".png")):
                 name = os.path.splitext(filename)[0]
                 image_path = os.path.join(image_folder, filename)
                 image = cv2.imread(image_path)
-                bboxes, kpss = face_detector.detect(image, max_num=1, input_size=(640, 640))
+                bboxes, kpss = face_detector.autodetect(image, max_num=1)
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = face_recognizer.get(image, kps)
                     database[name] = embedding
         return database
+  
+    def update_database(self, old_name: str, new_name: str) -> None:
+        """
+        Update the database key from old_name to new_name.
 
+        :param old_name: The old key name in the database.
+        :param new_name: The new key name to update in the database.
+        """
+        # Check if the old_name exists in the database
+        if old_name in self.database:
+            # Update the key with the new_name
+            self.database[new_name] = self.database.pop(old_name)
+            print(f"Database key updated from {old_name} to {new_name}")
+        else:
+            print(f"No entry found for {old_name} in the database.")
+
+          # Define possible extensions
+        extensions = ['jpeg', 'jpg', 'png']
+        new_image_path = None
+
+        # Check for the existence of the image with any of the extensions
+        for ext in extensions:
+            path = os.path.join('./face-images', f"{new_name}.{ext}")
+            if os.path.exists(path):
+                new_image_path = path
+                break
+
+        if new_image_path:
+            if self.database.get(new_name) is None:
+                image = cv2.imread(new_image_path)
+                bboxes, kpss = self.face_detector.autodetect(image, max_num=1)
+                if len(bboxes) > 0:
+                    kps = kpss[0]
+                    embedding = self.face_recognizer.get(image, kps)
+                    self.database[new_name] = embedding
+                    print(f"Database updated with new embedding for {new_name}")
+                else:
+                    print("No face detected in the new image.")
+            else:
+                print(f"Database already contains an embedding for {new_name}")
+        else:
+            print(f"No image found for {new_name} with extensions {extensions}")
+
+    # def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, List[np.ndarray]]:
+    #     database: Dict[str, List[np.ndarray]] = {}
+        
+    #     for person_name in os.listdir(image_folder):
+    #         person_folder = os.path.join(image_folder, person_name)
+    #         if os.path.isdir(person_folder):
+    #             database[person_name] = []
+                
+    #             for filename in os.listdir(person_folder):
+    #                 if filename.lower().endswith((".jpg", ".jpeg", ".png")):
+    #                     image_path = os.path.join(person_folder, filename)
+    #                     image = cv2.imread(image_path)
+    #                     bboxes, kpss = face_detector.autodetect(image, max_num=1)
+                        
+    #                     if len(bboxes) > 0:
+    #                         kps = kpss[0]
+    #                         embedding = face_recognizer.get(image, kps)
+    #                         database[person_name].append(embedding)
+        
+    #     return database
     def _save_and_log_face(
         self, face_image: np.ndarray | None, label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool
     ) -> str:
@@ -140,7 +202,7 @@ class Stream:
         if frame is None or len(frame.shape) < 2:
             return [], [], [], [], [], []
 
-        bboxes, kpss = self.face_detector.detect(frame, max_num=49, input_size=(640, 640))
+        bboxes, kpss = self.face_detector.autodetect(frame, max_num=49)
         if len(bboxes) == 0:
             return [], [], [], [], [], []
 

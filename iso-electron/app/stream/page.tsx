@@ -274,7 +274,6 @@ const VideoStream: React.FC = () => {
                           }
                         >
                           <CameraStreamControl
-                            size={camera.size}
                             id={camera.id}
                             cameraUrls={cameraUrls}
                             selectedCamera={camera.selectedCamera}
@@ -295,7 +294,7 @@ const VideoStream: React.FC = () => {
                   })}
             </div>
           </div>
-          <div className={`col-span-3 fixed top-36 right-16`}>
+          <div className={`col-span-3 fixed top-40 right-16`}>
             <RecogFaces />
           </div>
         </div>

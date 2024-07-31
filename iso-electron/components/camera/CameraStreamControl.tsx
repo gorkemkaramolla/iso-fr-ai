@@ -1,14 +1,10 @@
-import React, { useEffect } from 'react';
-import CameraDropdown from './CameraDropdown';
+import React from 'react';
 import QualityDropdown from './QualityDropdown';
 import CameraControls from './CameraControls';
 import CameraStream from './CameraStream';
 import { Quality } from '@/utils/enums';
-import axios from 'axios';
-import api from '@/utils/axios_instance';
 import createApi from '@/utils/axios_instance';
 interface CameraStreamProps {
-  size: { width: number; height: number };
   id: number;
   selectedCamera: Camera | undefined;
   selectedQuality: keyof typeof Quality;
@@ -29,7 +25,6 @@ interface CameraStreamProps {
 }
 
 const CameraStreamControl: React.FC<CameraStreamProps> = ({
-  size,
   id,
   selectedCamera,
   selectedQuality,

@@ -1,0 +1,30 @@
+[
+  {
+    "_id": "66aa45f2651f79ba063aa602",
+    "name": "John",
+    "lastname": "Doe",
+    "email": "john.doe@example.com",
+    "image_path": "/path/to/your/image.jpg"
+  },
+  {
+    "_id": "66aa45f6651f79ba063aa603",
+    "name": "John",
+    "lastname": "Doe",
+    "email": "john.doe@example.com",
+    "image_path": "/path/to/your/image.jpg"
+  },
+  {
+    "_id": "66aa464f651f79ba063aa604",
+    "name": "John",
+    "lastname": "Doe",
+    "email": "john.doe@example.com",
+    "image_path": "./face-images/fatih.jpeg"
+  },
+  {
+    "_id": "66aa4653651f79ba063aa605",
+    "name": "John",
+    "lastname": "Doe",
+    "email": "john.doe@example.com",
+    "image_path": "./face-images/fatih.jpeg"
+  }
+]

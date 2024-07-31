@@ -231,7 +231,7 @@ const RecogFaces: React.FC = () => {
           <SearchIcon className={`opacity-70 ${searchQuery ? 'hidden' : ''}`} />
         </div>
       </label>
-      <div className='max-h-[70svh] overflow-scroll w-full p-1 pr-3'>
+      <div className='max-h-[60svh] overflow-scroll w-full p-1 pr-3'>
         {filteredGroups.map((group) => (
           <div key={group.name} className='mb-2 flex flex-col gap-2 w-full'>
             <div

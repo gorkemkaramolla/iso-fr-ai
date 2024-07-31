@@ -295,7 +295,7 @@ const VideoStream: React.FC = () => {
                   })}
             </div>
           </div>
-          <div className={`col-span-3 fixed top-20 right-16`}>
+          <div className={`col-span-3 fixed top-36 right-16`}>
             <RecogFaces />
           </div>
         </div>

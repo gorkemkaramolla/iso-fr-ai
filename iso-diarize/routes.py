@@ -177,6 +177,23 @@ def get_transcription_route(id):
         response = diarization_processor.get_transcription(id)
     return jsonify(response), 200 if "error" not in response else 500
 
+@audio_bp.route("/transcriptions/<id>", methods=["DELETE"])
+@jwt_required()
+def delete_transcription_route(id):
+    if id is None:
+        return jsonify({"message": "ID is required"}), 404
+    
+    try:
+        response = diarization_processor.delete_transcription(id)
+        if "error" in response:
+            return jsonify(response), 500
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+
+
+
 @audio_bp.route("/rename_segments/<transcription_id>", methods=["POST"])
 @jwt_required()
 def rename_segments_route(transcription_id):

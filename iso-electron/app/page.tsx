@@ -10,8 +10,8 @@ const Page: React.FC = () => {
     router.refresh();
   }, []);
   return (
-    <div className='min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
-      <div className='max-w-3xl mx-auto mt-8'>
+    <div className='h-[91vh] bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-3xl  mx-auto my-12'>
         <SearchComponent />
       </div>
       <div className='container mx-auto'>

@@ -9,7 +9,7 @@ import { GripVertical } from 'lucide-react';
 interface Props {}
 const Speech: React.FC<Props> = () => {
   return (
-    <div className='w-screen h-[91.5vh] z-0 flex flex-col justify-center'>
+    <div className='w-screen  z-0 flex flex-col justify-center'>
       <div className='flex h-full justify-between'>
         <PanelGroup
           autoSaveId='example'

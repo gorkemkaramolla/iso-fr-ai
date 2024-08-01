@@ -4,7 +4,15 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import createApi from '@/utils/axios_instance';
 import { z } from 'zod';
 import { ZodError } from 'zod';
-import { FaUser, FaEnvelope, FaLock, FaUserCog, FaPlus } from 'react-icons/fa';
+import {
+  FaUser,
+  FaEnvelope,
+  FaLock,
+  FaUserCog,
+  FaPlus,
+  FaTrash,
+  FaKey,
+} from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const userSchema = z.object({
@@ -88,6 +96,39 @@ export default function AdminPage() {
     setNewUser((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+
+    try {
+      const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
+      await api.delete(`/users/${userId}`, { withCredentials: true });
+      setMessage('User deleted successfully!');
+      fetchUsers();
+    } catch (error) {
+      setMessage('Error deleting user: ' + (error as Error).message);
+    }
+  };
+
+  const handleResetPassword = async (userId: string) => {
+    const newPassword = prompt('Enter a new password:');
+    if (!newPassword || newPassword.length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+
+    try {
+      const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
+      await api.put(
+        `/users/${userId}/reset_password`,
+        { password: newPassword },
+        { withCredentials: true }
+      );
+      setMessage('Password reset successfully!');
+    } catch (error) {
+      setMessage('Error resetting password: ' + (error as Error).message);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -144,10 +185,6 @@ export default function AdminPage() {
       variants={pageVariants}
       transition={pageTransition}
       className='min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-12 px-4 sm:px-6 lg:px-8'
-      style={{
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-      }}
     >
       <div className='max-w-7xl mx-auto'>
         <motion.h1
@@ -315,6 +352,12 @@ export default function AdminPage() {
                       >
                         Rol
                       </th>
+                      <th
+                        scope='col'
+                        className='px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider'
+                      >
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className='bg-white divide-y divide-gray-200'>
@@ -344,6 +387,24 @@ export default function AdminPage() {
                             >
                               {user.role}
                             </motion.span>
+                          </td>
+                          <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2'>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className='text-red-600 hover:text-red-800'
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              <FaTrash />
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className='text-yellow-600 hover:text-yellow-800'
+                              onClick={() => handleResetPassword(user.id)}
+                            >
+                              <FaKey />
+                            </motion.button>
                           </td>
                         </motion.tr>
                       ))}

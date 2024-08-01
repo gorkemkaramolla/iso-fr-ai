@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { InputText } from 'primereact/inputtext';
 import { Search, User, Mail, Briefcase } from 'lucide-react';
 import Image from 'next/image';
-import DeletePersonel from './delete-personel';
 import { Toast } from 'primereact/toast';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'; // Import ConfirmDialog
 
 interface Personel {
   _id: string;
@@ -73,7 +73,7 @@ export default function ShowPersonel() {
 
   const header = (
     <div className='flex justify-between items-center mb-4'>
-      <h1 className='text-xl font-bold'>Personnel List</h1>
+      <h1 className='text-xl font-bold'>Personel Listesi</h1>
       <div className='relative'>
         <Search
           className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'
@@ -105,20 +105,51 @@ export default function ShowPersonel() {
   };
 
   const actionBodyTemplate = (rowData: Personel) => {
+    const confirmDelete = () => {
+      confirmDialog({
+        message: 'Bu kişiyi silmek istediğinizden emin misiniz?',
+        header: 'Silme Onayı',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Evet',
+        rejectLabel: 'Hayır',
+        accept: async () => {
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/${rowData._id}`,
+              { method: 'DELETE' }
+            );
+            if (response.ok) {
+              toastRef.current?.show({
+                severity: 'success',
+                summary: 'Başarılı',
+                detail: 'Kişi başarıyla silindi.',
+              });
+              fetchPersonel(); // Refresh the list
+              router.refresh();
+            } else {
+              toastRef.current?.show({
+                severity: 'error',
+                summary: 'Hata',
+                detail: 'Kişi silinirken bir hata oluştu.',
+              });
+            }
+          } catch (error) {
+            console.error('Error deleting personel:', error);
+            toastRef.current?.show({
+              severity: 'error',
+              summary: 'Hata',
+              detail: 'Kişi silinirken bir hata oluştu.',
+            });
+          }
+        },
+      });
+    };
+
     return (
       <div className='flex items-center justify-center'>
-        <DeletePersonel
-          onDeleteSuccess={() => {
-            toastRef.current?.show({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Personnel deleted successfully.',
-            });
-            fetchPersonel(); // Refetch the personnel data
-            router.refresh(); // Refresh the router
-          }}
-          personelId={rowData._id}
-        />
+        <button onClick={confirmDelete} className='p-button p-button-danger'>
+          Sil
+        </button>
       </div>
     );
   };
@@ -152,13 +183,14 @@ export default function ShowPersonel() {
 
   return (
     <div className='mx-auto bg-white shadow-lg rounded-lg overflow-hidden'>
-      <Toast ref={toastRef} /> {/* Add Toast component here */}
+      <Toast ref={toastRef} />
+      <ConfirmDialog /> {/* Add ConfirmDialog component here */}
       <div className='p-6'>
         {header}
         <DataTable
           value={filteredPersonel}
           onRowClick={handleRowClick}
-          emptyMessage='No personnel found.'
+          emptyMessage='Kişi bulunamadı.'
           className='p-datatable-sm'
           stripedRows
           responsiveLayout='stack'
@@ -168,30 +200,30 @@ export default function ShowPersonel() {
         >
           <Column
             body={profileImageBodyTemplate}
-            header='Profile'
+            header='Profil'
             style={{ width: '220px', textAlign: 'center' }}
           />
           <Column
             body={nameBodyTemplate}
-            header='Name'
+            header='Adı'
             sortable
             sortField='name'
           />
           <Column
             body={emailBodyTemplate}
-            header='Email'
+            header='E-posta'
             sortable
             sortField='email'
           />
           <Column
             body={titleBodyTemplate}
-            header='Title'
+            header='Unvan'
             sortable
             sortField='title'
           />
           <Column
             body={actionBodyTemplate}
-            header='Actions'
+            header='İşlemler'
             style={{ width: '100px', textAlign: 'center' }}
           />
         </DataTable>

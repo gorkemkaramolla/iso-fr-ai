@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, ChangeEvent, useRef } from 'react';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -60,6 +61,7 @@ export default function AddPersonel() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // To lock form submission
   const toast = useRef<Toast>(null);
   const router = useRouter();
 
@@ -92,7 +94,11 @@ export default function AddPersonel() {
     setFormData((prevData) => ({ ...prevData, uploadedFile: file }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (isSubmitting) return; // Prevent multiple submissions
+
+    setIsSubmitting(true);
+
     try {
       formSchema.parse(formData);
       setErrors({});
@@ -106,22 +112,19 @@ export default function AddPersonel() {
         }
       });
 
-      fetch(apiUrl, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         body: fd,
-      })
-        .then(async (response) => {
-          const data = await response.json();
-          if (response.ok) {
-            showSuccess(data.message || 'Personel başarıyla eklendi.');
-            router.push(`/profiles/${data.data._id}`);
-          } else {
-            showError(data.message || 'Bir hata oluştu.');
-          }
-        })
-        .catch((error) => {
-          showError(error.message || 'Bir hata oluştu.');
-        });
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showSuccess(data.message || 'Personel başarıyla eklendi.');
+        router.push(`/profiles/${data.data._id}`);
+      } else {
+        showError(data.message || 'Bir hata oluştu.');
+      }
     } catch (e) {
       if (e instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -134,6 +137,8 @@ export default function AddPersonel() {
       } else {
         showError('An unexpected error occurred');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -142,7 +147,7 @@ export default function AddPersonel() {
     visible: {
       opacity: 1,
       transition: {
-        duration: 0.5,
+        duration: 0.05,
         when: 'beforeChildren',
         staggerChildren: 0.1,
       },
@@ -160,7 +165,7 @@ export default function AddPersonel() {
 
   return (
     <motion.div
-      className='  '
+      className=' '
       variants={containerVariants}
       initial='hidden'
       animate='visible'
@@ -168,22 +173,22 @@ export default function AddPersonel() {
       <Toast ref={toast} />
 
       <motion.div
-        className='max-w-4xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden'
+        className='max-w-5xl mx-auto bg-white rounded-lg shadow-xl overflow-hidden'
         variants={itemVariants}
       >
-        <div className='bg-indigo-600 text-white py-6 px-8'>
-          <h1 className='text-3xl font-bold'>Personel Ayarları</h1>
-          <p className='mt-2 text-indigo-200'>
+        <div className='bg-indigo-600 text-white py-4 px-6'>
+          <h1 className='text-2xl font-bold'>Personel Ayarları</h1>
+          <p className='mt-1 text-indigo-200'>
             Yeni personel bilgilerini ekleyin
           </p>
         </div>
 
-        <div className='p-8'>
-          <motion.div className='mb-8' variants={itemVariants}>
+        <div className='p-6'>
+          <motion.div className='mb-6' variants={itemVariants}>
             <FileUploader onFileUpload={handleFileUpload} />
           </motion.div>
 
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <motion.div variants={itemVariants}>
               <label
                 htmlFor='name'
@@ -195,7 +200,7 @@ export default function AddPersonel() {
                 id='name'
                 value={formData.name}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-md ${
+                className={`w-full p-2 border rounded-md ${
                   errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
@@ -215,7 +220,7 @@ export default function AddPersonel() {
                 id='lastname'
                 value={formData.lastname}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-md ${
+                className={`w-full p-2 border rounded-md ${
                   errors.lastname ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
@@ -235,7 +240,7 @@ export default function AddPersonel() {
                 id='title'
                 value={formData.title}
                 onChange={handleChange}
-                className='w-full p-3 border border-gray-300 rounded-md'
+                className='w-full p-2 border border-gray-300 rounded-md'
               />
             </motion.div>
 
@@ -250,7 +255,7 @@ export default function AddPersonel() {
                 id='email'
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-md ${
+                className={`w-full p-2 border rounded-md ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
@@ -270,7 +275,7 @@ export default function AddPersonel() {
                 id='phone'
                 value={formData.phone}
                 onChange={handleChange}
-                className='w-full p-3 border border-gray-300 rounded-md'
+                className='w-full p-2 border border-gray-300 rounded-md'
               />
             </motion.div>
 
@@ -285,7 +290,7 @@ export default function AddPersonel() {
                 id='gsm'
                 value={formData.gsm}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-md ${
+                className={`w-full p-2 border rounded-md ${
                   errors.gsm ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
@@ -307,7 +312,7 @@ export default function AddPersonel() {
                 onChange={handleChange}
                 type='date'
                 lang='tr'
-                className='w-full p-3 border border-gray-300 rounded-md'
+                className='w-full p-2 border border-gray-300 rounded-md'
               />
             </motion.div>
 
@@ -322,7 +327,7 @@ export default function AddPersonel() {
                 id='iso_phone'
                 value={formData.iso_phone}
                 onChange={handleChange}
-                className='w-full p-3 border border-gray-300 rounded-md'
+                className='w-full p-2 border border-gray-300 rounded-md'
               />
             </motion.div>
 
@@ -337,12 +342,12 @@ export default function AddPersonel() {
                 id='iso_phone2'
                 value={formData.iso_phone2}
                 onChange={handleChange}
-                className='w-full p-3 border border-gray-300 rounded-md'
+                className='w-full p-2 border border-gray-300 rounded-md'
               />
             </motion.div>
           </div>
 
-          <motion.div className='mt-6' variants={itemVariants}>
+          <motion.div className='mt-4' variants={itemVariants}>
             <label
               htmlFor='address'
               className='block text-sm font-medium text-gray-700 mb-1'
@@ -354,11 +359,11 @@ export default function AddPersonel() {
               value={formData.address}
               onChange={handleChange}
               rows={3}
-              className='w-full p-3 border border-gray-300 rounded-md'
+              className='w-full p-2 border border-gray-300 rounded-md'
             />
           </motion.div>
 
-          <motion.div className='mt-6' variants={itemVariants}>
+          <motion.div className='mt-4' variants={itemVariants}>
             <label
               htmlFor='resume'
               className='block text-sm font-medium text-gray-700 mb-1'
@@ -369,13 +374,13 @@ export default function AddPersonel() {
               id='resume'
               value={formData.resume}
               onChange={handleChange}
-              rows={5}
-              className='w-full p-3 border border-gray-300 rounded-md'
+              rows={4}
+              className='w-full p-2 border border-gray-300 rounded-md'
             />
           </motion.div>
 
           <motion.div
-            className='mt-8 flex justify-end'
+            className='mt-6 flex justify-end'
             variants={itemVariants}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -384,7 +389,8 @@ export default function AddPersonel() {
               onClick={handleSubmit}
               label='Yeni Personel Ekle'
               icon='pi pi-user-plus'
-              className='p-button-lg bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
+              className='p-button-md bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
+              disabled={isSubmitting} // Disable button while submitting
             />
           </motion.div>
         </div>

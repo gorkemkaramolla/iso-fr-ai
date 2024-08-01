@@ -58,25 +58,25 @@ services:
       - solr
       - fluentbit
 
-  face_recognition_service:
-    build: ./iso-fr
-    ports:
-      - "5002:5002"
-    env_file:
-      - .env
-    volumes:
-      - face_recognition_data:/app/data
-    networks:
-      - isoai-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        tag: face_recognition_service
-    depends_on:
-      - mongo
-      - solr
-      - fluentbit
+  # face_recognition_service:
+  #   build: ./iso-fr
+  #   ports:
+  #     - "5002:5002"
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - face_recognition_data:/app/data
+  #   networks:
+  #     - isoai-network
+  #   logging:
+  #     driver: "fluentd"
+  #     options:
+  #       fluentd-address: localhost:24224
+  #       tag: face_recognition_service
+  #   depends_on:
+  #     - mongo
+  #     - solr
+  #     - fluentbit
 
   speaker_diarization_service:
     build: ./iso-diarize
@@ -122,7 +122,7 @@ services:
 volumes:
   mongo_data:
   solr_data:
-  face_recognition_data:
+  # face_recognition_data:
   personel_images:
   audio_data:
 

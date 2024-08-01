@@ -1,11 +1,20 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import createApi from '@/utils/axios_instance';
-import { Mail, Phone, MapPin, Briefcase, Calendar, Globe } from 'lucide-react';
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Calendar,
+  Globe,
+  Upload,
+} from 'lucide-react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Toast } from 'primereact/toast';
+import { useRouter } from 'next/navigation';
 
 interface Props {
   params: {
@@ -13,12 +22,71 @@ interface Props {
   };
 }
 
+interface Personel {
+  _id: string;
+  name: string;
+  lastname: string;
+  title: string;
+  email: string;
+  phone: string;
+  gsm: string;
+  address: string;
+  birth_date: string;
+  iso_phone: string;
+  iso_phone2: string;
+  resume: string;
+}
+
+interface EnlargedImageProps {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}
+
+function EnlargedImage({ src, alt, onClose }: EnlargedImageProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className='fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50'
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.8 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.8 }}
+        className='relative'
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Image
+          src={src}
+          alt={alt}
+          width={600}
+          height={600}
+          className='max-w-full max-h-[90vh] object-contain'
+        />
+        <button
+          onClick={onClose}
+          className='absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2'
+        >
+          Close
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function Profile({ params: { profile_id } }: Props) {
   const [personel, setPersonel] = useState<Personel | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedPersonel, setEditedPersonel] = useState<Personel | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [enlargedImage, setEnlargedImage] = useState(false);
+  const [newImage, setNewImage] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const toast = useRef<Toast>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchPersonel = async () => {
@@ -38,6 +106,7 @@ export default function Profile({ params: { profile_id } }: Props) {
       }
     };
     fetchPersonel();
+    router.refresh();
   }, [profile_id]);
 
   const handleEdit = () => {
@@ -47,9 +116,32 @@ export default function Profile({ params: { profile_id } }: Props) {
   const handleSave = async () => {
     try {
       const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
-      await api.put(`/personel/${profile_id}`, editedPersonel);
+      const formData = new FormData();
+
+      // Append all personel data
+      Object.entries(editedPersonel || {}).forEach(([key, value]) => {
+        formData.append(key, value as string);
+      });
+
+      // Append the new image if it exists
+      if (newImage) {
+        formData.append('image', newImage);
+      }
+
+      await api
+        .put(`/personel/${profile_id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        })
+        .then(() => {
+          router.refresh();
+        });
+
       setPersonel(editedPersonel);
       setIsEditing(false);
+      setNewImage(null);
+      setPreviewImage(null);
       setError(null);
       toast.current?.show({
         severity: 'success',
@@ -72,13 +164,23 @@ export default function Profile({ params: { profile_id } }: Props) {
   const handleCancel = () => {
     setEditedPersonel(personel);
     setIsEditing(false);
+    setNewImage(null);
+    setPreviewImage(null);
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setEditedPersonel((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setNewImage(file);
+      setPreviewImage(URL.createObjectURL(file));
+    }
   };
 
   if (error)
@@ -92,13 +194,42 @@ export default function Profile({ params: { profile_id } }: Props) {
         <div className='bg-gradient-to-r from-blue-600 to-indigo-700 h-24'></div>
         <div className='relative px-6 -mt-12 pb-8'>
           <div className='flex flex-col items-center'>
-            <Image
-              alt={`${personel.name} ${personel.lastname}`}
-              src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${personel._id}`}
-              width={120}
-              height={120}
-              className='rounded-full border-4 object-cover border-white shadow-lg w-48 h-48'
-            />
+            {isEditing ? (
+              <div className='relative'>
+                <Image
+                  alt={`${personel.name} ${personel.lastname}`}
+                  src={
+                    previewImage ||
+                    `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${personel._id}`
+                  }
+                  width={120}
+                  height={120}
+                  className='rounded-full border-4 object-cover border-white shadow-lg w-48 h-48'
+                />
+                <label
+                  htmlFor='imageUpload'
+                  className='absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer'
+                >
+                  <Upload size={20} />
+                </label>
+                <input
+                  id='imageUpload'
+                  type='file'
+                  accept='image/*'
+                  onChange={handleImageChange}
+                  className='hidden'
+                />
+              </div>
+            ) : (
+              <Image
+                alt={`${personel.name} ${personel.lastname}`}
+                src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${personel._id}`}
+                width={120}
+                height={120}
+                className='rounded-full border-4 object-cover border-white shadow-lg w-48 h-48 cursor-pointer'
+                onClick={() => setEnlargedImage(true)}
+              />
+            )}
             <motion.div
               className='mt-4 text-center'
               animate={
@@ -258,6 +389,15 @@ export default function Profile({ params: { profile_id } }: Props) {
           </div>
         </div>
       </div>
+      <AnimatePresence>
+        {enlargedImage && (
+          <EnlargedImage
+            src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${personel._id}`}
+            alt={`${personel.name} ${personel.lastname}`}
+            onClose={() => setEnlargedImage(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -276,7 +416,6 @@ function InfoSection({
     </div>
   );
 }
-
 function InfoItem({
   icon,
   label,
@@ -291,7 +430,7 @@ function InfoItem({
   isEditing: boolean;
   name: string;
   value: string | undefined;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   href?: string;
 }) {
   return (

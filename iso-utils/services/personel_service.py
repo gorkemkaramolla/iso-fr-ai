@@ -14,23 +14,61 @@ class PersonelService:
         self.db = db
         self.solr_searcher = SolrSearcher(db)
         
-    def update_personel(self, personel_id, data):
-            try:
-                # Remove '_id' if it exists in the update data
-                update_data = {k: v for k, v in data.items() if k != '_id' and v is not None}
-                result = self.db["Personel"].update_one(
-                    {"_id": ObjectId(personel_id)},
-                    {"$set": update_data}
-                )
-                if result.matched_count > 0:
-                    self.logger.info(f"Updated personel with id {personel_id}")
-                    return {"status": "success", "message": "Personnel updated successfully"}, 200
+    def update_personel(self, personel_id, data, file=None):
+        os.makedirs(self.IMAGE_DIRECTORY, exist_ok=True)  # Ensure directory exists
+        try:
+            # Prepare the update data, excluding the '_id'
+            update_data = {k: v for k, v in data.items() if k != '_id' and v is not None}
+
+            # If a new image file is provided, save it
+            if file and file.filename.endswith(('.png', '.jpg', '.jpeg')):
+                try:
+                    filename = f"{personel_id}{os.path.splitext(file.filename)[-1]}"
+                    file_path = os.path.join(self.IMAGE_DIRECTORY, filename)
+                    file.save(file_path)
+                    self.logger.info(f"Saved file to {file_path}")
+
+                    # Update the file path in the database
+                    update_data['file_path'] = file_path
+
+                except Exception as e:
+                    self.logger.error(f"Error saving file: {e}")
+                    return {"status": "error", "message": str(e)}, 500
+
+            # Perform the update operation in the database
+            result = self.db["Personel"].update_one(
+                {"_id": ObjectId(personel_id)},
+                {"$set": update_data}
+            )
+
+            if result.matched_count > 0:
+                self.logger.info(f"Updated personel with id {personel_id}")
+
+                # Retrieve the full updated record to send to Solr
+                updated_personel = self.db["Personel"].find_one({"_id": ObjectId(personel_id)})
+
+                if updated_personel:
+                    updated_personel['_id'] = str(updated_personel['_id'])  # Convert ObjectId to string
+                    solr_response = self.solr_searcher.update_record_in_solr(updated_personel)
+
+                    if solr_response['status'] == 'success':
+                        return {"status": "success", "message": "Personnel updated successfully in both MongoDB and Solr"}, 200
+                    else:
+                        self.logger.error("Error updating data in Solr")
+                        return {"status": "error", "message": "Error updating data in Solr", "solr_response": solr_response}, 500
                 else:
-                    self.logger.error(f"Personel with id {personel_id} not found")
-                    return {"status": "error", "message": "Personel not found"}, 404
-            except Exception as e:
-                self.logger.error(f"Error updating personel: {e}")
-                return {"status": "error", "message": str(e)}, 500
+                    self.logger.error(f"Personel with id {personel_id} could not be retrieved after update")
+                    return {"status": "error", "message": "Personnel could not be retrieved after update"}, 500
+
+            else:
+                self.logger.error(f"Personel with id {personel_id} not found")
+                return {"status": "error", "message": "Personel not found"}, 404
+
+        except Exception as e:
+            self.logger.error(f"Error updating personel: {e}")
+            return {"status": "error", "message": str(e)}, 500
+
+
     def add_personel(self, data, file):
         os.makedirs(self.IMAGE_DIRECTORY, exist_ok=True)
         try:

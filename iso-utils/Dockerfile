@@ -19,5 +19,5 @@ RUN apt-get update && \
 # Make port 5004 available to the world outside this container
 EXPOSE 5004
 
-# Run app.py when the container launches
-CMD ["python", "app.py"]
+# Run Gunicorn when the container launches
+CMD ["gunicorn", "--bind", "0.0.0.0:5004", "app:app"]

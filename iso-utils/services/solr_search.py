@@ -5,12 +5,14 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from pymongo import MongoClient
 import uuid
+from logger import configure_logging
 class SolrSearcher:
     def __init__(self, mongo_db, solr_url="http://solr:8983/solr/isoai"):
         self.solr_logs_url="http://solr:8983/solr/logs"
         self.mongo_db = mongo_db
         self.mongo_collection = self.mongo_db["Personel"]
         self.solr_url = solr_url
+        self.logger = configure_logging()
         logging.info(f"Initializing Solr with URL: {self.solr_url}")
 
     def check_connection(self):
@@ -161,7 +163,54 @@ class SolrSearcher:
             return {"status": "error", "message": str(e)}
         
         
-        
+    def update_record_in_solr(self, data):
+        try:
+            # Ensure that the data contains the correct 'id' field used by Solr to identify documents
+            if 'id' not in data:
+                if '_id' in data:
+                    data['id'] = data['_id']
+                else:
+                    raise ValueError("Missing 'id' or '_id' in data; this is required to update the document in Solr.")
+
+            # Convert the data to a JSON string
+            json_data = json.dumps([data])  # Solr expects a list of documents
+
+            # Construct the Solr update URL
+            update_url = f"{self.solr_url}/update/json?commit=true"
+
+            # Debug the URL and payload
+            self.logger.info(f"Updating Solr at URL: {update_url} with data: {json_data}")
+
+            # Prepare the request
+            request = Request(update_url, data=json_data.encode('utf-8'), headers={'Content-Type': 'application/json'}, method='POST')
+
+            # Perform the request
+            with urlopen(request, timeout=10) as connection:
+                response = connection.read().decode('utf-8')
+
+            # Check response
+            response_data = json.loads(response)
+            if response_data.get('responseHeader', {}).get('status', 0) == 0:
+                return {"status": "success"}
+            else:
+                error_message = response_data.get('error', {}).get('msg', 'Unknown error')
+                self.logger.error(f"Error updating record in Solr: {error_message}")
+                return {"status": "error", "message": error_message}
+
+        except ValueError as e:
+            self.logger.error(f"ValueError: {str(e)}")
+            return {"status": "error", "message": str(e)}
+        except HTTPError as e:
+            self.logger.error(f"HTTPError during Solr update: {e.code} {e.reason}")
+            return {"status": "error", "message": f"HTTPError: {e.reason}", "details": e.read().decode()}
+        except URLError as e:
+            self.logger.error(f"URLError during Solr update: {e.reason}")
+            return {"status": "error", "message": f"URLError: {e.reason}"}
+        except Exception as e:
+            self.logger.exception("Exception during Solr update")
+            return {"status": "error", "message": str(e)}
+
+                
     def search_logs(self, query=None):
         try:
             # Prepare query

@@ -32,46 +32,6 @@ os.makedirs("logs", exist_ok=True)
 
 
 if __name__ == "__main__":
-    import requests
-
-    # URL of the API endpoint
-    url = "http://localhost:5004/personel/"
-
-    # Data to be sent in the POST request
-    data = {
-        "name": "John",
-        "lastname": "Doe",
-        "email": "john.doe@example.com",
-        "image_path": "./face-images/fatih.jpeg"  # Path to the image on the server
-    }
-
-    # File to be uploaded (make sure the key matches 'uploadedFile')
-    files = {
-        "uploadedFile": open("./face-images/fatih.jpeg", "rb")
-    }
-
-    # Sending the POST request
-    response = requests.post(url, data=data, files=files)
-    # Checking the response
-    if response.status_code == 200:
-        print("Success:", response.json())
-    else:
-        print("Error:", response.json())
-
-    def get_personel_data():
-        url = "http://localhost:5004/personel"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()  # Raise an exception for HTTP errors
-            return response.json()  # Return the JSON response
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred: {e}")
-            return None
-
-  
-
-    data = get_personel_data()
-    print(data)    
-    # socketio.init_app(app)
-    # # socketio.run(app, debug=True, port=5004, host="0.0.0.0")
-    # socketio.run(app, debug=True, port=5000, host="192.168.101.81")
+    socketio.init_app(app)
+    # socketio.run(app, debug=True, port=5004, host="0.0.0.0")
+    socketio.run(app, debug=True, port=5000, host="192.168.101.81")

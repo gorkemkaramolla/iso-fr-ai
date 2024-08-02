@@ -79,7 +79,10 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
 
-  const stopStream = () => {
+  const stopStream = async () => {
+    // const response = await fetch(`${BASE_URL}/stream/stop/${id}`, {
+    //   method: "POST",
+    // });
     setCameraStreams(
       cameraStreams.map((camera) =>
         camera.id === id
@@ -96,8 +99,10 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     );
   };
 
-  const startStream = () => {
-   
+  const startStream = async () => {
+    // const response = await fetch(`${BASE_URL}/stream/start/${id}`, {
+    //   method: "POST",
+    // });
     setCameraStreams(
       cameraStreams.map((camera) =>
         camera.id === id
@@ -115,8 +120,22 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
       )
     );
   };
-  const removeStream = () => {
+  const removeStream = async () => {
     // stopStream();
+  //  const response = await fetch(`${BASE_URL}/stream/stop/${id}`, {
+  //     method: "POST",
+  //   });
+
+    if (response.ok && !isLocalCamera ) {
+      console.log("Stream Stopped");
+      
+      toast.current?.show({
+        severity: "warn",
+        summary: "Kamera Yayını Durduruldu",
+        detail: `Kamera yayını durduruldu.`,
+        life: 3000,
+      }); 
+    }
 
     setAvailableIds((prevIds) => [...prevIds, id].sort((a, b) => a - b));
 

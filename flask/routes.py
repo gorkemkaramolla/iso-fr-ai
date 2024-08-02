@@ -234,8 +234,6 @@ def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
     camera = request.args.get("camera")
     quality = request.args.get("quality")
-    # print("Camera: ", camera)
-    # print("Quality: ", quality)
     return Response(
         stream_instance.recog_face_ip_cam(
             stream_id,
@@ -245,6 +243,27 @@ def stream(stream_id):
         ),
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
+
+@camera_bp.route("/stream/start/<int:stream_id>", methods=["POST"])
+def start_stream(stream_id):
+    is_recording = request.args.get("is_recording") == "true"
+    camera = request.args.get("camera")
+    quality = request.args.get("quality")
+
+    # Start the stream if it's not already running
+    stream_instance.start_stream(
+        stream_id,
+        camera=camera,
+        quality=quality,
+        is_recording=is_recording
+    )
+
+    return jsonify({"message": "Stream started successfully"}), 200
+
+@camera_bp.route("/stream/stop/<int:stream_id>", methods=["POST"])
+def stop_stream(stream_id):
+    stream_instance.stop_stream(stream_id)
+    return jsonify({"message": "Stream stopped successfully"}), 200
 
 # ****************************************************************************
 # Local CAM Stream

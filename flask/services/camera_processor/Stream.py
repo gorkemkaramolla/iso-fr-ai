@@ -61,7 +61,7 @@ class Stream:
 
         self.stop_flag = threading.Event()  # Initialize the stop flag
         self.video_writer = None
-    
+        self.active_streams = {}  # Dictionary to track active streams by ID
     def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, np.ndarray]:
         database: Dict[str, np.ndarray] = {}
         for filename in os.listdir(image_folder):
@@ -320,21 +320,24 @@ class Stream:
         processed_image = base64.b64encode(buffer).decode('utf-8')
         return 'data:image/jpeg;base64,' + processed_image
     
+    def start_stream(self, stream_id, camera, quality="Quality", is_recording=False):
+   
 
-    def stop_stream(self) -> None:
+        self.stop_flag.clear()
+        self.stop_flag = threading.Event()  
+        logging.info(f"Starting stream: {stream_id} / camera: {camera}")
+     
+
+     
+
+    def stop_stream(self, stream_id: int) -> None:
         """
-        Stops the ongoing video stream by setting the stop flag.
+        Stops the ongoing video stream with the given ID by setting the stop flag.
         Releases video capture and writer resources if they are in use.
         """
-        # Set the stop flag
+    
         self.stop_flag.set()
-
-        # Release any resources associated with the stream
-        if self.video_writer:
-            self.video_writer.release()
-            self.video_writer = None
-            logging.info("Video writer released")
-        else:
-            logging.info("No video writer to release")
         
-        logging.info("Stream stopped successfully")
+        logging.info(f"Stream with ID {stream_id} stopped successfully")
+
+    

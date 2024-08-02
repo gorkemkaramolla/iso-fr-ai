@@ -79,7 +79,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
         socket.current = null;
         // Show success toast
         toast.current?.show({
-          severity: 'success',
+          severity: 'warn',
           summary: 'Success',
           detail: 'Camera stream stopped successfully',
           life: 3000,
@@ -107,7 +107,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
 
         // Show success toast
         toast.current?.show({
-          severity: 'success',
+          severity: 'warn',
           summary: 'Success',
           detail: 'Camera stream stopped successfully',
           life: 3000,
@@ -116,14 +116,14 @@ const CameraStream: React.FC<CameraStreamProps> = ({
 
     }
   }, [isClose, isLocalCamera, id, isPlaying]);
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      console.log("StreamSRC: " + streamSrc);
-    }, 1000);
+  // useEffect(() => {
+  //   const intervalId = setInterval(() => {
+  //     console.log("StreamSRC: " + streamSrc);
+  //   }, 1000);
 
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
-  }, [streamSrc]);
+  //   // Cleanup interval on component unmount
+  //   return () => clearInterval(intervalId);
+  // }, [streamSrc]);
 
   return (
     <div>

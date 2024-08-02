@@ -160,7 +160,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
 
       // Show success toast
       toast.current?.show({
-        severity: 'success',
+        severity: 'info',
         summary: 'Yeni Yüz Tanımlandı',
         detail: `"${newFace.label}" adlı yüz tanımlandı.`,
         life: 4000,
@@ -243,7 +243,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
       <div className='flex items-center justify-between'>
         <h1 className='text-3xl font-bold mb-2'>Tanınan Yüzler</h1>
         <FaTable
-          className='ml-2 pb-1 text-[rgb(80,74,237,0.8)] cursor-pointer'
+          className='ml-2 pb-1 text-[rgb(80,74,237)] cursor-pointer'
           size={32}
           onClick={() => router.push('/recog')}
           title='Tablo Görünümü'

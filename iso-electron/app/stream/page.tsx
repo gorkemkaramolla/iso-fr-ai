@@ -96,6 +96,7 @@ const VideoStream: React.FC = () => {
         isPlaying: true,
         isLoading: true,
         isRecording: false,
+        isClose: false,
         position: { x: 0, y: 0 },
         size: { width: '100%', height: '100%' },
         isLocalCamera: isLocalCamera, // Add a flag for local camera
@@ -291,6 +292,7 @@ const VideoStream: React.FC = () => {
                             isPlaying={camera.isPlaying}
                             isLoading={camera.isLoading}
                             isRecording={camera.isRecording}
+                            isClose={camera.isClose}
                             streamSrc={camera.streamSrc}
                             availableIds={availableIds}
                             setAvailableIds={setAvailableIds}

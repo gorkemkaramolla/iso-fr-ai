@@ -118,26 +118,6 @@ class Stream:
         else:
             print(f"No image found for {new_name} with extensions {extensions}")
 
-    # def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, List[np.ndarray]]:
-    #     database: Dict[str, List[np.ndarray]] = {}
-        
-    #     for person_name in os.listdir(image_folder):
-    #         person_folder = os.path.join(image_folder, person_name)
-    #         if os.path.isdir(person_folder):
-    #             database[person_name] = []
-                
-    #             for filename in os.listdir(person_folder):
-    #                 if filename.lower().endswith((".jpg", ".jpeg", ".png")):
-    #                     image_path = os.path.join(person_folder, filename)
-    #                     image = cv2.imread(image_path)
-    #                     bboxes, kpss = face_detector.autodetect(image, max_num=1)
-                        
-    #                     if len(bboxes) > 0:
-    #                         kps = kpss[0]
-    #                         embedding = face_recognizer.get(image, kps)
-    #                         database[person_name].append(embedding)
-        
-    #     return database
     def _save_and_log_face(
         self, face_image: np.ndarray | None, label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool
     ) -> str:
@@ -249,7 +229,7 @@ class Stream:
         return bboxes, labels, sims, emotions, genders, ages
     
     def recog_face_ip_cam(self, stream_id, camera, quality="Quality", is_recording=False):
-        self.stop_flag.clear()  # Clear the stop flag at the beginning
+    
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
        
         cap = cv2.VideoCapture(camera + quality)
@@ -339,3 +319,22 @@ class Stream:
         _, buffer = cv2.imencode(".jpg", frame)
         processed_image = base64.b64encode(buffer).decode('utf-8')
         return 'data:image/jpeg;base64,' + processed_image
+    
+
+    def stop_stream(self) -> None:
+        """
+        Stops the ongoing video stream by setting the stop flag.
+        Releases video capture and writer resources if they are in use.
+        """
+        # Set the stop flag
+        self.stop_flag.set()
+
+        # Release any resources associated with the stream
+        if self.video_writer:
+            self.video_writer.release()
+            self.video_writer = None
+            logging.info("Video writer released")
+        else:
+            logging.info("No video writer to release")
+        
+        logging.info("Stream stopped successfully")

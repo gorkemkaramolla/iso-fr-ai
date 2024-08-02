@@ -26,6 +26,7 @@ interface CameraStream {
   isPlaying: boolean;
   isLoading: boolean;
   isRecording: boolean;
+  isClose: boolean;
   position?: { x: number; y: number };
   size?: { width: string | number; height: string | number };
   isLocalCamera?: boolean;

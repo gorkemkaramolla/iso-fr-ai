@@ -69,7 +69,7 @@ class Stream:
                 name = os.path.splitext(filename)[0]
                 image_path = os.path.join(image_folder, filename)
                 image = cv2.imread(image_path)
-                bboxes, kpss = face_detector.autodetect(image, max_num=1)
+                bboxes, kpss = face_detector.detect(image, max_num=1, input_size=(640,640))
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = face_recognizer.get(image, kps)
@@ -105,7 +105,7 @@ class Stream:
         if new_image_path:
             if self.database.get(new_name) is None:
                 image = cv2.imread(new_image_path)
-                bboxes, kpss = self.face_detector.autodetect(image, max_num=1)
+                bboxes, kpss = self.face_detector.detect(image, max_num=1, input_size=(640,640))
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = self.face_recognizer.get(image, kps)
@@ -202,7 +202,7 @@ class Stream:
         if frame is None or len(frame.shape) < 2:
             return [], [], [], [], [], []
 
-        bboxes, kpss = self.face_detector.autodetect(frame, max_num=49)
+        bboxes, kpss = self.face_detector.detect(frame, max_num=49, input_size=(640, 640))
         if len(bboxes) == 0:
             return [], [], [], [], [], []
 

@@ -1,57 +1,105 @@
+'use client';
 import Link from 'next/link';
-import React from 'react';
+import React, { useRef } from 'react';
 import Image from 'next/image';
 import { Button } from 'primereact/button';
-import { Settings } from 'lucide-react';
-import { deleteCookies } from '@/library/auth/is_authenticated';
-import createApi from '@/utils/axios_instance';
-
+import { AudioLines, Contact, ScanFace, User, Users } from 'lucide-react';
+import { Menu } from 'primereact/menu';
+import { useRouter } from 'next/navigation';
 interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
+  const router = useRouter();
+  const menu = useRef<Menu>(null);
+  const profileMenu = useRef<Menu>(null);
+
+  const menuItems = [
+    {
+      label: 'Konuşma Sentezi',
+      icon: () => {
+        return <AudioLines className='w-5 mr-1.5 -ml-0.5' />;
+      },
+      command: () => {
+        router.push('/speech');
+      },
+    },
+    {
+      label: 'Yüz Tanıma',
+      icon: () => {
+        return <ScanFace className='w-5 mr-1.5 -ml-0.5' />;
+      },
+      command: () => {
+        router.push('/stream');
+      },
+    },
+    {
+      label: 'Tanınan Yüzler',
+      icon: () => {
+        return <Contact className='w-5 mr-1.5 -ml-0.5' />;
+      },
+      command: () => {
+        router.push('/recog');
+      },
+    },
+    {
+      label: 'Video Kayıtları',
+      icon: 'pi pi-video',
+      command: () => {
+        router.push('/records');
+      },
+    },
+    {
+      label: 'İzlence',
+      icon: 'pi pi-chart-bar',
+      command: () => {
+        router.push('/monitoring');
+      },
+    },
+  ];
+
+  const profileItems = [
+    {
+      label: 'Yeni Kullanıcı Ekle',
+      icon: 'pi pi-user-plus',
+      command: () => {
+        router.push('/admin');
+      },
+    },
+    {
+      label: 'Personel Ekle',
+      icon: () => {
+        return <Users className='w-4 mr-1.5' />;
+      },
+      command: () => {
+        router.push('/settings/personel_settings');
+      },
+    },
+    {
+      label: 'Kamera Ayarları',
+      icon: 'pi pi-camera',
+      command: () => {
+        router.push('/settings/camera_settings');
+      },
+    },
+    {
+      label: 'Çıkış Yap',
+      icon: 'pi pi-sign-out',
+      command: () => {
+        router.push('/api/logout');
+      },
+    },
+  ];
+
   return (
     <div style={{ zIndex: 100 }} className='sticky top-0 bg-white w-full '>
       <nav className='navbar h-[7vh] w-full mx-auto container z-40 flex justify-between items-center bg-base-100'>
         <div className='flex items-center space-x-4'>
-          <div className='dropdown'>
-            <div
-              tabIndex={0}
-              role='button'
-              className='btn btn-ghost btn-circle'
-            >
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                className='h-5 w-5'
-                fill='none'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth='2'
-                  d='M4 6h16M4 12h16M4 18h7'
-                />
-              </svg>
-            </div>
-            <ul
-              tabIndex={0}
-              className='menu menu-sm dropdown-content mt-3 z-40 p-2 shadow bg-base-100 rounded-box w-52'
-            >
-              <li>
-                <Link href={'/'}>Ana Sayfa</Link>
-              </li>
-              <li>
-                <Link href={'/speech'}>Ses kayıt</Link>
-              </li>
-              <li>
-                <Link href={'/stream'}>Kameralar</Link>
-              </li>
-              <li>
-                <Link href={'/monitoring'}>İzlence</Link>
-              </li>
-            </ul>
-          </div>
+          <Button
+            icon='pi pi-bars'
+            className='p-button-rounded p-button-text [&>span]:font-extrabold [&>span]:text-2xl text-black'
+            onClick={(event) => menu?.current?.toggle(event)}
+          />
+          <Menu model={menuItems} popup ref={menu} />
         </div>
 
         <div className='flex justify-center items-center flex-1'>
@@ -66,75 +114,17 @@ const NavigationBar: React.FC<Props> = () => {
           </Link>
         </div>
 
-        <div className='flex items-center space-x-4'>
-          <div className='dropdown dropdown-end'>
-            <div
-              tabIndex={1}
-              role='button'
-              className='btn btn-ghost btn-circle'
-            >
-              <button className='btn btn-ghost btn-circle'>
-                <div className='indicator'>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    className='h-5 w-5'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth='2'
-                      d='M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'
-                    />
-                  </svg>
-                  <span className='badge badge-xs badge-primary indicator-item'></span>
-                </div>
-              </button>
-            </div>
-            <ul
-              tabIndex={0}
-              className='menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52'
-            >
-              Bildirim
-            </ul>
+        <Button
+          tabIndex={0}
+          role='button'
+          className='btn btn-ghost btn-circle avatar'
+          onClick={(event) => profileMenu.current?.toggle(event)}
+        >
+          <div className='w-8'>
+            <User className='w-8 h-8' />
           </div>
-
-          <div className='dropdown dropdown-end'>
-            <div
-              tabIndex={0}
-              role='button'
-              className='btn btn-ghost btn-circle avatar'
-            >
-              <div className='w-10 rounded-full'>
-                <Image
-                  width={400}
-                  height={400}
-                  alt='User Avatar'
-                  src='/iso_logo.jpg'
-                />
-              </div>
-            </div>
-            <ul
-              tabIndex={0}
-              className='menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow'
-            >
-              <li>
-                <Link href={'/admin'} className='justify-between'>
-                  Profil
-                  <span className='badge'>Yeni</span>
-                </Link>
-              </li>
-              <li>
-                <Link href={'/settings'}>Ayarlar</Link>
-              </li>
-              <li>
-                <Link href={'/api/logout'}>Çıkış Yap</Link>
-              </li>
-            </ul>
-          </div>
-        </div>
+        </Button>
+        <Menu model={profileItems} popup ref={profileMenu} />
       </nav>
     </div>
   );

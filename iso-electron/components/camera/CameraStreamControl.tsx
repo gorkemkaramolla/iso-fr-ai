@@ -3,7 +3,7 @@ import QualityDropdown from './QualityDropdown';
 import CameraControls from './CameraControls';
 import CameraStream from './CameraStream';
 import { Quality } from '@/utils/enums';
-import createApi from '@/utils/axios_instance';
+import { Toast } from 'primereact/toast';
 interface CameraStreamProps {
   id: number;
   selectedCamera: Camera | undefined;
@@ -17,11 +17,11 @@ interface CameraStreamProps {
   stopStream?: (id: number) => void;
   startStream?: (id: number) => void;
   onRemoveStream?: (id: number) => void;
-  cameraUrls: Camera[];
   addCameraStream?: () => void;
   cameraStreams: CameraStream[];
   setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;
   isLocalCamera?: boolean;
+  toast: React.RefObject<Toast>;
 }
 
 const CameraStreamControl: React.FC<CameraStreamProps> = ({
@@ -36,7 +36,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   isLocalCamera,
   setCameraStreams,
   setAvailableIds,
-  cameraUrls,
+  toast,
 }) => {
   const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
   const startRecording = () => {
@@ -74,23 +74,63 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
       )
     );
   };
-  const stopStream = () => {
-    const api = createApi(process.env.NEXT_PUBLIC_FLASK_URL);
 
-    api.get('camera/stop', { params: { id: id } });
-    setCameraStreams(
-      cameraStreams.map((camera) =>
-        camera.id === id
-          ? {
-              ...camera,
-              streamSrc: '',
-              isLoading: false,
-              isPlaying: false,
-              isRecording: false,
-            }
-          : camera
-      )
-    );
+  const stopStream = async () => {
+    const url = `${process.env.NEXT_PUBLIC_FLASK_URL}/camera/stop?id=${id}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include', // Include credentials if needed
+        headers: {
+          'X-CSRF-TOKEN': getCsrfTokenFromCookies(),
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      setCameraStreams(
+        cameraStreams.map((camera) =>
+          camera.id === id
+            ? {
+                ...camera,
+                streamSrc: '',
+                isLoading: false,
+                isPlaying: false,
+                isRecording: false,
+              }
+            : camera
+        )
+      );
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Camera stream stopped successfully',
+        life: 3000,
+      });
+    } catch (error) {
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to stop camera stream' + error,
+        life: 3000,
+      });
+      console.error('Error stopping stream:', error);
+    }
+  };
+
+  const getCsrfTokenFromCookies = () => {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf_token') {
+        return value;
+      }
+    }
+    return '';
   };
 
   const startStream = () => {

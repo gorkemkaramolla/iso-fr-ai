@@ -6,7 +6,7 @@ import logging
 import shutil
 import bson
 import bson.json_util
-from flask import Flask, Blueprint, request, jsonify, Response, send_file
+from flask import Flask, Blueprint, request, jsonify, Response, send_file, send_from_directory, abort
 import flask.json.provider as provider
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from services.camera_processor.Stream import Stream
@@ -65,18 +65,6 @@ auth_bp = Blueprint("auth_bp", __name__)
 elastic_search_bp = Blueprint("elastic_search_bp", __name__)
 users_bp = Blueprint("users_bp", __name__)
 
-
-# ####################################################### Setup Blueprint
-# @elastic_search_bp.route("/search", methods=["GET"])
-# def search():
-#     query = request.args.get("query")
-#     results = searcher.search(query)
-#     if isinstance(results, tuple):
-#         return jsonify({"error": results[0]["error"]}), results[1]
-#     return jsonify(results), 200
-
-
-# app.register_blueprint(elastic_search_bp, url_prefix="/api")
 
 
 #########################################################
@@ -159,6 +147,29 @@ def login():
 app.register_blueprint(auth_bp)
 
 #########################CAMERA ROUTES###############################################
+
+# ####################################################### Video Records
+
+
+VIDEO_FOLDER = './records'
+
+@camera_bp.route('/videos/<filename>')
+def get_video(filename):
+    
+    file_path = os.path.join(VIDEO_FOLDER, filename)
+
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=False)
+    else:
+        abort(404, description="Resource not found")
+
+
+@camera_bp.route('/videos')
+def list_videos():
+    files = os.listdir(VIDEO_FOLDER)
+    videos = [{'filename': file, 'title': file} for file in files if file.endswith(('.mp4'))]
+    return jsonify(videos)
+
 
 
 @camera_bp.route("/camera-url", methods=["POST"])

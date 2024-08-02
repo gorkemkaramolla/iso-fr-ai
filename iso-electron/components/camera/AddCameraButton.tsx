@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import { PlusIcon, XIcon } from 'lucide-react';
-import axios from 'axios';
-import api from '@/utils/axios_instance';
-import toast from 'react-hot-toast';
-import createApi from '@/utils/axios_instance';
+import { Toast } from 'primereact/toast';
 
 interface AddCameraButtonProps {
   showAddCamera: boolean;
   setShowAddCamera: React.Dispatch<React.SetStateAction<boolean>>;
   disabled: boolean;
+  toast: React.RefObject<Toast>;
 }
 
 const AddCameraButton: React.FC<AddCameraButtonProps> = ({
   disabled,
   showAddCamera,
   setShowAddCamera,
+  toast,
 }) => {
   const [newCameraLabel, setNewCameraLabel] = useState('');
   const [newCameraUrl, setNewCameraUrl] = useState('');
@@ -38,7 +37,12 @@ const AddCameraButton: React.FC<AddCameraButtonProps> = ({
         }),
       });
       // alert('Kamera URL eklendi 🎉');
-      toast.success('Kamera URL eklendi 🎉', { duration: 2000 });
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Yeni Kamera URL eklendi 🎉',
+        life: 2000,
+      });
       setNewCameraLabel('');
       setNewCameraUrl('');
       setShowAddCamera(false); // Hide the section after adding a camera

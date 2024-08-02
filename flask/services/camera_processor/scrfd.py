@@ -6,7 +6,7 @@ import os
 import os.path as osp
 import cv2
 import sys
-
+import traceback
 
 def softmax(z):
     assert len(z.shape) == 2
@@ -77,7 +77,7 @@ class SCRFD:
             assert self.model_file is not None
             assert osp.exists(self.model_file)
             self.session = onnxruntime.InferenceSession(
-                self.model_file, providers=["CUDAExecutionProvider"]
+                self.model_file, providers=["CoreMLExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"]
             )
         self.center_cache = {}
         self.nms_thresh = 0.4
@@ -130,6 +130,8 @@ class SCRFD:
     def prepare(self, ctx_id, **kwargs):
         if ctx_id < 0:
             self.session.set_providers(["CPUExecutionProvider"])
+        else:
+            self.session.set_providers(["CoreMLExecutionProvider", "CUDAExecutionProvider"])
         nms_thresh = kwargs.get("nms_thresh", None)
         if nms_thresh is not None:
             self.nms_thresh = nms_thresh
@@ -279,15 +281,28 @@ class SCRFD:
                     )  # some extra weight on the centering
                 bindex = np.argsort(values)[::-1]  # some extra weight on the cientering
                 bindex = bindex[0:max_num]
-                det = det[bindex, :]
+                det = np.array(det[bindex, :])
                 if kpss is not None:
-                    kpss = kpss[bindex, :]
+                    kpss = np.array(kpss[bindex, :])
             return det, kpss
         except ZeroDivisionError:
-            print("Warning: Image height is zero, cannot perform detection.")
+            print("Error: Division by zero encountered in the image height or width calculation.")
+            return [], None
+        except AssertionError:
+            print("Error: Input size is not provided.")
+            return [], None
+        except cv2.error as e:
+            print(f"OpenCV Error: {e}")
+            return [], None
+        except ValueError as e:
+            print(f"Value Error: {e}")
+            return [], None
+        except TypeError as e:
+            print(f"Type Error: {e}")
             return [], None
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print("An unexpected error occurred:")
+            traceback.print_exc()
             return [], None
 
     # def detect(self, img, input_size=None, thresh=None, max_num=0, metric="default"):

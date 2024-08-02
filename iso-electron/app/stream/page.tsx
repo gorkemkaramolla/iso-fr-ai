@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Toast } from 'primereact/toast';
 import { io } from 'socket.io-client';
 import AddCameraButton from '@/components/camera/AddCameraButton';
 import CameraDropdown from '@/components/camera/CameraDropdown';
@@ -8,12 +9,14 @@ import CameraStreamControl from '@/components/camera/CameraStreamControl';
 import { Resizable } from 're-resizable';
 import Draggable from 'react-draggable';
 import { Quality } from '@/utils/enums';
-import toast, { Toaster } from 'react-hot-toast';
+// import toast, { Toaster } from 'react-hot-toast';
 import StreamUtilButtons from '@/components/camera/StreamUtilButtons';
 const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
 const socket = io(BASE_URL!);
 
 const VideoStream: React.FC = () => {
+  const toast = useRef<Toast>(null);
+
   const [showAddCamera, setShowAddCamera] = useState(false);
   const [cameraUrls, setCameraUrls] = useState<Camera[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<Camera>();
@@ -163,7 +166,12 @@ const VideoStream: React.FC = () => {
       // Clear the state
       setCameraStreams([]);
       setAvailableIds([1, 2, 3, 4]);
-      toast.success('Tüm yayınlar kapatıldı!', { duration: 2000 });
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Tüm yayınlar kapatıldı!',
+        life: 2000,
+      });
       setIsModified(false); // Reset the isModified state
     }
   };
@@ -189,11 +197,14 @@ const VideoStream: React.FC = () => {
 
   return (
     <div className='h-full w-full overflow-auto'>
-      <Toaster />
+      {/* <Toaster /> */}
+      <Toast ref={toast} />
+
       <div className='container mx-auto mb-20'>
         <div className='flex items-center'>
           <div className='flex flex-grow items-center justify-center'>
             <AddCameraButton
+              toast={toast}
               showAddCamera={showAddCamera}
               setShowAddCamera={setShowAddCamera}
               disabled={false}
@@ -275,7 +286,6 @@ const VideoStream: React.FC = () => {
                         >
                           <CameraStreamControl
                             id={camera.id}
-                            cameraUrls={cameraUrls}
                             selectedCamera={camera.selectedCamera}
                             selectedQuality={camera.selectedQuality}
                             isPlaying={camera.isPlaying}
@@ -287,6 +297,7 @@ const VideoStream: React.FC = () => {
                             cameraStreams={cameraStreams}
                             setCameraStreams={setCameraStreams}
                             isLocalCamera={camera.isLocalCamera}
+                            toast={toast}
                           />
                         </Resizable>
                       </Draggable>
@@ -295,7 +306,7 @@ const VideoStream: React.FC = () => {
             </div>
           </div>
           <div className={`col-span-3 fixed top-40 right-16`}>
-            <RecogFaces />
+            <RecogFaces toast={toast} />
           </div>
         </div>
       </div>

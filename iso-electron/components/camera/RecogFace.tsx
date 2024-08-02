@@ -2,17 +2,23 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { SearchIcon, XIcon } from 'lucide-react';
-import {} from './FaceDialog';
 import { useRouter } from 'next/navigation';
 import { Tooltip } from 'primereact/tooltip';
 import { FaTable } from 'react-icons/fa'; // Importing FontAwesome icon
+import { Toast } from 'primereact/toast';
 
 const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
 const socket = io(BASE_URL!);
-const InfoItem = ({ label, value }:{ label: string | number, value: string | number}) => (
-  <p className="text-sm">
-    <span className="font-semibold text-gray-700">{label}:</span>{' '}
-    <span className="text-gray-600">{value}</span>
+const InfoItem = ({
+  label,
+  value,
+}: {
+  label: string | number;
+  value: string | number;
+}) => (
+  <p className='text-sm'>
+    <span className='font-semibold text-gray-700'>{label}:</span>{' '}
+    <span className='text-gray-600'>{value}</span>
   </p>
 );
 const getRecogFaces = async () => {
@@ -24,7 +30,7 @@ const getRecogFaces = async () => {
     throw error;
   }
 };
-""
+('');
 const updateRecogName = async (id: string, newName: string) => {
   try {
     await axios.put(`${BASE_URL}/recog/name/${id}`, { name: newName });
@@ -35,7 +41,11 @@ const updateRecogName = async (id: string, newName: string) => {
   }
 };
 
-const RecogFaces: React.FC = () => {
+interface IRecogFace {
+  toast: React.RefObject<Toast>;
+}
+
+const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
   const router = useRouter();
   const [groupedRecogFaces, setGroupedRecogFaces] = useState<
     GroupedRecogFaces[]
@@ -147,6 +157,14 @@ const RecogFaces: React.FC = () => {
           ];
         }
       });
+
+      // Show success toast
+      toast.current?.show({
+        severity: 'success',
+        summary: 'Yeni Yüz Tanımlandı',
+        detail: `"${newFace.label}" adlı yüz tanımlandı.`,
+        life: 4000,
+      });
     });
 
     return () => {
@@ -222,15 +240,15 @@ const RecogFaces: React.FC = () => {
 
   return (
     <div className='backdrop-blur-lg p-4 rounded-xl'>
-       <div className='flex items-center justify-between'>
-      <h1 className='text-3xl font-bold mb-2'>Tanınan Yüzler</h1>
-      <FaTable
-        className='ml-2 pb-1  cursor-pointer'
-        size={32}
-        onClick={() => router.push('/recog')}
-        title="Tablo Görünümü"
-      />
-    </div>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-3xl font-bold mb-2'>Tanınan Yüzler</h1>
+        <FaTable
+          className='ml-2 pb-1 text-[rgb(80,74,237,0.8)] cursor-pointer'
+          size={32}
+          onClick={() => router.push('/recog')}
+          title='Tablo Görünümü'
+        />
+      </div>
       <label className='input input-bordered flex items-center gap-2 mb-2'>
         <input
           type='text'
@@ -256,26 +274,22 @@ const RecogFaces: React.FC = () => {
         {filteredGroups.map((group) => (
           <div key={group.name} className='mb-2 flex flex-col gap-2 w-full'>
             <div
-              
-              className='flex items-center justify-start gap-2  font-bold 
+              className='flex items-center justify-start gap-2  font-bold
               bg-slate-50 w-full p-2 rounded-xl shadow-md '
             >
-               <>
-      <img
-        src={`${BASE_URL}/faces/${group.name}`}
-        alt='avatar'
-        className='shadow-md shadow-red-500 object-cover w-10 h-10 rounded-full cursor-pointer p-element'
-        onError={(e) => {
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = './inner_circle.png';
-        }}
-        onClick={() => handleImageClick(group.name)}
-        data-pr-tooltip="Profile Git"
-        data-pr-position="left"
-        
-      />
-      <Tooltip target=".p-element" className='text-xs'/>
-    </>
+              <>
+                <img
+                  src={`${BASE_URL}/faces/${group.name}`}
+                  alt='avatar'
+                  className='shadow-md shadow-red-500 object-cover w-10 h-10 rounded-full cursor-pointer'
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = './inner_circle.png';
+                  }}
+                  onClick={() => handleImageClick(group.name)}
+                  title='Profile Git'
+                />
+              </>
               {editingName === group.name ? (
                 <div className='flex items-center gap-2'>
                   <input
@@ -299,11 +313,15 @@ const RecogFaces: React.FC = () => {
                 </div>
               ) : (
                 <div className='flex justify-between items-center w-full'>
-                  <div className='text-xs  overflow-hidden ' >
-                    <span className='tooltip cursor-pointer' onClick={() => handleToggle(group.name)} data-pr-tooltip='Tüm Resimler' data-pr-position='top' >
+                  <div className='text-xs  overflow-hidden '>
+                    <span
+                      className='cursor-pointer'
+                      onClick={() => handleToggle(group.name)}
+                      title='Tüm yüz tanımalar'
+                    >
                       {group.name}
                     </span>
-                    <Tooltip target=".tooltip" className='text-xs' />
+
                     <br />
                     <span className='font-light text-xs'>
                       {formatLastSeen(getLatestTimestamp(group.faces))}
@@ -324,7 +342,7 @@ const RecogFaces: React.FC = () => {
             </div>
             {!group.isCollapsed && (
               <div
-                className='flex flex-wrap gap-2 items-center justify-center p-2 pt-4 border
+                className='flex flex-wrap gap-2 items-start justify-center p-2 pt-4 border
               border-gray-200 rounded-xl shadow-md max-w-[21.5rem]'
               >
                 {group.faces
@@ -351,40 +369,69 @@ const RecogFaces: React.FC = () => {
                       <div className='text-xs text-balance font-light'>
                         {formatLastSeen(face.timestamp)}
                       </div>
-                      <dialog id={`modal-${index}`} className="modal">
-  <div className="modal-box max-w-3xl bg-white rounded-lg shadow-2xl overflow-hidden">
-    <form method="dialog" className="absolute right-2 top-2">
-      <button className="btn btn-circle btn-ghost text-gray-500 hover:text-red-500 transition-colors duration-200">
-        <XIcon className="w-6 h-6 stroke-[3]" />
-      </button>
-    </form>
-    {selectedFace && (
-      <div className="flex flex-col md:flex-row">
-        <div className="md:w-1/2 p-4">
-          <img
-            src={`${BASE_URL}/images/${selectedFace.image_path}`}
-            alt="Selected Face"
-            className="object-cover w-full h-full rounded-lg shadow-md"
-          />
-        </div>
-        <div className="md:w-1/2 p-6 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">{selectedFace.label}</h2>
-          <div className="space-y-3">
-            <InfoItem label="Tarih" value={new Date(selectedFace.timestamp).toLocaleString()} />
-            <InfoItem label="Benzerlik" value={selectedFace.similarity} />
-            <InfoItem label="Duygu" value={selectedFace.emotion} />
-            <InfoItem label="Cinsiyet" value={selectedFace.gender == 1 ? 'Erkek' : 'Kadın'} />
-            <InfoItem label="Yaş" value={selectedFace.age} />
-            <InfoItem label="Fotoğraf Adresi" value={selectedFace.image_path} />
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-  <form method="dialog" className="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
+                      <dialog id={`modal-${index}`} className='modal'>
+                        <div className='modal-box max-w-3xl bg-white rounded-lg shadow-2xl overflow-hidden'>
+                          <form
+                            method='dialog'
+                            className='absolute right-2 top-2'
+                          >
+                            <button className='btn btn-circle btn-ghost text-gray-500 hover:text-red-500 transition-colors duration-200'>
+                              <XIcon className='w-6 h-6 stroke-[3]' />
+                            </button>
+                          </form>
+                          {selectedFace && (
+                            <div className='flex flex-col md:flex-row'>
+                              <div className='md:w-1/2 p-4'>
+                                <img
+                                  src={`${BASE_URL}/images/${selectedFace.image_path}`}
+                                  alt='Selected Face'
+                                  className='object-cover w-full h-full rounded-lg shadow-md'
+                                />
+                              </div>
+                              <div className='md:w-1/2 p-6 bg-gray-50'>
+                                <h2 className='text-2xl font-bold mb-4 text-gray-800'>
+                                  {selectedFace.label}
+                                </h2>
+                                <div className='space-y-3'>
+                                  <InfoItem
+                                    label='Tarih'
+                                    value={new Date(
+                                      selectedFace.timestamp
+                                    ).toLocaleString()}
+                                  />
+                                  <InfoItem
+                                    label='Benzerlik'
+                                    value={selectedFace.similarity}
+                                  />
+                                  <InfoItem
+                                    label='Duygu'
+                                    value={selectedFace.emotion}
+                                  />
+                                  <InfoItem
+                                    label='Cinsiyet'
+                                    value={
+                                      selectedFace.gender == 1
+                                        ? 'Erkek'
+                                        : 'Kadın'
+                                    }
+                                  />
+                                  <InfoItem
+                                    label='Yaş'
+                                    value={selectedFace.age}
+                                  />
+                                  <InfoItem
+                                    label='Fotoğraf Adresi'
+                                    value={selectedFace.image_path}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <form method='dialog' className='modal-backdrop'>
+                          <button>close</button>
+                        </form>
+                      </dialog>
                     </div>
                   ))}
               </div>

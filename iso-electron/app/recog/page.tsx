@@ -1,14 +1,18 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import { DataTable, DataTableExpandedRows, DataTableFilterMeta } from "primereact/datatable";
-import { Column, ColumnFilterElementTemplateOptions } from "primereact/column";
-import { InputText } from "primereact/inputtext";
-import { Dropdown } from "primereact/dropdown";
-import { FilterMatchMode } from "primereact/api";
-import { Button } from "primereact/button";
-import { InputIcon } from "primereact/inputicon";
-import { IconField } from "primereact/iconfield";
-import { Card } from "primereact/card";
+'use client';
+import React, { useState, useEffect } from 'react';
+import {
+  DataTable,
+  DataTableExpandedRows,
+  DataTableFilterMeta,
+} from 'primereact/datatable';
+import { Column, ColumnFilterElementTemplateOptions } from 'primereact/column';
+import { InputText } from 'primereact/inputtext';
+import { Dropdown } from 'primereact/dropdown';
+import { FilterMatchMode } from 'primereact/api';
+import { Button } from 'primereact/button';
+import { InputIcon } from 'primereact/inputicon';
+import { IconField } from 'primereact/iconfield';
+import { Card } from 'primereact/card';
 
 interface RecognizedFace {
   _id: {
@@ -35,20 +39,24 @@ const defaultFilters: DataTableFilterMeta = {
 const RecognizedFacesTable: React.FC = () => {
   const [recognizedFaces, setRecognizedFaces] = useState<RecognizedFace[]>([]);
   const [filters, setFilters] = useState<DataTableFilterMeta>(defaultFilters);
-  const [globalFilterValue, setGlobalFilterValue] = useState<string>("");
-  const [expandedRows, setExpandedRows] = useState<DataTableExpandedRows | RecognizedFace[]>([]);
+  const [globalFilterValue, setGlobalFilterValue] = useState<string>('');
+  const [expandedRows, setExpandedRows] = useState<
+    DataTableExpandedRows | RecognizedFace[]
+  >([]);
   useEffect(() => {
     // Fetch recognized face data from the backend using fetch
     const fetchData = async () => {
       try {
-        const response = await fetch(process.env.NEXT_PUBLIC_FLASK_URL + "/recog");
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_FLASK_URL + '/recog'
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         setRecognizedFaces(data);
       } catch (error) {
-        console.error("Error fetching recognized face data:", error);
+        console.error('Error fetching recognized face data:', error);
       }
     };
 
@@ -60,14 +68,14 @@ const RecognizedFacesTable: React.FC = () => {
   };
 
   const formatGender = (value: number) => {
-    return value === 1 ? "Male" : "Female";
+    return value === 1 ? 'Male' : 'Female';
   };
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     let _filters: DataTableFilterMeta = { ...filters };
     //@ts-ignore
-    _filters["global"].value = value;
+    _filters['global'].value = value;
 
     setFilters(_filters);
     setGlobalFilterValue(value);
@@ -79,26 +87,26 @@ const RecognizedFacesTable: React.FC = () => {
 
   const initFilters = () => {
     setFilters(defaultFilters);
-    setGlobalFilterValue("");
+    setGlobalFilterValue('');
   };
 
   const renderHeader = () => {
     return (
-      <div className="flex justify-between w-full">
-        <div className="text-4xl">Tanınan Yüzler</div>
-        <IconField iconPosition="left">
-          <InputIcon className="pi pi-search" />
+      <div className='flex justify-between w-full'>
+        <div className='text-4xl'>Tanınan Yüzler</div>
+        <IconField iconPosition='left'>
+          <InputIcon className='pi pi-search' />
           <InputText
-            className="w-[600px]"
+            className='w-[600px]'
             value={globalFilterValue}
             onChange={onGlobalFilterChange}
-            placeholder="Keyword Search"
+            placeholder='Keyword Search'
           />
         </IconField>
         <Button
-          type="button"
-          icon="pi pi-filter-slash"
-          label="Clear"
+          type='button'
+          icon='pi pi-filter-slash'
+          label='Clear'
           outlined
           onClick={clearFilter}
         />
@@ -112,10 +120,10 @@ const RecognizedFacesTable: React.FC = () => {
     return (
       <Dropdown
         value={options.value}
-        options={["Neutral", "Happy", "Sad", "Angry", "Surprised"]}
+        options={['Neutral', 'Happy', 'Sad', 'Angry', 'Surprised']}
         onChange={(e) => options.filterCallback(e.value, options.index)}
-        placeholder="Select an Emotion"
-        className="p-column-filter"
+        placeholder='Select an Emotion'
+        className='p-column-filter'
         showClear
       />
     );
@@ -128,13 +136,13 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          { label: "Male", value: 1 },
-          { label: "Female", value: 0 },
+          { label: 'Male', value: 1 },
+          { label: 'Female', value: 0 },
         ]}
         onChange={(e) => options.filterCallback(e.value, options.index)}
-        optionLabel="label"
-        placeholder="Select a Gender"
-        className="p-column-filter"
+        optionLabel='label'
+        placeholder='Select a Gender'
+        className='p-column-filter'
         showClear
       />
     );
@@ -143,89 +151,96 @@ const RecognizedFacesTable: React.FC = () => {
   const header = renderHeader();
 
   return (
-    <div className="container mx-auto my-10">
+    <div className='container mx-auto my-10'>
       <Card>
         <DataTable
-        className="custom-datatable"
+          className='custom-datatable'
           value={recognizedFaces}
-          size="large"
+          size='small'
           paginator
           rows={100}
           rowsPerPageOptions={[50, 100, 500]}
-          dataKey="_id.$oid"
+          dataKey='_id.$oid'
           filters={filters}
-          filterDisplay="menu"
-          globalFilterFields={["label", "emotion", "similarity", "gender", "age"]}
+          filterDisplay='menu'
+          globalFilterFields={[
+            'label',
+            'emotion',
+            'similarity',
+            'gender',
+            'age',
+          ]}
           header={header}
-          emptyMessage="No recognized faces found."
+          emptyMessage='No recognized faces found.'
           scrollable
           removableSort
-          rowGroupMode="subheader" // Enable row grouping
-          groupRowsBy="label"  
-          sortMode="single" 
-          sortField="timestamp"
+          rowGroupMode='subheader' // Enable row grouping
+          groupRowsBy='label'
+          sortMode='single'
           sortOrder={1}
           rowGroupHeaderTemplate={(data) => (
-            <div className="inline-flex text-center">
-              <div className="flex gap-2 items-center justify-center text-center">
+            <div className='inline-flex text-center'>
+              <div className='flex gap-2 items-center justify-center text-center'>
                 <img
-                  src={process.env.NEXT_PUBLIC_FLASK_URL + "/faces/" + data.label}
-                  alt=""
-                  className="w-[32px] h-[32px] rounded-full shadow-lg"
+                  src={
+                    process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + data.label
+                  }
+                  alt=''
+                  className='w-[32px] h-[32px] rounded-full shadow-lg'
                   onError={(e) => {
-                    e.currentTarget.src = "/inner_circle.png";
+                    e.currentTarget.src = '/inner_circle.png';
                   }}
                 />
-                <span className="font-bold text-lg">{data.label}</span>
+                <span className='font-bold text-lg'>{data.label}</span>
               </div>
             </div>
           )}
-          >
-          <Column field="_id.$oid" header="ID" sortable />
+        >
+          <Column field='_id.$oid' header='ID' sortable />
           <Column
-            field="timestamp"
-            header="Timestamp"
+            field='timestamp'
+            header='Timestamp'
             body={(rowData) => formatTimestamp(rowData.timestamp)}
             sortable
           />
           <Column
-            field="label"
-            header="Label"
+            field='label'
+            header='Label'
             sortable
             filter
-            filterPlaceholder="Search by label"
+            filterPlaceholder='Search by label'
           />
-          <Column field="similarity" header="Similarity" sortable filter />
+          <Column field='similarity' header='Similarity' sortable filter />
           <Column
-            field="emotion"
-            header="Emotion"
+            field='emotion'
+            header='Emotion'
             sortable
             filter
             filterElement={emotionFilterTemplate}
           />
           <Column
-            field="gender"
-            header="Gender"
+            field='gender'
+            header='Gender'
             body={(rowData) => formatGender(rowData.gender)}
             sortable
             filter
             filterElement={genderFilterTemplate}
           />
           <Column
-            field="age"
-            header="Age"
+            field='age'
+            header='Age'
             sortable
             filter
-            filterPlaceholder="Search by age"
+            filterPlaceholder='Search by age'
           />
           <Column
-            field="image_path"
-            header="Image Path"
+            field='image_path'
+            header='Image Path'
             body={(rowData) => (
               <img
                 src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
-                alt="Face"
-                style={{ width: "50px", height: "50px", borderRadius: "5px" }}
+                alt='Face'
+                style={{ width: '50px', height: '50px', borderRadius: '5px' }}
               />
             )}
           />
@@ -236,7 +251,6 @@ const RecognizedFacesTable: React.FC = () => {
 };
 
 export default RecognizedFacesTable;
-
 
 // "use client"
 // import React, { useState, useEffect } from 'react';
@@ -373,7 +387,7 @@ export default RecognizedFacesTable;
 
 //   return (
 //     <div className='container mx-auto my-10'>
-//         <Card>     
+//         <Card>
 //       <DataTable
 //         value={recognizedFaces}
 //         paginator

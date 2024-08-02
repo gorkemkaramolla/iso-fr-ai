@@ -94,6 +94,19 @@ class SpeakerDiarizationProcessor:
             return full_text
         return ""
 
+    def delete_transcription(self, transcription_id):
+        collection = self.mongo_db["transcripts"]
+
+        # Perform the delete operation using the _id field as a string
+        delete_result = collection.delete_one({"_id": transcription_id})
+
+        if delete_result.deleted_count > 0:
+            return {"status": "success", "deleted_count": delete_result.deleted_count}
+        else:
+            return {"status": "no changes made"}
+
+        
+        
     def delete_segments(self, transcription_id, segment_ids):
         collection = self.mongo_db["segments"]
         delete_result = collection.delete_many(

@@ -9,6 +9,7 @@ from flask_jwt_extended import JWTManager, jwt_required
 from bson import ObjectId
 import requests
 import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
@@ -35,7 +36,7 @@ personel_service = PersonelService(db)
 solr_search_bp = Blueprint("solr_search_bp", __name__)
 system_check = Blueprint("system_check", __name__)
 personel_bp = Blueprint("personel_bp", __name__)
-
+##############################PERSONEL##############################################
 @personel_bp.route("/personel", methods=["POST"])
 def add_personel():
     data = request.form.to_dict()
@@ -77,13 +78,27 @@ def get_personel_by_id(id):
             return jsonify({"status": "error", "message": "Person not found"}), 404
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
-#########UPDATE PERSONEL
+
+
+
+
 @personel_bp.route('/personel/<personel_id>', methods=['PUT'])
 @jwt_required()
 def update_personel_route(personel_id):
-    data = request.get_json()
-    result, status = personel_service.update_personel(personel_id, data)
-    return jsonify(result), status
+    try:
+        if 'image' in request.files:
+            image = request.files['image']
+        else:
+            image = None
+        
+        data = request.form.to_dict()  # Use request.form to handle multipart/form-data
+        
+        result, status = personel_service.update_personel(personel_id, data, file=image)
+        return jsonify(result), status
+    except Exception as e:
+        app.logger.error(f"Error in update_personel_route: {str(e)}")
+        return jsonify({"status": "error", "message": "Internal Server Error"}), 500
+
 
 @personel_bp.route('/personel/image/', methods=['GET'])
 def get_user_images():
@@ -103,7 +118,7 @@ def get_user_images():
         return jsonify(image_paths)
 
 app.register_blueprint(personel_bp)
-
+##############################SOLR#########################################
 @solr_search_bp.route("/add_to_solr", methods=["POST"])
 def add_to_solr():
     data = request.get_json()
@@ -129,6 +144,10 @@ def search_logs_route():
 
 app.register_blueprint(solr_search_bp)
 
+
+
+
+#########################System Check###################################
 @system_check.route("/system_check/", methods=["GET"])
 def system_check_route():
     system_info = monitoring_service.get_system_info()

@@ -157,6 +157,7 @@ td {
 .p-inputtext:focus {
   box-shadow: none;
 }
+/* Example CSS for pastel border colors */
 
 .waveform-container {
   width: 100%;
@@ -165,4 +166,24 @@ td {
 .highlightedText {
   background-color: yellow;
   color: black;
+}
+
+.border-pastel-red {
+  border-color: #ff8a8a; /* A stronger pastel red */
+}
+
+.border-pastel-blue {
+  border-color: #8fa3e0; /* A more visible pastel blue */
+}
+
+.border-pastel-yellow {
+  border-color: #fffa73; /* A more noticeable pastel yellow */
+}
+
+.border-pastel-purple {
+  border-color: #b28ae6; /* A deeper pastel purple */
+}
+
+.border-pastel-pink {
+  border-color: #ffa3a3; /* A more vibrant pastel pink */
 }

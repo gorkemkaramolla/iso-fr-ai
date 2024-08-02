@@ -192,7 +192,7 @@ const WhisperUpload: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <div className='overflow-hidden h-2 mb-4 text-xs flex rounded bg-indigo-200'>
+                  <div className=' h-2 mb-4 text-xs flex rounded bg-indigo-200'>
                     <div
                       style={{ width: `${progress}%` }}
                       className='shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 transition-all duration-300 ease-in-out'
@@ -216,7 +216,7 @@ const WhisperUpload: React.FC = () => {
         <AnimatePresence>
           {response && (
             <motion.div
-              className='bg-white rounded-lg shadow-lg  overflow-hidden'
+              className='bg-white rounded-lg shadow-lg  '
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -229,7 +229,7 @@ const WhisperUpload: React.FC = () => {
                   Dil: {response.transcription.language}
                 </p>
               </div>
-              <ul className='divide-y h-[500px] pb-24 overflow-y-scroll divide-gray-200'>
+              <ul className='divide-y  divide-gray-200'>
                 {response.transcription.segments.map((segment, index) => (
                   <li
                     key={index}

@@ -27,7 +27,7 @@ export default function RootLayout({
       <body
         className={
           inter.className +
-          ' w-full max-w-screen overflow-x-hidden flex justify-center'
+          ' w-full max-w-screen overflow-y-hidden overflow-x-hidden flex justify-center'
         }
       >
         <PrimeReactProvider>

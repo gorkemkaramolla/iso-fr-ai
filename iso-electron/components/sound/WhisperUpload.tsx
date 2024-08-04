@@ -7,6 +7,7 @@ import createApi from '@/utils/axios_instance';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUploadCloud, FiX, FiMusic } from 'react-icons/fi';
 import WaveAudio from '@/components/sound/wave-audio';
+import Link from 'next/link';
 
 interface Segment {
   id: number;
@@ -228,6 +229,7 @@ const WhisperUpload: React.FC = () => {
                   {new Date(response.created_at).toLocaleString()} | Algılanılan
                   Dil: {response.transcription.language}
                 </p>
+                <Link href={`/transcription$/{response.id}`}>Go to Edit</Link>
               </div>
               <ul className='divide-y  divide-gray-200'>
                 {response.transcription.segments.map((segment, index) => (

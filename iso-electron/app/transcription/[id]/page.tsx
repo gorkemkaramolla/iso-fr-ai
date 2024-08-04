@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
 import createApi from '@/utils/axios_instance';
 import { Dialog } from 'primereact/dialog';
@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PanelBottomClose, Trash2, TrashIcon } from 'lucide-react';
 import { FaAngleDown } from 'react-icons/fa';
 
+import TextEditor from './editor';
 interface Props {
   params: {
     id: string;
@@ -25,14 +26,6 @@ interface Props {
 
 const Transcription: React.FC<Props> = ({ params: { id } }) => {
   const [transcription, setTranscription] = useState<Transcript | null>(null);
-  const [showBulkSpeakerModal, setShowBulkSpeakerModal] = useState(false);
-  const [showBulkTextModal, setShowBulkTextModal] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmDialogAction, setConfirmDialogAction] = useState<string>('');
-  const [showTranscriptionDeleteDialog, setShowTranscriptionDeleteDialog] =
-    useState(false);
-  const [bulkNewName, setBulkNewName] = useState('');
-  const [bulkNewText, setBulkNewText] = useState('');
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
   const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
@@ -43,9 +36,27 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     null
   );
   const [isEditing, setIsEditing] = useState(false);
-  const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const toast = useRef<Toast>(null);
   const editingRef = useRef<HTMLInputElement>(null);
+
+  const generateRandomColor = (): string => {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return `${color}33`;
+  };
+
+  const speakerColors = useMemo(() => {
+    const colors: Record<string, string> = {};
+    transcription?.segments.forEach((segment) => {
+      if (!colors[segment.speaker]) {
+        colors[segment.speaker] = generateRandomColor();
+      }
+    });
+    return colors;
+  }, [transcription?.segments]);
 
   useEffect(() => {
     const fetchTranscription = async () => {
@@ -132,12 +143,6 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   };
 
   const handleTranscriptionDelete = async () => {
-    setShowTranscriptionDeleteDialog(true);
-  };
-
-  const confirmTranscriptionDelete = async () => {
-    setShowTranscriptionDeleteDialog(false);
-
     try {
       const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
       const response = await api.delete(`/transcriptions/${id}`);
@@ -224,162 +229,80 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
     });
   };
 
-  const handleDeleteSelected = async () => {
-    setConfirmDialogAction('delete');
-    setShowConfirmDialog(true);
-  };
-
-  const confirmDeleteSelected = async () => {
-    setShowConfirmDialog(false);
+  const handleSpeakerNameChange = async (
+    segmentId: string,
+    newName: string
+  ) => {
     if (transcription) {
-      try {
-        const updatedSegments = transcription.segments.filter(
-          (segment) => !selectedSegments.includes(segment.segment_id)
-        );
-        setTranscription({ ...transcription, segments: updatedSegments });
-        const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
-        await api.post(`/delete_segments/${id}`, {
-          segment_ids: selectedSegments,
-        });
-        setSelectedSegments([]);
-        setSelectedSpeakers([]);
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Başarılı',
-          detail: 'Segmentler başarıyla silindi',
-          life: 3000,
-        });
-      } catch (error) {
-        console.error('Segmentler silinirken hata oluştu:', error);
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Hata',
-          detail: 'Segmentler silinemedi',
-          life: 3000,
-        });
-      }
-    }
-  };
+      const oldName = transcription.segments.find(
+        (segment) => segment.segment_id === segmentId
+      )?.speaker;
 
-  const handleRenameSpeakers = () => {
-    if (selectedSegments.length === 1 && transcription) {
-      const selectedSegment = transcription.segments.find(
-        (segment) => segment.segment_id === selectedSegments[0]
-      );
-      if (selectedSegment) {
-        setBulkNewName(selectedSegment.speaker);
-      }
-    } else {
-      setBulkNewName('');
-    }
-    setConfirmDialogAction('renameSpeakers');
-    setShowConfirmDialog(true);
-  };
+      setTranscription((prev) => {
+        if (!prev) return prev;
 
-  const confirmRenameSpeakers = async () => {
-    setShowConfirmDialog(false);
-    setShowBulkSpeakerModal(true);
-  };
-
-  const renameSelectedSpeakerNames = async () => {
-    setShowBulkSpeakerModal(false);
-    if (transcription) {
-      try {
-        const oldNames = transcription.segments
-          .filter((segment) => selectedSegments.includes(segment.segment_id))
-          .map((segment) => segment.speaker);
-        const updatedSegments = transcription.segments.map((segment) =>
-          selectedSegments.includes(segment.segment_id)
-            ? { ...segment, speaker: bulkNewName }
+        const updatedSegments = prev.segments.map((segment) =>
+          segment.segment_id === segmentId
+            ? { ...segment, speaker: newName }
             : segment
         );
-        setTranscription({ ...transcription, segments: updatedSegments });
-        const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+
+        return { ...prev, segments: updatedSegments };
+      });
+
+      const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+      try {
         await api.post(`/rename_segments/${id}`, {
-          old_names: oldNames,
-          new_name: bulkNewName,
-          segment_ids: selectedSegments,
-        });
-        setSelectedSegments([]);
-        setSelectedSpeakers([]);
-        const updatedSpeakers = [
-          ...new Set(updatedSegments.map((segment) => segment.speaker)),
-        ];
-        setUniqueSpeakers(updatedSpeakers);
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Başarılı',
-          detail: 'Konuşmacılar başarıyla yeniden adlandırıldı',
-          life: 3000,
+          old_names: [oldName],
+          new_name: newName,
+          segment_ids: [segmentId],
         });
       } catch (error) {
-        console.error(
-          'Konuşmacılar yeniden adlandırılırken hata oluştu:',
-          error
-        );
+        console.error('Failed to rename speaker:', error);
         toast.current?.show({
           severity: 'error',
-          summary: 'Hata',
-          detail: 'Konuşmacılar yeniden adlandırılamadı',
+          summary: 'Error',
+          detail: 'Failed to rename speaker',
           life: 3000,
         });
       }
     }
   };
 
-  const handleRenameTexts = () => {
-    if (selectedSegments.length === 1 && transcription) {
-      const selectedSegment = transcription.segments.find(
-        (segment) => segment.segment_id === selectedSegments[0]
-      );
-      if (selectedSegment) {
-        setBulkNewText(selectedSegment.transcribed_text);
-      }
-    } else {
-      setBulkNewText('');
-    }
-    setConfirmDialogAction('renameTexts');
-    setShowConfirmDialog(true);
-  };
-
-  const confirmRenameTexts = async () => {
-    setShowConfirmDialog(false);
-    setShowBulkTextModal(true);
-  };
-
-  const renameSelectedTexts = async () => {
-    setShowBulkTextModal(false);
+  const handleTranscribedTextChange = async (
+    segmentId: string,
+    newText: string
+  ) => {
     if (transcription) {
-      try {
-        const oldTexts = transcription.segments
-          .filter((segment) => selectedSegments.includes(segment.segment_id))
-          .map((segment) => segment.transcribed_text);
-        const updatedSegments = transcription.segments.map((segment) =>
-          selectedSegments.includes(segment.segment_id)
-            ? { ...segment, transcribed_text: bulkNewText }
+      const oldText = transcription.segments.find(
+        (segment) => segment.segment_id === segmentId
+      )?.transcribed_text;
+
+      setTranscription((prev) => {
+        if (!prev) return prev;
+
+        const updatedSegments = prev.segments.map((segment) =>
+          segment.segment_id === segmentId
+            ? { ...segment, transcribed_text: newText }
             : segment
         );
-        setTranscription({ ...transcription, segments: updatedSegments });
-        const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+
+        return { ...prev, segments: updatedSegments };
+      });
+
+      const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+      try {
         await api.post(`/rename_transcribed_text/${id}`, {
-          old_texts: oldTexts,
-          new_text: bulkNewText,
-          segment_ids: selectedSegments,
-        });
-        setSelectedSegments([]);
-        setSelectedSpeakers([]);
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Başarılı',
-          detail: 'Metinler başarıyla yeniden adlandırıldı',
-          life: 3000,
+          old_texts: [oldText],
+          new_text: newText,
+          segment_ids: [segmentId],
         });
       } catch (error) {
-        console.error('Metinler yeniden adlandırılırken hata oluştu:', error);
+        console.error('Failed to rename transcribed text:', error);
         toast.current?.show({
           severity: 'error',
-          summary: 'Hata',
-          detail: 'Metinler yeniden adlandırılamadı',
+          summary: 'Error',
+          detail: 'Failed to rename transcribed text',
           life: 3000,
         });
       }
@@ -456,189 +379,39 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
             <button className='right-0 absolute '>
               <FaAngleDown />
             </button>
-            <WaveAudio transcript_id={transcription?.transcription_id!} />
+            <WaveAudio
+              speakerColors={speakerColors}
+              segments={transcription?.segments!}
+              transcript_id={transcription?.transcription_id!}
+            />
           </div>
 
           <div className='flex flex-col lg:flex-row min-h-screen bg-gray-50'>
-            <div className=' p-4  lg:w-9/12'>
-              <div className='flex items-center justify-between w-full'>
-                {isEditing ? (
-                  <input
-                    ref={editingRef}
-                    type='text'
-                    className='border-none p-4 w-96 bg-transparent text-xl font-extrabold'
-                    defaultValue={transcription?.name}
-                    onBlur={() => {
-                      setIsEditing(false);
-                      if (editingRef.current) {
-                        handleEditName(editingRef.current.value);
-                      }
-                    }}
-                  />
-                ) : (
-                  <h1
-                    onDoubleClick={() => setIsEditing(true)}
-                    className='text-xl font-extrabold p-4 w-full'
-                  >
-                    {transcription?.name}
-                  </h1>
-                )}
-
-                <button
-                  onClick={handleTranscriptionDelete}
-                  className='p-4 text-red-500 hover:text-red-700'
-                >
-                  <Trash2 />
-                </button>
-              </div>
-
-              <div className='flex justify-end space-x-2 mb-4'>
-                <Button
-                  label='Excel Olarak İndir'
-                  icon='pi pi-file-excel'
-                  className='p-button-sm'
-                  onClick={handleGetExcel}
-                />
-                <Button
-                  label='JSON Olarak İndir'
-                  icon='pi pi-file'
-                  className='p-button-sm'
-                  onClick={handleGetJSON}
-                />
-              </div>
-
-              <div className='flex justify-between mb-4'>
-                <div className='flex space-x-2'>
-                  <Button
-                    label='Seçilenleri Sil'
-                    className='p-button-sm p-button-danger'
-                    onClick={handleDeleteSelected}
-                    disabled={selectedSegments.length === 0}
-                  />
-                  <Button
-                    label='Seçilenlerin Konuşmacı Adını Değiştir'
-                    className='p-button-sm'
-                    onClick={handleRenameSpeakers}
-                    disabled={selectedSegments.length === 0}
-                  />
-                  <Button
-                    label='Seçilenlerin Metnini Değiştir'
-                    className='p-button-sm'
-                    onClick={handleRenameTexts}
-                    disabled={selectedSegments.length === 0}
-                  />
-                </div>
-              </div>
-              <div
-                ref={transcriptionRef}
-                className='bg-white rounded shadow p-4 overflow-y-scroll h-[600px]'
-              >
-                <div className='flex w-full justify-around py-2 '>
-                  <div>
-                    <Checkbox
-                      checked={
-                        selectedSegments.length ===
-                        transcription?.segments.length
-                      }
-                      onChange={handleSelectAll}
-                      name='selectall'
-                    />
-                    <label htmlFor='selectall' className='ml-2'>
-                      Hepsini Seç
-                    </label>
-                  </div>
-                  {uniqueSpeakers.map((speaker) => (
-                    <div key={speaker} className=' flex gap-1'>
-                      <Checkbox
-                        checked={selectedSpeakers.includes(speaker)}
-                        onChange={() => handleSelectSpeaker(speaker)}
-                        name={`select-${speaker}`}
-                      />
-                      <label htmlFor={`select-${speaker}`} className='ml-2'>
-                        {speaker}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                <AnimatePresence>
-                  {transcription?.segments.map((segment, index) => (
-                    <motion.div
-                      key={segment.segment_id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2, delay: index * 0.03 }}
-                      className={`mb-2 rounded-md shadow-sm overflow-hidden cursor-pointer segment border-2 ${getSpeakerBorderColor(
-                        segment.speaker
-                      )}
-                      ${
-                        highlightedSegment === segment.segment_id ||
-                        selectedSegments.includes(segment.segment_id)
-                          ? 'ml-4'
-                          : ''
-                      }
-                      ${
-                        highlightedSegment === segment.segment_id
-                          ? 'bg-yellow-200' // Highlighted color
-                          : selectedSegments.includes(segment.segment_id)
-                          ? 'bg-indigo-700 text-white' // Selected color
-                          : 'bg-white'
-                      }`}
-                      data-segment-id={segment.segment_id}
-                      data-start-time={segment.start_time}
-                      data-end-time={segment.end_time}
-                      onClick={() => handleSelectSegment(segment.segment_id)}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                    >
-                      <motion.div
-                        className={`w-full p-3 `}
-                        animate={{
-                          backgroundColor:
-                            highlightedSegment === segment.segment_id
-                              ? '#99F999' // yellow-200, consistent with above
-                              : selectedSegments.includes(segment.segment_id)
-                              ? '#4338CA' // indigo-700, consistent with above
-                              : 'transparent',
-                          color: selectedSegments.includes(segment.segment_id)
-                            ? 'white'
-                            : 'black',
-                        }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <div className='flex justify-between items-center mb-1'>
-                          <motion.span
-                            className='font-semibold text-sm'
-                            whileHover={{ scale: 1.03 }}
-                          >
-                            {segment.speaker}
-                          </motion.span>
-                          <motion.span
-                            className={`text-xs px-1.5 py-0.5 rounded-full ${
-                              highlightedSegment === segment.segment_id ||
-                              selectedSegments.includes(segment.segment_id)
-                                ? 'bg-opacity-20 bg-gray-800'
-                                : 'bg-gray-100'
-                            }`}
-                            whileHover={{ backgroundColor: '#E5E7EB' }}
-                          >
-                            {segment.start_time.toFixed(2)}s -{' '}
-                            {segment.end_time.toFixed(2)}s
-                          </motion.span>
-                        </div>
-                        <motion.p
-                          className='text-sm leading-relaxed'
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.05 }}
-                        >
-                          {segment.transcribed_text}
-                        </motion.p>
-                      </motion.div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+            <div className='p-4 lg:w-9/12'>
+              <TextEditor
+                speakerColors={speakerColors}
+                currentTime={currentTime}
+                transcription={transcription}
+                editingRef={editingRef}
+                handleEditName={handleEditName}
+                handleTranscriptionDelete={handleTranscriptionDelete}
+                handleGetExcel={handleGetExcel}
+                handleGetJSON={handleGetJSON}
+                handleDeleteSelected={() => {}}
+                handleSelectSegment={handleSelectSegment}
+                handleSelectAll={handleSelectAll}
+                handleSelectSpeaker={handleSelectSpeaker}
+                handleSpeakerNameChange={handleSpeakerNameChange}
+                handleTranscribedTextChange={handleTranscribedTextChange}
+                selectedSegments={selectedSegments}
+                selectedSpeakers={selectedSpeakers}
+                uniqueSpeakers={uniqueSpeakers}
+                highlightedSegment={highlightedSegment}
+                transcriptionRef={transcriptionRef}
+                getSpeakerBorderColor={getSpeakerBorderColor}
+                isEditing={isEditing}
+                setIsEditing={setIsEditing}
+              />
             </div>
 
             <div className='lg:w-3/12'>
@@ -646,156 +419,6 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
                 activePageId={transcription?.transcription_id}
               />
             </div>
-
-            <Dialog
-              header='İşlemi Onayla'
-              visible={showConfirmDialog}
-              onHide={() => setShowConfirmDialog(false)}
-              footer={
-                <div>
-                  <Button
-                    label='Hayır'
-                    icon='pi pi-times'
-                    onClick={() => setShowConfirmDialog(false)}
-                    className='p-button-text'
-                  />
-                  <Button
-                    label='Evet'
-                    icon='pi pi-check'
-                    onClick={() => {
-                      if (confirmDialogAction === 'delete')
-                        confirmDeleteSelected();
-                      else if (confirmDialogAction === 'renameSpeakers')
-                        confirmRenameSpeakers();
-                      else if (confirmDialogAction === 'renameTexts')
-                        confirmRenameTexts();
-                    }}
-                    autoFocus
-                  />
-                </div>
-              }
-            >
-              <p>
-                Seçilen{' '}
-                {confirmDialogAction === 'delete'
-                  ? 'segmentleri silmek'
-                  : 'isimleri veya metinleri değiştirmek'}{' '}
-                istediğinize emin misiniz?
-              </p>
-            </Dialog>
-
-            <Dialog
-              header='Seçilen Konuşmacı İsimleri'
-              visible={showBulkSpeakerModal}
-              onHide={() => setShowBulkSpeakerModal(false)}
-              className='w-80'
-            >
-              <div className='flex flex-col gap-4'>
-                {selectedSegments.length === 1 ? (
-                  <InputText
-                    value={bulkNewName}
-                    onChange={(e) => setBulkNewName(e.target.value)}
-                    className='p-2 text-sm'
-                  />
-                ) : (
-                  <div className='p-2 text-sm'>
-                    {selectedSegments.map((segmentId) => {
-                      const segment = transcription?.segments.find(
-                        (s) => s.segment_id === segmentId
-                      );
-                      return (
-                        <div key={segmentId}>
-                          <strong>{segment?.speaker}:</strong>{' '}
-                          {segment?.transcribed_text}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className='flex justify-end space-x-2'>
-                  <Button
-                    label='İptal'
-                    className='p-button-text p-button-sm'
-                    onClick={() => setShowBulkSpeakerModal(false)}
-                  />
-                  <Button
-                    label='Kaydet'
-                    icon='pi pi-check'
-                    className='p-button-sm'
-                    onClick={renameSelectedSpeakerNames}
-                  />
-                </div>
-              </div>
-            </Dialog>
-
-            <Dialog
-              header='Seçilen Metin'
-              visible={showBulkTextModal}
-              onHide={() => setShowBulkTextModal(false)}
-              className='w-80'
-            >
-              <div className='flex flex-col gap-4'>
-                {selectedSegments.length === 1 ? (
-                  <InputTextarea
-                    rows={5}
-                    value={bulkNewText}
-                    onChange={(e) => setBulkNewText(e.target.value)}
-                    className='p-2 text-sm'
-                  />
-                ) : (
-                  <div className='p-2 text-sm'>
-                    {selectedSegments.map((segmentId) => {
-                      const segment = transcription?.segments.find(
-                        (s) => s.segment_id === segmentId
-                      );
-                      return (
-                        <div key={segmentId}>
-                          <strong>{segment?.speaker}:</strong>{' '}
-                          {segment?.transcribed_text}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className='flex justify-end space-x-2'>
-                  <Button
-                    label='İptal'
-                    className='p-button-text p-button-sm'
-                    onClick={() => setShowBulkTextModal(false)}
-                  />
-                  <Button
-                    label='Kaydet'
-                    icon='pi pi-check'
-                    className='p-button-sm'
-                    onClick={renameSelectedTexts}
-                  />
-                </div>
-              </div>
-            </Dialog>
-
-            <Dialog
-              header='Transkripsiyonu Sil'
-              visible={showTranscriptionDeleteDialog}
-              onHide={() => setShowTranscriptionDeleteDialog(false)}
-              footer={
-                <div>
-                  <Button
-                    label='Hayır'
-                    icon='pi pi-times'
-                    onClick={() => setShowTranscriptionDeleteDialog(false)}
-                    className='p-button-text'
-                  />
-                  <Button
-                    label='Evet'
-                    icon='pi pi-check'
-                    onClick={confirmTranscriptionDelete}
-                    autoFocus
-                  />
-                </div>
-              }
-            >
-              <p>Bu transkripsiyonu silmek istediğinizden emin misiniz?</p>
-            </Dialog>
           </div>
         </div>
       )}

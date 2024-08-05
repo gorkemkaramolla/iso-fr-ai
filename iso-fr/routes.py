@@ -22,7 +22,6 @@ import binascii
 import cv2
 import numpy as np
 from socketio_instance import notify_new_camera_url, socketio
-from config import BINARY_MATCH
 
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False

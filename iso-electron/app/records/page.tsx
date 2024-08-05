@@ -62,7 +62,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className='min-h-screen bg-gray-100 p-8'>
+    <div className='max-h-screen bg-gray-100 p-8 overflow-y-scroll'>
       <Toast ref={toast} />
       <h1 className='text-3xl font-bold text-center mb-8'>Video Galeri</h1>
       {error && <p className='text-red-500 text-center'>{error}</p>}

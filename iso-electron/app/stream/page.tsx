@@ -83,7 +83,7 @@ const VideoStream: React.FC = () => {
     if (availableIds.length > 0) {
       const newId = availableIds[0]; // Take the smallest available ID
       setAvailableIds(availableIds.slice(1)); // Remove the new ID from the available IDs
-      const isLocalCamera = camera.url === '0'; // Check if the URL is "0"
+      const isLocalCamera = !isNaN(Number(camera.url)); // Check if the URL can be converted to a number
       const newCameraStream = {
         id: newId,
         selectedCamera: camera,
@@ -91,7 +91,7 @@ const VideoStream: React.FC = () => {
           ? ''
           : `${BASE_URL}/stream/${newId}?camera=${
               selectedCamera?.url
-            }&quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
+            }?quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
         selectedQuality: Object.keys(Quality)[0],
         isPlaying: true,
         isLoading: true,
@@ -100,6 +100,7 @@ const VideoStream: React.FC = () => {
         position: { x: 0, y: 0 },
         size: { width: '100%', height: '100%' },
         isLocalCamera: isLocalCamera, // Add a flag for local camera
+        localCameraId: isLocalCamera ? Number(camera.url) : undefined,
       };
 
       setCameraStreams([...cameraStreams, newCameraStream]);
@@ -299,6 +300,7 @@ const VideoStream: React.FC = () => {
                             cameraStreams={cameraStreams}
                             setCameraStreams={setCameraStreams}
                             isLocalCamera={camera.isLocalCamera}
+                            localCameraId={camera.localCameraId}
                             toast={toast}
                           />
                         </Resizable>

@@ -17,6 +17,26 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
   addCameraStream,
   showAddCamera,
 }) => {
+  const [videoInputDevices, setVideoInputDevices] = React.useState<
+    MediaDeviceInfo[]
+  >([]);
+
+  React.useEffect(() => {
+    const getVideoInputDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(
+          (device) => device.kind === 'videoinput'
+        );
+        console.log(videoInputs);
+        setVideoInputDevices(videoInputs);
+      } catch (error) {
+        console.error('Error getting video input devices:', error);
+      }
+    };
+
+    getVideoInputDevices();
+  }, []);
   // const streams = Array.isArray(cameraStreams) ? cameraStreams : [];
   return (
     <div
@@ -38,6 +58,26 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
         <option disabled value='' className='select-option'>
           Kamera Seçiniz
         </option>
+        {videoInputDevices?.map((device, index) => {
+          const cameraUrl = index.toString();
+          const isCameraStreamPresent = cameraStreams?.some(
+            (stream) => stream.selectedCamera.url === cameraUrl
+          );
+
+          if (!isCameraStreamPresent) {
+            return (
+              <option
+                key={device.deviceId}
+                value={cameraUrl}
+                className='select-option'
+              >
+                Yerel Kamera - {index + 1}
+              </option>
+            );
+          }
+
+          return null;
+        })}
         {cameraUrls?.length !== 0 &&
           cameraUrls
             ?.filter(

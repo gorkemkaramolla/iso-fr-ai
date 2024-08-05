@@ -134,9 +134,11 @@ from flask_cors import CORS
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from logger import configure_logging
-from config import xml_config  # Import the XML configuration
+from config import XMLConfig  # Import the XML configuration
 import torch
 app = Flask(__name__)
+xml_config = XMLConfig(service_name='speaker_diarization_service')
+xml_mongo_config = XMLConfig(service_name='mongo')
 
 # Configure JWT using XML config
 app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
@@ -152,8 +154,8 @@ CORS(app, supports_credentials=xml_config.SUPPORTS_CREDENTIALS, origins=xml_conf
 jwt = JWTManager(app)
 
 # Setup MongoDB using XML config
-client = MongoClient(xml_config.MONGO_DB_URI)
-db = client[xml_config.MONGO_DB_NAME]
+client = MongoClient(xml_mongo_config.MONGO_DB_URI)
+db = client[xml_mongo_config.MONGO_DB_NAME]
 logs_collection = db[xml_config.LOGGING_COLLECTION]
 
 
@@ -169,14 +171,6 @@ diarization_processor = SpeakerDiarizationProcessor(device=xml_config.DEVICE)
 
 # Initialize logger
 logger = configure_logging()
-
-
-
-
-
-
-
-
 
 # Setup Blueprint
 audio_bp = Blueprint("audio_bp", __name__)
@@ -225,6 +219,29 @@ def delete_transcription_route(id):
         return jsonify(response), 200
     except Exception as e:
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+    
+    
+@audio_bp.route("/transcriptions/<id>", methods=["PUT"])
+@jwt_required()
+def rename_transcription_route(id):
+    if id is None:
+        return jsonify({"message": "ID is required"}), 404
+
+    data = request.get_json()
+    new_name = data.get('name')
+    
+    if not new_name:
+        return jsonify({"message": "New name is required"}), 400
+
+    try:
+        response = diarization_processor.rename_transcription(id, new_name)
+        if "error" in response:
+            return jsonify(response), 500
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+    
 
 @audio_bp.route("/rename_segments/<transcription_id>", methods=["POST"])
 @jwt_required()
@@ -264,6 +281,8 @@ def delete_segments_route(transcription_id):
     result = diarization_processor.delete_segments(transcription_id, segment_ids)
     
     return jsonify(result), 200 if result["status"] == "success" else 500
+
+
 
 @audio_bp.route("/stream-audio/<transcription_id>", methods=["GET"])
 @jwt_required()

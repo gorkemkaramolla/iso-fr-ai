@@ -14,7 +14,8 @@ from services.camera_processor.arcface_onnx import ArcFaceONNX
 from services.camera_processor.attribute import Attribute
 from services.camera_processor.emotion import EmotionDetector
 from socketio_instance import notify_new_face
-
+import subprocess
+VIDEO_FOLDER = './records'
 class Stream:
     def __init__(self, device: str = "cuda") -> None:
         self.device = torch.device(device)
@@ -62,6 +63,9 @@ class Stream:
         self.stop_flag = threading.Event()  # Initialize the stop flag
         self.video_writer = None
         self.active_streams = {}  # Dictionary to track active streams by ID
+        self.camera_states = {}
+        self.lock = threading.Lock()
+        
     def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, np.ndarray]:
         database: Dict[str, np.ndarray] = {}
         for filename in os.listdir(image_folder):
@@ -228,11 +232,16 @@ class Stream:
 
         return bboxes, labels, sims, emotions, genders, ages
     
-    def recog_face_ip_cam(self, stream_id, camera, quality="Quality", is_recording=False):
+    def recog_face_ip_cam(self, stream_id, camera: str, quality="Quality", is_recording=False):
     
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
-       
-        cap = cv2.VideoCapture(camera + quality)
+        if camera is None:
+            raise ValueError("Camera URL must be provided and cannot be None")
+    
+        if quality is None:
+            quality = "Quality"  # Provide a default value if quality is None
+        
+        cap = cv2.VideoCapture(camera + "?" + quality)
         print("Camera Opened:  " + str(cap.isOpened()))
         writer = None
         if is_recording:
@@ -282,16 +291,17 @@ class Stream:
         if writer:
             writer.release()
         logging.info("Finished generate function")
-
+    
     def recog_face_local_cam(self, frame: np.ndarray, is_recording: bool = False) -> str:
         self.stop_flag.clear()
+        
         logging.info("Processing frame")
-
+        
         if is_recording and self.video_writer is None:
             now = datetime.datetime.now()
             directory = "./records/"
             os.makedirs(directory, exist_ok=True)
-            filename = directory + now.strftime("%H-%M-%S_%d-%m-%Y") + ".mp4"
+            filename = directory + now.strftime("%H-%M-%S_%d-%m-%Y_yerel_camera") + ".mp4"
             frame_height, frame_width = frame.shape[:2]
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             self.video_writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
@@ -316,6 +326,8 @@ class Stream:
         if self.video_writer:
             self.video_writer.write(frame)
 
+      
+        
         _, buffer = cv2.imencode(".jpg", frame)
         processed_image = base64.b64encode(buffer).decode('utf-8')
         return 'data:image/jpeg;base64,' + processed_image
@@ -340,4 +352,25 @@ class Stream:
         
         logging.info(f"Stream with ID {stream_id} stopped successfully")
 
+
     
+    def stop_recording(self):
+        if self.video_writer:
+            self.video_writer.release()
+            self.video_writer = None
+    
+            # Find the last saved file in the ./records folder
+            records_folder = './records'
+            files = [os.path.join(records_folder, f) for f in os.listdir(records_folder) if os.path.isfile(os.path.join(records_folder, f))]
+            last_saved_file = max(files, key=os.path.getctime)
+    
+            # Define output file path
+            output_file = last_saved_file.replace(".mp4", "_converted.mp4")
+    
+            # Execute ffmpeg command to convert video
+            command = ["ffmpeg", "-i", last_saved_file, "-vcodec", "h264", "-acodec", "aac", output_file]
+    
+            # Run the command
+            subprocess.run(command, capture_output=True, text=True)
+    
+            return output_file

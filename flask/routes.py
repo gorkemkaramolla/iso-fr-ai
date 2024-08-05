@@ -27,7 +27,7 @@ import io
 import binascii
 import cv2
 import numpy as np
-from socketio_instance import notify_new_camera_url, socketio
+from socketio_instance import notify_new_camera_url, socketio, emit, join_room, leave_room
 from config import BINARY_MATCH
 
 app = Flask(__name__)
@@ -267,22 +267,60 @@ def stop_stream(stream_id):
 
 # ****************************************************************************
 # Local CAM Stream
-@socketio.on('video_frame')
-def handle_video_frame(data):
-    frame_data = data['frame']
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+    emit('joined', {'room': room}, room=room)
+
+@socketio.on('leave')
+def on_leave(data):
+    room = data['room']
+    leave_room(room)
+    emit('left', {'room': room}, room=room)
+# @socketio.on('video_frames')
+# def handle_video_frames(data):
+#     room = data['room']
+#     frames_data = data['frames']
+#     is_recording = data['isRecording']
+
+#     processed_frames = []
+#     for frame_data in frames_data:
+#         image_data = frame_data.split(',')[1]
+#         nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
+#         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+#         processed_image = stream_instance.recog_face_local_cam(room, img, is_recording)
+#         processed_frames.append(processed_image)
+
+#     emit('processed_frames', {'frames': processed_frames}, room=room)
+
+@socketio.on('video_frames')
+def handle_video_frames(data):
+    room = data['room']
+    frames_data = data['frames']  # List of frames
     is_recording = data['isRecording']
 
-    # Decode the image
-    image_data = frame_data.split(',')[1]
-    nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    processed_frames = []
 
-    # Process the image
-    processed_image = stream_instance.recog_face_local_cam(img, is_recording)
+    for frame_data in frames_data:
+        # Decode the image
+        image_data = frame_data.split(',')[1]
+        nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-    # Emit the processed frame back to the client
-    socketio.emit('processed_frame', processed_image)
+        # Process the image
+        processed_image = stream_instance.recog_face_local_cam(img, is_recording)
+        processed_frames.append(processed_image)
 
+    # Emit the processed frames back to the room
+    emit('processed_frames', {'frames': processed_frames}, room=room)
+
+@camera_bp.route("/local_stream/stop_recording", methods=["POST"])
+def stop_recording():
+    return Response(
+        stream_instance.stop_recording(),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
+    )
 # ****************************************************************************
 
 @camera_bp.route("/recog", methods=["GET"])
@@ -315,33 +353,18 @@ def delete_log(id):
     logs_collection.delete_one({"_id": ObjectId(id)})
     return jsonify({"message": "Log deleted successfully"}), 200
 
-
-# @camera_bp.route("/recog/name/<id>", methods=["PUT"])
-# def update_recog_name(id):
-#     data = request.json
-#     new_name = data.get("name")
-#     if not new_name:
-#         return jsonify({"error": "Name is required"}), 400
-
-#     result = logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
-#     if result.matched_count == 0:
-#         return jsonify({"error": "Log not found"}), 404
-
-#     return jsonify({"message": "Name updated successfully"}), 200
-
-
 @camera_bp.route("/recog/name/<id>", methods=["PUT"])
 def update_recog_name(id):
     data = request.json
     new_name = data.get("name")
     if not new_name:
-        return jsonify({"error": "Name is required"}), 400
+        return jsonify({"error": "Name is required in the request body"}), 400
 
     # Update the label in the database
     result = stream_instance.recognition_logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
     if result.matched_count == 0:
-        return jsonify({"error": "Log not found"}), 404
-  
+        return jsonify({"error": f"No logs found for ID: {id}"}), 404
+
     # Determine the correct source folder path
     base_dir = os.path.join('recog')
     unknown_faces_path = os.path.join(base_dir, 'unknown_faces', id)
@@ -350,64 +373,150 @@ def update_recog_name(id):
 
     try:
         # Ensure known_faces/<name> directory exists
-        if not os.path.exists(known_faces_path):
-            os.makedirs(known_faces_path)
+        os.makedirs(known_faces_path, exist_ok=True)
+    except PermissionError:
+        return jsonify({"error": f"Permission denied when creating directory: {known_faces_path}"}), 403
 
-        moved_files = []
-
+    moved_files = []
+    try:
         # Rename and move files from old folder to the appropriate directories
         for file_name in os.listdir(unknown_faces_path):
             if file_name.endswith((".jpg", ".png", ".jpeg")):
-                # Construct the new file name as <new_name>-<id>.jpeg for known_faces
                 new_known_faces_file_name = f"{new_name}-{id}.jpeg"
                 known_faces_dst_path = os.path.join(known_faces_path, new_known_faces_file_name)
-
-                # Construct the new file name as <new_name>.jpeg for face-images
                 new_face_images_file_name = f"{new_name}.jpeg"
                 face_images_dst_path = os.path.join(face_images_path, new_face_images_file_name)
-                
+
                 # Check if a file with the same name already exists in face-images
                 existing_files = [
                     f for f in os.listdir(face_images_path)
                     if os.path.splitext(f)[0] == new_name and f.endswith((".jpg", ".png", ".jpeg"))
                 ]
-                
                 if existing_files:
-                    print(f"File with the name '{new_name}' already exists in face-images. Skipping file.")
-                    continue  # Skip this file as a similar file exists
-                
-                src_file_path = os.path.join(unknown_faces_path, file_name)
-                
-                # Move the file to the known_faces directory with the new name
-                shutil.move(src_file_path, known_faces_dst_path)
-                moved_files.append((new_known_faces_file_name, known_faces_dst_path))
+                    logging.warning(f"File with the name '{new_name}' already exists in face-images. Skipping file.")
+                    continue
 
-                # Also move the file to the face-images directory
-                shutil.copy(known_faces_dst_path, face_images_dst_path)
-        
+                src_file_path = os.path.join(unknown_faces_path, file_name)
+                try:
+                    # Move the file to the known_faces directory with the new name
+                    shutil.move(src_file_path, known_faces_dst_path)
+                    moved_files.append((new_known_faces_file_name, known_faces_dst_path))
+                    # Also move the file to the face-images directory
+                    shutil.copy(known_faces_dst_path, face_images_dst_path)
+                except PermissionError:
+                    return jsonify({"error": f"Permission denied when moving or copying file: {src_file_path}"}), 403
+                except shutil.Error as e:
+                    return jsonify({"error": f"Error moving or copying file: {str(e)}"}), 500
+
         # Call update_database with old_name (id) and new_name
-        stream_instance.update_database(id, new_name)
+        try:
+            stream_instance.update_database(id, new_name)
+        except Exception as e:
+            return jsonify({"error": f"Error updating database: {str(e)}"}), 500
 
         # Remove the old folder if it's empty
         if not os.listdir(unknown_faces_path):
-            os.rmdir(unknown_faces_path)
+            try:
+                os.rmdir(unknown_faces_path)
+            except PermissionError:
+                logging.warning(f"Permission denied when trying to remove directory: {unknown_faces_path}")
+            except OSError as e:
+                logging.warning(f"Error removing directory {unknown_faces_path}: {str(e)}")
 
         # Update the image paths in the database
         for new_file_name, new_path in moved_files:
-            stream_instance.recognition_logs_collection.update_many(
-                {"label": new_name},
-                {
-                    "$set": {
-                        "image_path": new_path
-                    }
-                }
-            )
+            try:
+                stream_instance.recognition_logs_collection.update_many(
+                    {"label": new_name},
+                    {"$set": {"image_path": new_path}}
+                )
+            except Exception as e:
+                logging.error(f"Error updating image path in database: {str(e)}")
+
     except FileNotFoundError:
-        return jsonify({"error": "Folder not found"}), 404
+        return jsonify({"error": f"Folder not found: {unknown_faces_path}"}), 404
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
     return jsonify({"message": "Name, image paths updated, and images moved successfully"}), 200
+# @camera_bp.route("/recog/name/<id>", methods=["PUT"])
+# def update_recog_name(id):
+#     data = request.json
+#     new_name = data.get("name")
+#     if not new_name:
+#         return jsonify({"error": "Name is required"}), 400
+
+#     # Update the label in the database
+#     result = stream_instance.recognition_logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+#     if result.matched_count == 0:
+#         return jsonify({"error": "Log not found"}), 404
+  
+#     # Determine the correct source folder path
+#     base_dir = os.path.join('recog')
+#     unknown_faces_path = os.path.join(base_dir, 'unknown_faces', id)
+#     known_faces_path = os.path.join(base_dir, 'known_faces', new_name)
+#     face_images_path = './face-images'
+
+#     try:
+#         # Ensure known_faces/<name> directory exists
+#         if not os.path.exists(known_faces_path):
+#             os.makedirs(known_faces_path)
+
+#         moved_files = []
+
+#         # Rename and move files from old folder to the appropriate directories
+#         for file_name in os.listdir(unknown_faces_path):
+#             if file_name.endswith((".jpg", ".png", ".jpeg")):
+#                 # Construct the new file name as <new_name>-<id>.jpeg for known_faces
+#                 new_known_faces_file_name = f"{new_name}-{id}.jpeg"
+#                 known_faces_dst_path = os.path.join(known_faces_path, new_known_faces_file_name)
+
+#                 # Construct the new file name as <new_name>.jpeg for face-images
+#                 new_face_images_file_name = f"{new_name}.jpeg"
+#                 face_images_dst_path = os.path.join(face_images_path, new_face_images_file_name)
+                
+#                 # Check if a file with the same name already exists in face-images
+#                 existing_files = [
+#                     f for f in os.listdir(face_images_path)
+#                     if os.path.splitext(f)[0] == new_name and f.endswith((".jpg", ".png", ".jpeg"))
+#                 ]
+                
+#                 if existing_files:
+#                     print(f"File with the name '{new_name}' already exists in face-images. Skipping file.")
+#                     continue  # Skip this file as a similar file exists
+                
+#                 src_file_path = os.path.join(unknown_faces_path, file_name)
+                
+#                 # Move the file to the known_faces directory with the new name
+#                 shutil.move(src_file_path, known_faces_dst_path)
+#                 moved_files.append((new_known_faces_file_name, known_faces_dst_path))
+
+#                 # Also move the file to the face-images directory
+#                 shutil.copy(known_faces_dst_path, face_images_dst_path)
+        
+#         # Call update_database with old_name (id) and new_name
+#         stream_instance.update_database(id, new_name)
+
+#         # Remove the old folder if it's empty
+#         if not os.listdir(unknown_faces_path):
+#             os.rmdir(unknown_faces_path)
+
+#         # Update the image paths in the database
+#         for new_file_name, new_path in moved_files:
+#             stream_instance.recognition_logs_collection.update_many(
+#                 {"label": new_name},
+#                 {
+#                     "$set": {
+#                         "image_path": new_path
+#                     }
+#                 }
+#             )
+#     except FileNotFoundError:
+#         return jsonify({"error": "Folder not found"}), 404
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+
+#     return jsonify({"message": "Name, image paths updated, and images moved successfully"}), 200
 
 # -----------------------------------Çalışan Kod
 
@@ -440,16 +549,6 @@ def get_face_image(image_name):
     
     # If no file matches, return an error message
     return jsonify({"error": "Image not found"}), 404
-
-
-# @camera_bp.route("/camera/<int:cam_id>", methods=["GET"])
-# # @jwt_required()
-# def local_camera(cam_id):
-
-#     return Response(
-#         camera_processor.local_camera_stream(cam_id, request.args.get("quality")),
-#         mimetype="multipart/x-mixed-replace; boundary=frame",
-#     )
 
 
 app.register_blueprint(camera_bp)

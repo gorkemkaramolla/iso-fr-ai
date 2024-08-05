@@ -30,7 +30,7 @@ const getRecogFaces = async () => {
     throw error;
   }
 };
-('');
+
 const updateRecogName = async (id: string, newName: string) => {
   try {
     await axios.put(`${BASE_URL}/recog/name/${id}`, { name: newName });
@@ -87,7 +87,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
     const fetchRecogFaces = async () => {
       try {
         const faces = await getRecogFaces();
-        console.log(faces);
+        // console.log(faces);
 
         faces.sort(
           (a: RecogFace, b: RecogFace) =>
@@ -181,6 +181,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
       )
     );
   };
+  const [filteredGroups, setFilteredGroups] = useState(groupedRecogFaces);
 
   const handleEditName = async (id: string) => {
     if (await updateRecogName(id, newName)) {
@@ -189,15 +190,48 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
           group.name === id ? { ...group, name: newName } : group
         )
       );
+
+      // Update filteredGroups as well
+      setFilteredGroups((prevFilteredGroups) =>
+        prevFilteredGroups
+          .map((group) =>
+            group.name === id ? { ...group, name: newName } : group
+          )
+          .filter((group) =>
+            group.name.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+
       setEditingName(null);
     } else {
       alert('Error updating name');
     }
   };
 
-  const filteredGroups = groupedRecogFaces.filter((group) =>
-    group.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Update filteredGroups whenever searchQuery or groupedRecogFaces changes
+  useEffect(() => {
+    setFilteredGroups(
+      groupedRecogFaces.filter((group) =>
+        group.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery, groupedRecogFaces, setEditingName]);
+  // const handleEditName = async (id: string) => {
+  //   if (await updateRecogName(id, newName)) {
+  //     setGroupedRecogFaces((prevGroups) =>
+  //       prevGroups.map((group) =>
+  //         group.name === id ? { ...group, name: newName } : group
+  //       )
+  //     );
+  //     setEditingName(null);
+  //   } else {
+  //     alert('Error updating name');
+  //   }
+  // };
+
+  // const filteredGroups = groupedRecogFaces.filter((group) =>
+  //   group.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
 
   const getLatestTimestamp = (faces: RecogFace[]) => {
     const latestFace = faces.reduce((latest, face) => {

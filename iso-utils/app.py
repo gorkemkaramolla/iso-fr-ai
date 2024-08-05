@@ -1,35 +1,52 @@
+import os
 from flask import Flask
 from flask_cors import CORS
-import os
+from flask_jwt_extended import JWTManager
+import flask.json.provider as provider
 from routes import (
     system_check,
     solr_search_bp,
     personel_bp
 )
-import flask.json.provider as provider
-from flask_jwt_extended import JWTManager
 from socketio_instance import socketio
-from datetime import timedelta
+from config import XMLConfig
 
+# Initialize the configuration for the 'utils_service'
+xml_config = XMLConfig(service_name='utils_service')
+
+# Environment setup
+os.environ["CURL_CA_BUNDLE"] = ""
+
+# Initialize Flask app
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
-CORS(app, origins="*", supports_credentials=True)
 
-# Configure JWT
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Enable CSRF protection in production
+# Configure CORS using the values from xml_config
+CORS(app, origins=xml_config.CORS_ORIGINS, supports_credentials=xml_config.SUPPORTS_CREDENTIALS)
 
+# Configure JWT using the values from xml_config
+app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
+app.config["JWT_TOKEN_LOCATION"] = xml_config.JWT_TOKEN_LOCATION
+app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
+app.config["JWT_REFRESH_COOKIE_PATH"] = xml_config.JWT_REFRESH_COOKIE_PATH
+app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = xml_config.get_jwt_expire_timedelta()
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_timedelta()
 
-
-
+# Initialize JWT Manager
 jwt = JWTManager(app)
+
+# Register blueprints
 app.register_blueprint(system_check)
 app.register_blueprint(solr_search_bp)
 app.register_blueprint(personel_bp)
-os.makedirs("logs", exist_ok=True)
+
+# Ensure necessary directories exist
+os.makedirs(xml_config.TEMP_DIRECTORY, exist_ok=True)
+os.makedirs(xml_config.LOGGING_COLLECTION, exist_ok=True)
+
+# Run the application
 if __name__ == "__main__":
-    socketio.init_app(app)
-    socketio.run(app, debug=True,host="0.0.0.0", port=5004, allow_unsafe_werkzeug=True)
+    socketio.init_app(app, cors_allowed_origins=xml_config.CORS_ORIGINS)
+    socketio.run(app, debug=xml_config.FLASK_DEBUG, host=xml_config.FLASK_HOST, port=xml_config.FLASK_PORT, allow_unsafe_werkzeug=True)

@@ -46,6 +46,10 @@ services:
       - "5001:5001"
     env_file:
       - .env
+    volumes:
+      - ./iso-auth:/app  # Bind mount for development
+      - ./config.xml:/app/config.xml
+      - ./config.py:/app/config.py
     networks:
       - isoai-network
     logging:
@@ -72,7 +76,10 @@ services:
               count: all
               capabilities: [gpu]
     volumes:
+      - ./iso-fr:/app  # Bind mount for development
       - face_recognition_data:/app/data
+      - ./config.xml:/app/config.xml
+      - ./config.py:/app/config.py
     networks:
       - isoai-network
     logging:
@@ -98,6 +105,10 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    volumes:
+      - ./iso-diarize:/app  # Bind mount for development
+      - ./config.xml:/app/config.xml  
+      - ./config.py:/app/config.py
     networks:
       - isoai-network
     logging:
@@ -117,8 +128,11 @@ services:
     env_file:
       - .env
     volumes:
+      - ./iso-utils:/app  # Bind mount for development
       - personel_images:/app/personel_images
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./config.xml:/app/config.xml  
+      - ./config.py:/app/config.py
     networks:
       - isoai-network
     logging:

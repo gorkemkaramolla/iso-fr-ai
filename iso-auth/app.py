@@ -4,11 +4,13 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from routes import auth_bp, users_bp
 import flask.json.provider as provider
-from config import xml_config  # Import the configuration
+from config import XMLConfig  # Import the XML configuration
+
 
 # Initialize Flask app
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
+xml_config = XMLConfig(service_name='auth_service')
 
 # Configure CORS
 CORS(app, origins=xml_config.CORS_ORIGINS, supports_credentials=xml_config.SUPPORTS_CREDENTIALS)

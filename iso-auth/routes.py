@@ -25,10 +25,14 @@ import binascii
 import numpy as np
 import cv2
 
-from config import  xml_config  # Import the configuration
+from config import XMLConfig  # Import the XML configuration
+
 
 # Initialize Flask app
 app = Flask(__name__)
+xml_config = XMLConfig(service_name='auth_service')
+xml_mongo_config = XMLConfig(service_name='mongo')
+
 provider.DefaultJSONProvider.sort_keys = False
 
 # Configure CORS
@@ -47,8 +51,8 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_time
 jwt = JWTManager(app)
 
 ###################################################### Setup MongoDB
-client = MongoClient(xml_config.MONGO_DB_URI)
-db = client[xml_config.MONGO_DB_NAME]
+client = MongoClient(xml_mongo_config.MONGO_DB_URI)
+db = client[xml_mongo_config.MONGO_DB_NAME]
 ##################################################### Create an instance of your class
 logger = configure_logging()
 

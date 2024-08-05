@@ -134,26 +134,51 @@ from flask_cors import CORS
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from logger import configure_logging
-
+from config import xml_config  # Import the XML configuration
+import torch
 app = Flask(__name__)
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-app.config["JWT_COOKIE_SECURE"] = False
-app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
-CORS(app, supports_credentials=True, origins="*")
+# Configure JWT using XML config
+app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
+app.config["JWT_TOKEN_LOCATION"] = xml_config.JWT_TOKEN_LOCATION
+app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
+app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE
+app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT
 
+# Configure CORS using XML config
+CORS(app, supports_credentials=xml_config.SUPPORTS_CREDENTIALS, origins=xml_config.CORS_ORIGINS)
+
+# Initialize JWT Manager
 jwt = JWTManager(app)
 
-client = MongoClient(os.environ.get("MONGO_DB_URI"))
-db = client[os.environ.get("MONGO_DB_NAME")]
-logs_collection = db["logs"]
-camera_collection = db["cameras"]
+# Setup MongoDB using XML config
+client = MongoClient(xml_config.MONGO_DB_URI)
+db = client[xml_config.MONGO_DB_NAME]
+logs_collection = db[xml_config.LOGGING_COLLECTION]
 
-diarization_processor = SpeakerDiarizationProcessor(device="cpu")
+
+# Initialize the Speaker Diarization Processor with the configured device
+if torch.cuda.is_available():
+    print("CUDA is available. Using GPU.")
+    x = torch.device("cuda")
+else:
+    print("CUDA is not available. Using CPU.")
+    x = torch.device("cpu")
+    
+diarization_processor = SpeakerDiarizationProcessor(device=xml_config.DEVICE)
+
+# Initialize logger
 logger = configure_logging()
 
+
+
+
+
+
+
+
+
+# Setup Blueprint
 audio_bp = Blueprint("audio_bp", __name__)
 
 @audio_bp.route("/process-audio/", methods=["POST"])
@@ -165,6 +190,16 @@ def process_audio_route():
 @audio_bp.route("/hello", methods=["GET"])
 @jwt_required()
 def hello_route():
+    #CHECK CUDA
+
+    # Check if CUDA is available
+    if torch.cuda.is_available():
+        print("CUDA is available. Using GPU.")
+        x = torch.device("cuda")
+    else:
+        print("CUDA is not available. Using CPU.")
+        x = torch.device("cpu")
+        logger.info(f"Running on device: {x}")
     return "Hello", 200
 
 @audio_bp.route("/transcriptions/", defaults={"id": None}, methods=["GET"])
@@ -190,9 +225,6 @@ def delete_transcription_route(id):
         return jsonify(response), 200
     except Exception as e:
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
-
-
-
 
 @audio_bp.route("/rename_segments/<transcription_id>", methods=["POST"])
 @jwt_required()
@@ -237,7 +269,7 @@ def delete_segments_route(transcription_id):
 @jwt_required()
 def stream_audio_route(transcription_id):
     try:
-        wav_file_path = os.path.join("temp", f"{transcription_id}.wav")
+        wav_file_path = os.path.join(xml_config.TEMP_DIRECTORY, f"{transcription_id}.wav")
         
         if not os.path.exists(wav_file_path):
             abort(404, description="Resource not found")

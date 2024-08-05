@@ -1,4 +1,10 @@
-import React, { useState, useCallback, RefObject } from 'react';
+import React, {
+  useState,
+  useCallback,
+  RefObject,
+  useEffect,
+  useRef,
+} from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlignStartHorizontal,
@@ -10,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import SegmentMenu from './segment-menu';
+import { debounce } from 'lodash';
 
 interface TranscriptSegment {
   segment_id: string;
@@ -39,7 +46,6 @@ interface TextEditorProps {
   handleTranscribedTextChange: (segmentId: string, newText: string) => void;
   selectedSegments: string[];
   selectedSpeakers: string[];
-  uniqueSpeakers: string[];
   highlightedSegment: string | null;
   transcriptionRef: RefObject<HTMLDivElement>;
   getSpeakerBorderColor: (speaker: string) => string;
@@ -71,7 +77,6 @@ const TextEditor: React.FC<TextEditorProps> = ({
   handleTranscribedTextChange,
   selectedSegments,
   selectedSpeakers,
-  uniqueSpeakers,
   highlightedSegment,
   transcriptionRef,
   getSpeakerBorderColor,
@@ -87,6 +92,104 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   const [viewMode, setViewMode] = useState<'inline' | 'list'>('inline');
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
+  const [isTranscriptionNameEditing, setIsTranscriptionNameEditing] =
+    useState(false);
+  const [transcriptionName, setTranscriptionName] = useState(
+    transcription?.name || ''
+  );
+  const [segments, setSegments] = useState<TranscriptSegment[]>(
+    transcription?.segments || []
+  );
+  const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
+
+  const segmentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    setTranscriptionName(transcription?.name || '');
+    setSegments(transcription?.segments || []);
+    updateUniqueSpeakers(transcription?.segments || []);
+  }, [transcription]);
+
+  const debouncedHandleEditName = useCallback(
+    debounce((newName: string) => {
+      handleEditName(newName);
+      setTranscriptionName(newName); // Immediately update the name in the UI
+      alert('Name changed');
+    }, 500),
+    [handleEditName]
+  );
+
+  const updateUniqueSpeakers = (segments: TranscriptSegment[]) => {
+    const speakers = Array.from(
+      new Set(segments.map((segment) => segment.speaker))
+    );
+    setUniqueSpeakers(speakers);
+  };
+
+  const handleNameChange = (e: React.FocusEvent<HTMLHeadingElement>) => {
+    const newName = e.currentTarget.textContent || '';
+    setTranscriptionName(newName);
+    debouncedHandleEditName(newName);
+  };
+
+  const handleTranscriptionNameChange = () => {
+    setIsTranscriptionNameEditing(true);
+  };
+
+  const handleSpeakerClick = (speaker: string) => {
+    const newName = prompt(`Rename ${speaker} to:`);
+    if (newName && newName.trim() !== '') {
+      const confirmChange = window.confirm(
+        `Are you sure you want to rename all occurrences of "${speaker}" to "${newName}"?`
+      );
+      if (confirmChange) {
+        renameAllSegments(speaker, newName);
+      }
+    }
+  };
+
+  const renameAllSegments = (oldName: string, newName: string) => {
+    const updatedSegments = segments.map((segment) => {
+      if (segment.speaker === oldName) {
+        handleSpeakerNameChange(segment.segment_id, newName);
+        return { ...segment, speaker: newName };
+      }
+      return segment;
+    });
+    setSegments(updatedSegments); // Update the segments in the state
+    updateUniqueSpeakers(updatedSegments); // Update the unique speakers
+    alert(`All "${oldName}" segments renamed to "${newName}"`);
+  };
+
+  useEffect(() => {
+    if (segments.length > 0) {
+      const activeSegment = segments.find(
+        (segment) =>
+          currentTime >= segment.start_time && currentTime <= segment.end_time
+      );
+
+      if (activeSegment && segmentRefs.current[activeSegment.segment_id]) {
+        const element = segmentRefs.current[activeSegment.segment_id];
+        const container = transcriptionRef.current;
+
+        if (element && container) {
+          const elementRect = element.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          const offset = containerRect.height / 2 - elementRect.height / 2;
+
+          if (
+            elementRect.top < containerRect.top ||
+            elementRect.bottom > containerRect.bottom
+          ) {
+            container.scrollTo({
+              top: element.offsetTop - container.offsetTop - offset,
+              behavior: 'smooth',
+            });
+          }
+        }
+      }
+    }
+  }, [currentTime, segments, transcriptionRef]);
 
   const showSegmentMenu = useCallback(
     (e: React.MouseEvent, segmentId: string) => {
@@ -109,19 +212,29 @@ const TextEditor: React.FC<TextEditorProps> = ({
   }, []);
 
   const handleDeleteSegment = useCallback(() => {
-    console.log('Delete segment:', menuState.segmentId);
+    if (menuState.segmentId) {
+      handleDeleteSelected(menuState.segmentId);
+    }
     closeMenu();
-  }, [menuState.segmentId, closeMenu]);
+  }, [menuState.segmentId, handleDeleteSelected, closeMenu]);
 
   const handleEditSegment = useCallback(() => {
-    console.log('Edit segment:', menuState.segmentId);
+    if (menuState.segmentId) {
+      const segment = segments.find(
+        (s) => s.segment_id === menuState.segmentId
+      );
+      if (segment) {
+        const newSpeakerName = prompt('Edit Speaker Name:', segment.speaker);
+        if (newSpeakerName && newSpeakerName.trim() !== '') {
+          handleSpeakerNameChange(segment.segment_id, newSpeakerName);
+        }
+      }
+    }
     closeMenu();
-  }, [menuState.segmentId, closeMenu]);
+  }, [menuState.segmentId, segments, handleSpeakerNameChange, closeMenu]);
 
   const handleCopySegment = useCallback(() => {
-    const segment = transcription?.segments.find(
-      (s) => s.segment_id === menuState.segmentId
-    );
+    const segment = segments.find((s) => s.segment_id === menuState.segmentId);
     if (segment) {
       navigator.clipboard.writeText(segment.transcribed_text).then(
         () => {
@@ -133,7 +246,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
       );
     }
     closeMenu();
-  }, [menuState.segmentId, transcription?.segments, closeMenu]);
+  }, [menuState.segmentId, segments, closeMenu]);
 
   const handleBlur = useCallback(
     (
@@ -144,9 +257,15 @@ const TextEditor: React.FC<TextEditorProps> = ({
       const newText = e.currentTarget.textContent || '';
       if (newText !== originalText) {
         handleTranscribedTextChange(segmentId, newText);
+        const updatedSegments = segments.map((segment) =>
+          segment.segment_id === segmentId
+            ? { ...segment, transcribed_text: newText }
+            : segment
+        );
+        setSegments(updatedSegments);
       }
     },
-    [handleTranscribedTextChange]
+    [handleTranscribedTextChange, segments]
   );
 
   const handleBadgeMouseEnter = useCallback((segmentId: string) => {
@@ -161,26 +280,35 @@ const TextEditor: React.FC<TextEditorProps> = ({
     <div>
       <div className='flex items-center justify-between w-full'>
         <div className='flex items-center'>
-          <h1 className='text-xl font-extrabold p-4'>{transcription?.name}</h1>
+          <h1
+            className='text-xl font-extrabold p-4 w-64'
+            contentEditable={isTranscriptionNameEditing}
+            onBlur={handleNameChange}
+            suppressContentEditableWarning
+          >
+            {transcriptionName}
+          </h1>
           <div className='relative flex items-center'>
             <button onClick={() => setIsEditing(!isEditing)}>
               <EllipsisVertical />
             </button>
+
             {isEditing && (
               <ul className='menu menu-horizontal w-full bg-base-200 rounded-box'>
                 <li>
-                  <a
+                  <button
+                    onClick={handleTranscriptionNameChange}
                     className='tooltip tooltip-right'
-                    data-tip='Konuşma Sentezinin adını değiştir '
+                    data-tip='Konuşma adını değiştir'
                   >
                     <SquarePen />
-                  </a>
+                  </button>
                 </li>
                 <li>
                   <a
                     onClick={handleGetExcel}
                     className='tooltip tooltip-right'
-                    data-tip='Excel Dosyası Olarak İndir'
+                    data-tip='Download as Excel'
                   >
                     <FileX />
                   </a>
@@ -189,7 +317,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   <a
                     onClick={handleGetJSON}
                     className='tooltip tooltip-right'
-                    data-tip='JSON Olarak İndir'
+                    data-tip='Download as JSON'
                   >
                     <FileJson />
                   </a>
@@ -198,7 +326,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   <a
                     onClick={handleTranscriptionDelete}
                     className='tooltip tooltip-right text-red-600'
-                    data-tip='Transkripsiyonu Sil'
+                    data-tip='Delete transcription'
                   >
                     <Trash2 />
                   </a>
@@ -207,55 +335,57 @@ const TextEditor: React.FC<TextEditorProps> = ({
             )}
           </div>
         </div>
-      </div>
 
-      <div className='flex justify-end space-x-2 mb-4'>
-        <button
-          className='p-button-sm'
-          onClick={() => setViewMode(viewMode === 'inline' ? 'list' : 'inline')}
-        >
-          {viewMode === 'inline' ? (
-            <AlignStartHorizontal />
-          ) : (
-            <AlignStartVertical />
-          )}
-        </button>
+        <div className='flex justify-end space-x-2 mb-4'>
+          <div className='dropdown'>
+            <div tabIndex={0} role='button' className='btn m-1'>
+              Konuşmacılar
+            </div>
+            <ul
+              tabIndex={0}
+              className='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'
+            >
+              {uniqueSpeakers.map((speaker) => (
+                <li
+                  key={speaker}
+                  className='flex gap-1 ml-3 cursor-pointer'
+                  onClick={() => handleSpeakerClick(speaker)}
+                >
+                  -{speaker}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <button
+            className='p-button-sm'
+            onClick={() =>
+              setViewMode(viewMode === 'inline' ? 'list' : 'inline')
+            }
+          >
+            {viewMode === 'inline' ? (
+              <AlignStartHorizontal />
+            ) : (
+              <AlignStartVertical />
+            )}
+          </button>
+        </div>
       </div>
 
       <div
         ref={transcriptionRef}
         className='bg-white rounded shadow p-4 overflow-y-scroll h-[600px]'
       >
-        <div className='flex w-full justify-around py-2'>
-          <div>
-            <input
-              type='checkbox'
-              checked={
-                selectedSegments.length === transcription?.segments.length
-              }
-              onChange={handleSelectAll}
-              name='selectall'
-            />
-            <label htmlFor='selectall' className='ml-2'>
-              Hepsini Seç
-            </label>
-          </div>
+        {/* <div className='flex w-full justify-around flex-col text-sm py-2'>
+          <h2>Speakers</h2>
           {uniqueSpeakers.map((speaker) => (
-            <div key={speaker} className='flex gap-1'>
-              <input
-                type='checkbox'
-                checked={selectedSpeakers.includes(speaker)}
-                onChange={() => handleSelectSpeaker(speaker)}
-                name={`select-${speaker}`}
-              />
-              <label htmlFor={`select-${speaker}`} className='ml-2'>
-                {speaker}
-              </label>
+            <div key={speaker} className='flex gap-1 ml-3 '>
+              -{speaker}
             </div>
           ))}
-        </div>
+        </div> */}
         <AnimatePresence>
-          {transcription?.segments.map((segment, index) => {
+          {segments.map((segment, index) => {
             const isHighlighted =
               currentTime >= segment.start_time &&
               currentTime <= segment.end_time;
@@ -265,25 +395,32 @@ const TextEditor: React.FC<TextEditorProps> = ({
             return (
               <motion.div
                 key={segment.segment_id}
-                className={viewMode === 'inline' ? 'inline' : 'block mb-2'}
+                className={
+                  viewMode === 'inline'
+                    ? 'inline'
+                    : 'block mb-2 transition-all '
+                }
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2, delay: index * 0.03 }}
-                style={{
-                  backgroundColor: isHovered ? '#bfff00' : undefined,
+                ref={(el) => {
+                  segmentRefs.current[segment.segment_id] = el;
                 }}
               >
+                <span className=' badge text-gray-400 text-[10px]'>
+                  {segment.speaker}
+                </span>
+
                 <span
                   onClick={(e) => showSegmentMenu(e, segment.segment_id)}
                   className={`${
                     isActiveSegment ? 'bg-gray-500 text-white' : 'text-gray-400'
-                  }  cursor-pointer badge text-sm`}
+                  }  cursor-pointer badge text-[10px] `}
                   onMouseEnter={() => handleBadgeMouseEnter(segment.segment_id)}
                   onMouseLeave={handleBadgeMouseLeave}
                 >
-                  {segment.start_time.toFixed(2)}s -{' '}
-                  {segment.end_time.toFixed(2)}s
+                  {segment.start_time.toFixed(2)}s
                 </span>
 
                 <span
@@ -293,7 +430,9 @@ const TextEditor: React.FC<TextEditorProps> = ({
                     viewMode === 'list' ? 'block' : 'inline'
                   }`}
                   style={{
-                    backgroundColor: isHighlighted
+                    backgroundColor: isHovered
+                      ? '#bfff00'
+                      : isHighlighted
                       ? speakerColors[segment.speaker]
                       : 'transparent',
                   }}

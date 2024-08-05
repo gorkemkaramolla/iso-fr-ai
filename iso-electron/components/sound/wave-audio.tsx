@@ -39,7 +39,7 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     () =>
       Timeline.create({
         container: timelineContainerRef.current as HTMLElement,
-        height: 20,
+        height: 12,
         timeInterval: 15,
         primaryLabelInterval: 60,
         secondaryLabelInterval: 15,
@@ -74,6 +74,8 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchAudio = async () => {
       if (audioContainerRef.current) {
         try {
@@ -95,7 +97,6 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
           const waveform = WaveSurfer.create({
             container: audioContainerRef.current,
             waveColor: '#818cf8',
-
             progressColor: '#4f46e5',
             cursorColor: '#4f46e5',
             barWidth: 2,
@@ -109,31 +110,41 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
           waveAudioRef.current = waveform;
 
           waveform.on('ready', () => {
+            if (!isMounted) return;
+
             setDuration(waveform.getDuration());
 
-            segments.forEach((segment: Segment) => {
-              regionsPlugin.addRegion({
-                start: segment.start_time,
-                end: segment.end_time,
-                color: speakerColors[segment.speaker],
-                resize: false,
-                drag: false,
+            segments &&
+              segments.forEach((segment: Segment) => {
+                regionsPlugin.addRegion({
+                  start: segment.start_time,
+                  end: segment.end_time,
+                  color: speakerColors[segment.speaker],
+                  resize: false,
+                  drag: false,
+                });
               });
-            });
           });
 
           waveform.on('audioprocess', () => {
+            if (!isMounted) return;
+
             const current = waveform.getCurrentTime();
             setCurrentTime(current);
             setStoreCurrentTime(current);
 
             if (onTimeUpdate) {
-              onTimeUpdate(current);
+              onTimeUpdate(current); // Pass current time to parent
             }
           });
 
-          waveform.on('play', () => setIsPlaying(true));
-          waveform.on('pause', () => setIsPlaying(false));
+          waveform.on('play', () => {
+            if (isMounted) setIsPlaying(true);
+          });
+
+          waveform.on('pause', () => {
+            if (isMounted) setIsPlaying(false);
+          });
 
           return () => {
             waveform.destroy();
@@ -148,8 +159,10 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     fetchAudio();
 
     return () => {
+      isMounted = false;
       if (waveAudioRef.current) {
         waveAudioRef.current.destroy();
+        waveAudioRef.current = null;
       }
     };
   }, [
@@ -159,6 +172,7 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     customTimelinePlugin,
     regionsPlugin,
     setStoreCurrentTime,
+    onTimeUpdate, // Add this dependency to ensure the callback is up-to-date
   ]);
 
   const formatTime = (seconds: number) => {
@@ -168,7 +182,7 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
   };
 
   return (
-    <div className='flex flex-col w-full max-w-4xl mx-auto space-y-2'>
+    <div className='flex  flex-col w-full py-4 conati mx-auto space-y-2'>
       <div className='flex items-center space-x-4'>
         <div className='flex-grow'>
           <div ref={audioContainerRef} className='w-full h-16'></div>

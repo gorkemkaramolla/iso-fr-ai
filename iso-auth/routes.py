@@ -18,7 +18,6 @@ from flask_jwt_extended import (
     get_jwt_identity,
     unset_jwt_cookies
 )
-import os
 from datetime import timedelta, datetime, timezone
 from bson.objectid import ObjectId
 import io
@@ -26,73 +25,36 @@ import binascii
 import numpy as np
 import cv2
 
-from config import BINARY_MATCH
+from config import  xml_config  # Import the configuration
 
+# Initialize Flask app
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
 
-CORS(app, origins="*", supports_credentials=True)
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config['JWT_ACCESS_COOKIE_PATH'] = '/'
-app.config['JWT_REFRESH_COOKIE_PATH'] = '/token/refresh'
-app.config["JWT_COOKIE_SECURE"] = False  # Set to True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection in production
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(seconds=int(os.getenv("JWT_EXPIRE_SECONDS")))
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(hours=2)
+# Configure CORS
+CORS(app, origins=xml_config.CORS_ORIGINS, supports_credentials=xml_config.SUPPORTS_CREDENTIALS)
+
+# Set Flask app configuration using the parsed XML values
+app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
+app.config["JWT_TOKEN_LOCATION"] = xml_config.JWT_TOKEN_LOCATION
+app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
+app.config["JWT_REFRESH_COOKIE_PATH"] = xml_config.JWT_REFRESH_COOKIE_PATH
+app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = xml_config.get_jwt_expire_timedelta()
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_timedelta()
 
 jwt = JWTManager(app)
 
 ###################################################### Setup MongoDB
-client = MongoClient(os.environ.get("MONGO_DB_URI"))
-db = client[os.environ.get("MONGO_DB_NAME")]
-logs_collection = db["logs"]
-camera_collection = db["cameras"]
-
+client = MongoClient(xml_config.MONGO_DB_URI)
+db = client[xml_config.MONGO_DB_NAME]
 ##################################################### Create an instance of your class
 logger = configure_logging()
 
 # Setup Blueprint
 auth_bp = Blueprint("auth_bp", __name__)
 users_bp = Blueprint("users_bp", __name__)
-
-@users_bp.route("/users/images", methods=["GET"])
-def get_user_images():
-    personel = list(
-        db.get_collection("Personel").find(
-            {}, {"FOTO_BINARY_DATA": 1, "ADI": 1, "SOYADI": 1}
-        )
-    )
-    for i, person in enumerate(personel):
-        try:
-            if (
-                person.get("FOTO_BINARY_DATA")
-                and person.get("FOTO_BINARY_DATA") != BINARY_MATCH
-            ):
-                hex_data = person.get("FOTO_BINARY_DATA")
-                binary_data = binascii.unhexlify(hex_data)
-                nparr = np.frombuffer(binary_data, np.uint8)
-                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                if not os.path.exists("images"):
-                    os.makedirs("images")
-                adi = person.get("ADI", "unknown")
-                soyadi = person.get("SOYADI", "unknown")
-                cv2.imwrite(f"images/{adi}{soyadi}.jpeg", image)
-        except Exception as e:
-            print(f"Image {i} is corrupted, skipping... Error: {str(e)}")
-            continue
-    return "Images saved", 200
-
-# @users_bp.route('/testix', methods=['GET'])
-# @jwt_required()
-# def testix():
-#     cookie_header = request.headers.get('Cookie', 'Unknown')
-#     cookies = request.cookies  # This is a dictionary of all cookies
-#     response_data = {
-#         'CookieHeader': cookie_header,
-#         'Cookies': cookies
-#     }
-#     return jsonify(response_data), 200
 
 @users_bp.route("/users", methods=["GET"])
 @jwt_required() 
@@ -152,7 +114,7 @@ def login():
         return tokens
 
     response = jsonify({"message": "Login successful"})
-    set_access_cookies(response, tokens["access_token"], max_age=int(os.getenv("JWT_EXPIRE_SECONDS")))
+    set_access_cookies(response, tokens["access_token"], max_age=int(xml_config.JWT_EXPIRE_SECONDS))
     set_refresh_cookies(response, tokens["refresh_token"])
     return response, 200
 

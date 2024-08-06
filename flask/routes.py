@@ -352,7 +352,6 @@ def update_log(id):
 def delete_log(id):
     logs_collection.delete_one({"_id": ObjectId(id)})
     return jsonify({"message": "Log deleted successfully"}), 200
-
 @camera_bp.route("/recog/name/<id>", methods=["PUT"])
 def update_recog_name(id):
     data = request.json
@@ -365,25 +364,29 @@ def update_recog_name(id):
     if result.matched_count == 0:
         return jsonify({"error": f"No logs found for ID: {id}"}), 404
 
-    # Determine the correct source folder path
+    # Determine the correct source and destination folder paths
     base_dir = os.path.join('recog')
     unknown_faces_path = os.path.join(base_dir, 'unknown_faces', id)
-    known_faces_path = os.path.join(base_dir, 'known_faces', new_name)
+    known_faces_old_path = os.path.join(base_dir, 'known_faces', id)
+    known_faces_new_path = os.path.join(base_dir, 'known_faces', new_name)
     face_images_path = './face-images'
 
+    # Determine the source path (either unknown_faces or known_faces)
+    src_path = unknown_faces_path if os.path.exists(unknown_faces_path) else known_faces_old_path
+
     try:
-        # Ensure known_faces/<name> directory exists
-        os.makedirs(known_faces_path, exist_ok=True)
+        # Ensure known_faces/<new_name> directory exists
+        os.makedirs(known_faces_new_path, exist_ok=True)
     except PermissionError:
-        return jsonify({"error": f"Permission denied when creating directory: {known_faces_path}"}), 403
+        return jsonify({"error": f"Permission denied when creating directory: {known_faces_new_path}"}), 403
 
     moved_files = []
     try:
         # Rename and move files from old folder to the appropriate directories
-        for file_name in os.listdir(unknown_faces_path):
+        for file_name in os.listdir(src_path):
             if file_name.endswith((".jpg", ".png", ".jpeg")):
                 new_known_faces_file_name = f"{new_name}-{id}.jpeg"
-                known_faces_dst_path = os.path.join(known_faces_path, new_known_faces_file_name)
+                known_faces_dst_path = os.path.join(known_faces_new_path, new_known_faces_file_name)
                 new_face_images_file_name = f"{new_name}.jpeg"
                 face_images_dst_path = os.path.join(face_images_path, new_face_images_file_name)
 
@@ -396,13 +399,19 @@ def update_recog_name(id):
                     logging.warning(f"File with the name '{new_name}' already exists in face-images. Skipping file.")
                     continue
 
-                src_file_path = os.path.join(unknown_faces_path, file_name)
+                src_file_path = os.path.join(src_path, file_name)
                 try:
                     # Move the file to the known_faces directory with the new name
                     shutil.move(src_file_path, known_faces_dst_path)
                     moved_files.append((new_known_faces_file_name, known_faces_dst_path))
                     # Also move the file to the face-images directory
                     shutil.copy(known_faces_dst_path, face_images_dst_path)
+
+                    # Update the image path in the database for each moved file
+                    stream_instance.recognition_logs_collection.update_many(
+                        {"label": new_name, "image_path": src_file_path},
+                        {"$set": {"image_path": known_faces_dst_path}}
+                    )
                 except PermissionError:
                     return jsonify({"error": f"Permission denied when moving or copying file: {src_file_path}"}), 403
                 except shutil.Error as e:
@@ -415,30 +424,107 @@ def update_recog_name(id):
             return jsonify({"error": f"Error updating database: {str(e)}"}), 500
 
         # Remove the old folder if it's empty
-        if not os.listdir(unknown_faces_path):
+        if not os.listdir(src_path):
             try:
-                os.rmdir(unknown_faces_path)
+                os.rmdir(src_path)
             except PermissionError:
-                logging.warning(f"Permission denied when trying to remove directory: {unknown_faces_path}")
+                logging.warning(f"Permission denied when trying to remove directory: {src_path}")
             except OSError as e:
-                logging.warning(f"Error removing directory {unknown_faces_path}: {str(e)}")
-
-        # Update the image paths in the database
-        for new_file_name, new_path in moved_files:
-            try:
-                stream_instance.recognition_logs_collection.update_many(
-                    {"label": new_name},
-                    {"$set": {"image_path": new_path}}
-                )
-            except Exception as e:
-                logging.error(f"Error updating image path in database: {str(e)}")
+                logging.warning(f"Error removing directory {src_path}: {str(e)}")
 
     except FileNotFoundError:
-        return jsonify({"error": f"Folder not found: {unknown_faces_path}"}), 404
+        return jsonify({"error": f"Folder not found: {src_path}"}), 404
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
     return jsonify({"message": "Name, image paths updated, and images moved successfully"}), 200
+
+# @camera_bp.route("/recog/name/<id>", methods=["PUT"])
+# def update_recog_name(id):
+#     data = request.json
+#     new_name = data.get("name")
+#     if not new_name:
+#         return jsonify({"error": "Name is required in the request body"}), 400
+
+#     # Update the label in the database
+#     result = stream_instance.recognition_logs_collection.update_many({"label": id}, {"$set": {"label": new_name}})
+#     if result.matched_count == 0:
+#         return jsonify({"error": f"No logs found for ID: {id}"}), 404
+
+#     # Determine the correct source folder path
+#     base_dir = os.path.join('recog')
+#     unknown_faces_path = os.path.join(base_dir, 'unknown_faces', id)
+#     known_faces_path = os.path.join(base_dir, 'known_faces', new_name)
+#     face_images_path = './face-images'
+
+#     try:
+#         # Ensure known_faces/<name> directory exists
+#         os.makedirs(known_faces_path, exist_ok=True)
+#     except PermissionError:
+#         return jsonify({"error": f"Permission denied when creating directory: {known_faces_path}"}), 403
+
+#     moved_files = []
+#     try:
+#         # Rename and move files from old folder to the appropriate directories
+#         for file_name in os.listdir(unknown_faces_path):
+#             if file_name.endswith((".jpg", ".png", ".jpeg")):
+#                 new_known_faces_file_name = f"{new_name}-{id}.jpeg"
+#                 known_faces_dst_path = os.path.join(known_faces_path, new_known_faces_file_name)
+#                 new_face_images_file_name = f"{new_name}.jpeg"
+#                 face_images_dst_path = os.path.join(face_images_path, new_face_images_file_name)
+
+#                 # Check if a file with the same name already exists in face-images
+#                 existing_files = [
+#                     f for f in os.listdir(face_images_path)
+#                     if os.path.splitext(f)[0] == new_name and f.endswith((".jpg", ".png", ".jpeg"))
+#                 ]
+#                 if existing_files:
+#                     logging.warning(f"File with the name '{new_name}' already exists in face-images. Skipping file.")
+#                     continue
+
+#                 src_file_path = os.path.join(unknown_faces_path, file_name)
+#                 try:
+#                     # Move the file to the known_faces directory with the new name
+#                     shutil.move(src_file_path, known_faces_dst_path)
+#                     moved_files.append((new_known_faces_file_name, known_faces_dst_path))
+#                     # Also move the file to the face-images directory
+#                     shutil.copy(known_faces_dst_path, face_images_dst_path)
+#                 except PermissionError:
+#                     return jsonify({"error": f"Permission denied when moving or copying file: {src_file_path}"}), 403
+#                 except shutil.Error as e:
+#                     return jsonify({"error": f"Error moving or copying file: {str(e)}"}), 500
+
+#         # Call update_database with old_name (id) and new_name
+#         try:
+#             stream_instance.update_database(id, new_name)
+#         except Exception as e:
+#             return jsonify({"error": f"Error updating database: {str(e)}"}), 500
+
+#         # Remove the old folder if it's empty
+#         if not os.listdir(unknown_faces_path):
+#             try:
+#                 os.rmdir(unknown_faces_path)
+#             except PermissionError:
+#                 logging.warning(f"Permission denied when trying to remove directory: {unknown_faces_path}")
+#             except OSError as e:
+#                 logging.warning(f"Error removing directory {unknown_faces_path}: {str(e)}")
+
+#         # Update the image paths in the database
+#         for new_file_name, new_path in moved_files:
+#             try:
+#                 stream_instance.recognition_logs_collection.update_many(
+#                     {"label": new_name},
+#                     {"$set": {"image_path": new_path}}
+#                 )
+#             except Exception as e:
+#                 logging.error(f"Error updating image path in database: {str(e)}")
+
+#     except FileNotFoundError:
+#         return jsonify({"error": f"Folder not found: {unknown_faces_path}"}), 404
+#     except Exception as e:
+#         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+#     return jsonify({"message": "Name, image paths updated, and images moved successfully"}), 200
 # @camera_bp.route("/recog/name/<id>", methods=["PUT"])
 # def update_recog_name(id):
 #     data = request.json

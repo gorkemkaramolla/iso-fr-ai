@@ -37,6 +37,7 @@ const updateRecogName = async (id: string, newName: string) => {
     return true;
   } catch (error) {
     console.error('Error updating name', error);
+    alert('Error updating name' + error);
     return false;
   }
 };
@@ -56,7 +57,39 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
   const [editingName, setEditingName] = useState<string | null>(null);
   const [newName, setNewName] = useState<string>('');
   const [selectedFace, setSelectedFace] = useState<RecogFace | null>(null);
+  const [filteredGroups, setFilteredGroups] = useState(groupedRecogFaces);
 
+  const handleEditName = async (id: string) => {
+    if (await updateRecogName(id, newName)) {
+      setGroupedRecogFaces((prevGroups) =>
+        prevGroups.map((group) =>
+          group.name === id ? { ...group, name: newName } : group
+        )
+      );
+
+      // Update filteredGroups as well
+      setFilteredGroups((prevFilteredGroups) =>
+        prevFilteredGroups
+          .map((group) =>
+            group.name === id ? { ...group, name: newName } : group
+          )
+          .filter((group) =>
+            group.name.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+
+      setEditingName(null);
+    }
+  };
+
+  // Update filteredGroups whenever searchQuery or groupedRecogFaces changes
+  useEffect(() => {
+    setFilteredGroups(
+      groupedRecogFaces.filter((group) =>
+        group.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery, groupedRecogFaces]);
   const mergeGroups = (groups: GroupedRecogFaces[]) => {
     const merged = groups.reduce((acc: GroupedRecogFaces[], current) => {
       const foundIndex = acc.findIndex((g) => g.name === current.name);
@@ -170,7 +203,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
     return () => {
       socket.off('new_face');
     };
-  }, []);
+  }, [editingName]);
 
   const handleToggle = (name: string) => {
     setGroupedRecogFaces((prevGroups) =>
@@ -181,41 +214,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
       )
     );
   };
-  const [filteredGroups, setFilteredGroups] = useState(groupedRecogFaces);
 
-  const handleEditName = async (id: string) => {
-    if (await updateRecogName(id, newName)) {
-      setGroupedRecogFaces((prevGroups) =>
-        prevGroups.map((group) =>
-          group.name === id ? { ...group, name: newName } : group
-        )
-      );
-
-      // Update filteredGroups as well
-      setFilteredGroups((prevFilteredGroups) =>
-        prevFilteredGroups
-          .map((group) =>
-            group.name === id ? { ...group, name: newName } : group
-          )
-          .filter((group) =>
-            group.name.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-      );
-
-      setEditingName(null);
-    } else {
-      alert('Error updating name');
-    }
-  };
-
-  // Update filteredGroups whenever searchQuery or groupedRecogFaces changes
-  useEffect(() => {
-    setFilteredGroups(
-      groupedRecogFaces.filter((group) =>
-        group.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-  }, [searchQuery, groupedRecogFaces, setEditingName]);
   // const handleEditName = async (id: string) => {
   //   if (await updateRecogName(id, newName)) {
   //     setGroupedRecogFaces((prevGroups) =>

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,7 +13,16 @@
   @tailwind components;
   @tailwind utilities;
 }
-
+@layer primereact {
+  #percent.p-inputnumber-input {
+    margin: 0;
+    width: 5rem !important;
+  }
+  #age.p-inputnumber-input {
+    margin: 0;
+    width: 3.3rem !important;
+  }
+}
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -26,6 +36,42 @@
     --background-end-rgb: 0, 0, 0;
   }
 } */
+
+.nunito-100 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 100;
+  font-style: normal;
+}
+.nunito-200 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 200;
+  font-style: normal;
+}
+.nunito-300 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 300;
+  font-style: normal;
+}
+.nunito-400 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+.nunito-500 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+  font-style: normal;
+}
+.nunito-600 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-style: normal;
+}
+.nunito-700 {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
 
 @layer utilities {
   .text-balance {
@@ -121,12 +167,12 @@ th {
   position: sticky;
   top: 0;
 }
-td {
+/* td {
   justify-content: center;
   align-items: center;
   flex-direction: row;
   padding: 36px !important;
-}
+} */
 .truncate {
   display: block;
   width: 100%;

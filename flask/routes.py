@@ -20,7 +20,7 @@ from flask_cors import CORS
 from auth.auth_provider import AuthProvider
 from flask_jwt_extended import jwt_required, JWTManager
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from PIL import Image
 import io
@@ -29,7 +29,7 @@ import cv2
 import numpy as np
 from socketio_instance import notify_new_camera_url, socketio, emit, join_room, leave_room
 from config import BINARY_MATCH
-
+import pytz
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
 
@@ -323,13 +323,59 @@ def stop_recording():
     )
 # ****************************************************************************
 
+# @camera_bp.route("/recog", methods=["GET"])
+# def get_all_logs():
+#     logs = list(
+#         logs_collection.find({}, {}).sort("timestamp", DESCENDING)
+#     )  # Exclude _id from the results
+#     return bson.json_util.dumps(logs)
+    # return "Hello"
+    
 @camera_bp.route("/recog", methods=["GET"])
-def get_all_logs():
+def get_all_logs_by_date():
+    date_str = request.args.get('date')
+    
+    query = {}
+    if date_str:
+        try:
+            # Parse the date string in ISO 8601 format
+            date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            # Adjust for the timezone UTC+3
+            tz = pytz.timezone('Etc/GMT-3')
+            date = date.astimezone(tz)
+            # Set the start and end of the day
+            start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_of_day = start_of_day + timedelta(days=1)
+            # Convert to milliseconds since epoch for MongoDB comparison
+            start_of_day_ms = int(start_of_day.timestamp() * 1000)
+            end_of_day_ms = int(end_of_day.timestamp() * 1000)
+            query['timestamp'] = {'$gte': start_of_day_ms, '$lt': end_of_day_ms}
+        except ValueError:
+            return "Invalid date format. Use ISO 8601 format.", 400
+
     logs = list(
-        logs_collection.find({}, {}).sort("timestamp", DESCENDING)
+        logs_collection.find(query, {}).sort("timestamp", DESCENDING)
     )  # Exclude _id from the results
     return bson.json_util.dumps(logs)
-    # return "Hello"
+
+# @camera_bp.route("/recog", methods=["GET"])
+# def get_all_logs_by_date():
+#     date_str = request.args.get('date').split('T')[0] if request.args.get('date') else None
+    
+#     query = {}
+#     if date_str:
+#         try:
+#             date = datetime.strptime(date_str, '%Y-%m-%d') + timedelta(hours=3)
+#             next_day = date + timedelta(days=1)
+#             query['timestamp'] = {'$gte': date, '$lt': next_day}
+#         except ValueError:
+#             return "Invalid date format. Use YYYY-MM-DD.", 400
+
+#     logs = list(
+#         logs_collection.find(query, {}).sort("timestamp", DESCENDING)
+#     )  # Exclude _id from the results
+#     return bson.json_util.dumps(logs)
+
 
 
 @camera_bp.route("/recog/<id>", methods=["GET"])

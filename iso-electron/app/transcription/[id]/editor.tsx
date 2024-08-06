@@ -14,9 +14,11 @@ import {
   FileX,
   SquarePen,
   Trash2,
+  User,
+  Copy,
 } from 'lucide-react';
-import SegmentMenu from './segment-menu';
 import { debounce } from 'lodash';
+import SegmentMenu from './segment-menu';
 
 interface TranscriptSegment {
   segment_id: string;
@@ -38,7 +40,7 @@ interface TextEditorProps {
   handleTranscriptionDelete: () => void;
   handleGetExcel: () => void;
   handleGetJSON: () => void;
-  handleDeleteSelected: () => void;
+  handleDeleteSelected: (segmentId: string) => void;
   handleSelectSegment: (segmentId: string) => void;
   handleSelectAll: () => void;
   handleSelectSpeaker: (speaker: string) => void;
@@ -113,8 +115,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const debouncedHandleEditName = useCallback(
     debounce((newName: string) => {
       handleEditName(newName);
-      setTranscriptionName(newName); // Immediately update the name in the UI
-      alert('Name changed');
+      setTranscriptionName(newName);
     }, 500),
     [handleEditName]
   );
@@ -126,21 +127,47 @@ const TextEditor: React.FC<TextEditorProps> = ({
     setUniqueSpeakers(speakers);
   };
 
-  const handleNameChange = (e: React.FocusEvent<HTMLHeadingElement>) => {
-    const newName = e.currentTarget.textContent || '';
+  const handleNameChange = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    const newName = e.currentTarget.value || '';
     setTranscriptionName(newName);
     debouncedHandleEditName(newName);
+    setIsTranscriptionNameEditing(false);
   };
 
   const handleTranscriptionNameChange = () => {
     setIsTranscriptionNameEditing(true);
+
+    const el = editingRef.current;
+    if (el) {
+      setTimeout(() => {
+        el.focus();
+
+        // Create a new range
+        const range = document.createRange();
+
+        // Select the contents of the element
+        range.selectNodeContents(el);
+
+        // Move the range's end point to its end
+        range.collapse(false);
+
+        // Clear any existing selection
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+
+          // Add the new range
+          selection.addRange(range);
+        }
+      }, 0);
+    }
   };
 
   const handleSpeakerClick = (speaker: string) => {
-    const newName = prompt(`Rename ${speaker} to:`);
+    const newName = prompt(`${speaker} adlı konuşmacıyı değiştir:`);
     if (newName && newName.trim() !== '') {
       const confirmChange = window.confirm(
-        `Are you sure you want to rename all occurrences of "${speaker}" to "${newName}"?`
+        `"${speaker}" adlı konuşmacının tüm segmentlerini "${newName} olarak değiştirmeyi onaylayın"`
       );
       if (confirmChange) {
         renameAllSegments(speaker, newName);
@@ -156,9 +183,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
       }
       return segment;
     });
-    setSegments(updatedSegments); // Update the segments in the state
-    updateUniqueSpeakers(updatedSegments); // Update the unique speakers
-    alert(`All "${oldName}" segments renamed to "${newName}"`);
+    setSegments(updatedSegments);
+    updateUniqueSpeakers(updatedSegments);
   };
 
   useEffect(() => {
@@ -236,14 +262,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const handleCopySegment = useCallback(() => {
     const segment = segments.find((s) => s.segment_id === menuState.segmentId);
     if (segment) {
-      navigator.clipboard.writeText(segment.transcribed_text).then(
-        () => {
-          console.log('Copied to clipboard');
-        },
-        (err) => {
-          console.error('Failed to copy: ', err);
-        }
-      );
+      navigator.clipboard.writeText(segment.transcribed_text);
     }
     closeMenu();
   }, [menuState.segmentId, segments, closeMenu]);
@@ -277,96 +296,58 @@ const TextEditor: React.FC<TextEditorProps> = ({
   }, []);
 
   return (
-    <div>
-      <div className='flex items-center justify-between w-full'>
-        <div className='flex items-center'>
-          <h1
-            className='text-xl font-extrabold p-4 w-64'
-            contentEditable={isTranscriptionNameEditing}
-            onBlur={handleNameChange}
-            suppressContentEditableWarning
-          >
-            {transcriptionName}
-          </h1>
-          <div className='relative flex items-center'>
-            <button onClick={() => setIsEditing(!isEditing)}>
-              <EllipsisVertical />
-            </button>
-
-            {isEditing && (
-              <ul className='menu menu-horizontal w-full bg-base-200 rounded-box'>
-                <li>
-                  <button
-                    onClick={handleTranscriptionNameChange}
-                    className='tooltip tooltip-right'
-                    data-tip='Konuşma adını değiştir'
-                  >
-                    <SquarePen />
-                  </button>
-                </li>
-                <li>
-                  <a
-                    onClick={handleGetExcel}
-                    className='tooltip tooltip-right'
-                    data-tip='Download as Excel'
-                  >
-                    <FileX />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    onClick={handleGetJSON}
-                    className='tooltip tooltip-right'
-                    data-tip='Download as JSON'
-                  >
-                    <FileJson />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    onClick={handleTranscriptionDelete}
-                    className='tooltip tooltip-right text-red-600'
-                    data-tip='Delete transcription'
-                  >
-                    <Trash2 />
-                  </a>
-                </li>
-              </ul>
-            )}
-          </div>
+    <div className='bg-base-100 p-4 rounded-box shadow-lg'>
+      <div className='flex items-center justify-between mb-4'>
+        <div className='flex items-center space-x-4 w-full px-4'>
+          {isTranscriptionNameEditing ? (
+            <textarea
+              ref={editingRef}
+              className='text-2xl w-full cursor-text min-w-52 font-bold p-2 rounded border focus:outline-none'
+              rows={2}
+              value={transcriptionName}
+              onBlur={handleNameChange}
+              onChange={(e) => setTranscriptionName(e.target.value)}
+            />
+          ) : (
+            <h1
+              className='text-2xl cursor-text min-w-52  font-bold'
+              onClick={handleTranscriptionNameChange}
+            >
+              {transcriptionName}
+            </h1>
+          )}
         </div>
 
-        <div className='flex justify-end space-x-2 mb-4'>
-          <div className='dropdown'>
-            <div tabIndex={0} role='button' className='btn m-1'>
-              Konuşmacılar
-            </div>
+        <div className='flex space-x-2'>
+          <div className='dropdown dropdown-end'>
+            <label tabIndex={0} className='btn btn-primary btn-sm'>
+              Speakers
+            </label>
             <ul
               tabIndex={0}
-              className='dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow'
+              className='dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52'
             >
               {uniqueSpeakers.map((speaker) => (
-                <li
-                  key={speaker}
-                  className='flex gap-1 ml-3 cursor-pointer'
-                  onClick={() => handleSpeakerClick(speaker)}
-                >
-                  -{speaker}
+                <li key={speaker}>
+                  <a onClick={() => handleSpeakerClick(speaker)}>
+                    <User size={16} />
+                    {speaker}
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
 
           <button
-            className='p-button-sm'
+            className='btn btn-ghost btn-sm'
             onClick={() =>
               setViewMode(viewMode === 'inline' ? 'list' : 'inline')
             }
           >
             {viewMode === 'inline' ? (
-              <AlignStartHorizontal />
+              <AlignStartHorizontal size={20} />
             ) : (
-              <AlignStartVertical />
+              <AlignStartVertical size={20} />
             )}
           </button>
         </div>
@@ -374,64 +355,47 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
       <div
         ref={transcriptionRef}
-        className='bg-white rounded shadow p-4 overflow-y-scroll h-[600px]'
+        className=' rounded-box p-4 overflow-y-auto h-[600px]'
       >
-        {/* <div className='flex w-full justify-around flex-col text-sm py-2'>
-          <h2>Speakers</h2>
-          {uniqueSpeakers.map((speaker) => (
-            <div key={speaker} className='flex gap-1 ml-3 '>
-              -{speaker}
-            </div>
-          ))}
-        </div> */}
         <AnimatePresence>
           {segments.map((segment, index) => {
             const isHighlighted =
               currentTime >= segment.start_time &&
               currentTime <= segment.end_time;
-            const isActiveSegment = menuState.segmentId === segment.segment_id;
             const isHovered = hoveredSegmentId === segment.segment_id;
 
             return (
               <motion.div
                 key={segment.segment_id}
-                className={
-                  viewMode === 'inline'
-                    ? 'inline'
-                    : 'block mb-2 transition-all '
-                }
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                className={`${
+                  viewMode === 'inline' ? 'inline-block' : 'block mb-2'
+                }`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2, delay: index * 0.03 }}
                 ref={(el) => {
                   segmentRefs.current[segment.segment_id] = el;
                 }}
               >
-                <span className=' badge text-gray-400 text-[10px]'>
-                  {segment.speaker}
-                </span>
-
+                <span className='badge badge-sm mr-1'>{segment.speaker}</span>
                 <span
+                  className='badge badge-sm badge-outline cursor-pointer mr-1'
                   onClick={(e) => showSegmentMenu(e, segment.segment_id)}
-                  className={`${
-                    isActiveSegment ? 'bg-gray-500 text-white' : 'text-gray-400'
-                  }  cursor-pointer badge text-[10px] `}
                   onMouseEnter={() => handleBadgeMouseEnter(segment.segment_id)}
                   onMouseLeave={handleBadgeMouseLeave}
                 >
                   {segment.start_time.toFixed(2)}s
                 </span>
-
                 <span
                   contentEditable
                   suppressContentEditableWarning
-                  className={`focus:outline-none focus:bg-gray-100 rounded transition-colors duration-200 ${
-                    viewMode === 'list' ? 'block' : 'inline'
-                  }`}
+                  className={`${
+                    viewMode === 'list' ? 'block mt-1' : 'inline'
+                  } focus:outline-none focus:bg-base-300 rounded p-1 transition-colors duration-200`}
                   style={{
                     backgroundColor: isHovered
-                      ? '#bfff00'
+                      ? 'rgba(191, 255, 0, 0.2)'
                       : isHighlighted
                       ? speakerColors[segment.speaker]
                       : 'transparent',
@@ -442,21 +406,20 @@ const TextEditor: React.FC<TextEditorProps> = ({
                 >
                   {segment.transcribed_text}
                 </span>
-
                 {viewMode === 'list' && <br />}
               </motion.div>
             );
           })}
         </AnimatePresence>
-        <SegmentMenu
-          isOpen={menuState.isOpen}
-          position={menuState.position}
-          onClose={closeMenu}
-          onDelete={handleDeleteSegment}
-          onEdit={handleEditSegment}
-          onCopy={handleCopySegment}
-        />
       </div>
+      <SegmentMenu
+        isOpen={menuState.isOpen}
+        position={menuState.position}
+        onClose={closeMenu}
+        onDelete={handleDeleteSegment}
+        onEdit={handleEditSegment}
+        onCopy={handleCopySegment}
+      />
     </div>
   );
 };

@@ -39,7 +39,7 @@ const CameraManager: React.FC = () => {
 
   const handleDelete = (label: string) => {
     confirmDialog({
-      message: 'Are you sure you want to delete this camera?',
+      message: 'Bu kamerayı silmek istediğinize emin misiniz?',
       header: 'Delete Confirmation',
       icon: 'pi pi-exclamation-triangle',
       accept: async () => {
@@ -74,7 +74,7 @@ const CameraManager: React.FC = () => {
     }
 
     confirmDialog({
-      message: 'Are you sure you want to save the changes?',
+      message: 'Değişiklikleri kaydetmek istediğinize emin misiniz?',
       header: 'Save Confirmation',
       icon: 'pi pi-exclamation-triangle',
       accept: async () => {

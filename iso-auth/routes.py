@@ -61,7 +61,7 @@ auth_bp = Blueprint("auth_bp", __name__)
 users_bp = Blueprint("users_bp", __name__)
 
 @users_bp.route("/users", methods=["GET"])
-@jwt_required() 
+@jwt_required()
 def get_users():
     current_user = get_jwt_identity()
     if not current_user.get('role') == 'admin':
@@ -70,10 +70,11 @@ def get_users():
     users = list(db.get_collection("users").find())
     
     for user in users:
-        user.pop("_id", None)  
+        user['id'] = str(user.pop("_id"))  # Rename _id to id and convert to string
         user.pop("password", None)  
 
     return jsonify(users), 200
+
 
 app.register_blueprint(users_bp)
 
@@ -153,20 +154,25 @@ def add_user():
     response = auth_provider.add_user(username, password, email, role)
     return response
 
-@auth_bp.route("/delete_user", methods=["DELETE"])
+@auth_bp.route("/users/<user_id>", methods=["DELETE"])
 @jwt_required()
-def delete_user():
+def delete_user(user_id):
     current_user = get_jwt_identity()
     if current_user["role"] != "admin":
         return jsonify({"error": "Permission denied"}), 403
 
-    data = request.json
-    username = data.get("username")
-    if not username:
-        return jsonify({"error": "Username is required"}), 400
+    if not ObjectId.is_valid(user_id):
+        return jsonify({"error": "Invalid user ID"}), 400
 
-    response = auth_provider.delete_user(username)
-    return response
+    user = db.get_collection("users").find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    result = db.get_collection("users").delete_one({"_id": ObjectId(user_id)})
+    if result.deleted_count == 1:
+        return jsonify({"message": "User deleted successfully"}), 200
+    else:
+        return jsonify({"error": "Failed to delete user"}), 500
 
 @auth_bp.route("/update_user", methods=["PUT"])
 @jwt_required()

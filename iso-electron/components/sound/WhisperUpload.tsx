@@ -39,7 +39,7 @@ const WhisperUpload: React.FC = () => {
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files ? event.target.files[0] : null;
-    if (selectedFile && selectedFile.size > 50 * 1024 * 1024) {
+    if (selectedFile && selectedFile.size > 250 * 1024 * 1024) {
       setError('File size should be less than 50MB');
       return;
     }

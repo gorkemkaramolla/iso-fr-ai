@@ -12,10 +12,13 @@ import {
   FaPlus,
   FaTrash,
   FaKey,
+  FaEdit,
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import 'daisyui';
 
 const userSchema = z.object({
+  id: z.string().optional(),
   username: z.string().min(3, 'Username must be at least 3 characters long'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
@@ -24,15 +27,9 @@ const userSchema = z.object({
 
 type User = z.infer<typeof userSchema>;
 
-interface ApiUser {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-}
-
 export default function AdminPage() {
   const [newUser, setNewUser] = useState<User>({
+    id: '',
     username: '',
     email: '',
     password: '',
@@ -40,7 +37,9 @@ export default function AdminPage() {
   });
   const [message, setMessage] = useState<string>('');
   const [errors, setErrors] = useState<Partial<Record<keyof User, string>>>({});
-  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const handleAddNewUser = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -66,7 +65,13 @@ export default function AdminPage() {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
       await api.post('/add_user', newUser, { withCredentials: true });
       setMessage('User added successfully!');
-      setNewUser({ username: '', email: '', password: '', role: 'user' });
+      setNewUser({
+        id: '',
+        username: '',
+        email: '',
+        password: '',
+        role: 'user',
+      });
       fetchUsers();
     } catch (error) {
       setMessage('Error adding user: ' + (error as Error).message);
@@ -80,7 +85,7 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      const response = await api.get<ApiUser[]>('/users', {
+      const response = await api.get<User[]>('/users', {
         withCredentials: true,
       });
       setUsers(response.data);
@@ -97,7 +102,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
@@ -109,24 +114,57 @@ export default function AdminPage() {
     }
   };
 
-  const handleResetPassword = async (userId: string) => {
-    const newPassword = prompt('Enter a new password:');
-    if (!newPassword || newPassword.length < 6) {
-      alert('Password must be at least 6 characters long.');
-      return;
+  const openModal = (user: User) => {
+    setCurrentUser(user);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setCurrentUser(null);
+    setIsModalOpen(false);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!currentUser) return;
+
+    try {
+      userSchema.parse(currentUser);
+      setErrors({});
+    } catch (e) {
+      if (e instanceof ZodError) {
+        const validationErrors: Partial<Record<keyof User, string>> = {};
+        e.errors.forEach((error) => {
+          if (error.path.length > 0) {
+            const path = error.path[0] as keyof User;
+            validationErrors[path] = error.message;
+          }
+        });
+        setErrors(validationErrors);
+        return;
+      }
     }
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
       await api.put(
-        `/users/${userId}/reset_password`,
-        { password: newPassword },
+        `/users/${currentUser.id}`,
+        { ...currentUser },
         { withCredentials: true }
       );
-      setMessage('Password reset successfully!');
+      setMessage('User updated successfully!');
+      fetchUsers(); // To refresh the user list after update
+      closeModal();
     } catch (error) {
-      setMessage('Error resetting password: ' + (error as Error).message);
+      setMessage('Error updating user: ' + (error as Error).message);
     }
+  };
+
+  const handleModalInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    if (!currentUser) return;
+    const { name, value } = e.target;
+    setCurrentUser((prev) => ({ ...prev!, [name]: value }));
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -153,7 +191,13 @@ export default function AdminPage() {
       const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
       await api.post('/users', newUser, { withCredentials: true });
       setMessage('User added successfully!');
-      setNewUser({ username: '', email: '', password: '', role: 'user' });
+      setNewUser({
+        id: '',
+        username: '',
+        email: '',
+        password: '',
+        role: 'user',
+      });
       fetchUsers();
     } catch (error) {
       setMessage('Error adding user: ' + (error as Error).message);
@@ -362,13 +406,13 @@ export default function AdminPage() {
                   </thead>
                   <tbody className='bg-white divide-y divide-gray-200'>
                     <AnimatePresence>
-                      {users.map((user, index) => (
+                      {users.map((user) => (
                         <motion.tr
-                          key={user.id}
+                          key={user.id} // Ensure this key is unique
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -20 }}
-                          transition={{ delay: 0.1 * index, duration: 0.5 }}
+                          transition={{ duration: 0.5 }}
                         >
                           <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
                             {user.username}
@@ -393,7 +437,7 @@ export default function AdminPage() {
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               className='text-red-600 hover:text-red-800'
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteUser(user?.id!)}
                             >
                               <FaTrash />
                             </motion.button>
@@ -401,9 +445,9 @@ export default function AdminPage() {
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               className='text-yellow-600 hover:text-yellow-800'
-                              onClick={() => handleResetPassword(user.id)}
+                              onClick={() => openModal(user)}
                             >
-                              <FaKey />
+                              <FaEdit />
                             </motion.button>
                           </td>
                         </motion.tr>
@@ -416,6 +460,67 @@ export default function AdminPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Modal */}
+      {isModalOpen && currentUser && (
+        <div className='modal modal-open'>
+          <div className='modal-box'>
+            <h3 className='font-bold text-lg'>Update User Information</h3>
+            <div className='mt-4 space-y-4'>
+              <div>
+                <label className='block text-sm font-medium text-gray-700'>
+                  Username
+                </label>
+                <input
+                  type='text'
+                  name='username'
+                  value={currentUser.username}
+                  onChange={handleModalInputChange}
+                  className={`mt-1 block w-full border ${
+                    errors.username ? 'border-red-300' : 'border-gray-300'
+                  } rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-gray-700'>
+                  Password
+                </label>
+                <input
+                  type='password'
+                  name='password'
+                  value={currentUser.password}
+                  onChange={handleModalInputChange}
+                  className={`mt-1 block w-full border ${
+                    errors.password ? 'border-red-300' : 'border-gray-300'
+                  } rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-gray-700'>
+                  Role
+                </label>
+                <select
+                  name='role'
+                  value={currentUser.role}
+                  onChange={handleModalInputChange}
+                  className='mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
+                >
+                  <option value='user'>User</option>
+                  <option value='admin'>Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className='modal-action'>
+              <button className='btn btn-primary' onClick={handleUpdateUser}>
+                Confirm
+              </button>
+              <button className='btn' onClick={closeModal}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -73,11 +73,13 @@ class Stream:
                 name = os.path.splitext(filename)[0]
                 image_path = os.path.join(image_folder, filename)
                 image = cv2.imread(image_path)
-                bboxes, kpss = face_detector.detect(image, max_num=1, input_size=(640,640))
+                image = cv2.resize(image, (640, 640))
+                bboxes, kpss = face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=2)
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = face_recognizer.get(image, kps)
                     database[name] = embedding
+        print(f"--------------Database created with {len(database)} entries.--------------")
         return database
   
     def update_database(self, old_name: str, new_name: str) -> None:

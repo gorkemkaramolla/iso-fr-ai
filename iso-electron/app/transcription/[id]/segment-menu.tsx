@@ -53,7 +53,11 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
       <button
         className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600'
         onClick={() => {
-          if (window.confirm('Are you sure you want to delete this segment?'))
+          if (
+            window.confirm(
+              'Bu konuşma segmentini silmek istediğinize emin misiniz?'
+            )
+          )
             onDelete();
         }}
       >

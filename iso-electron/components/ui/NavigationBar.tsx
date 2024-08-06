@@ -59,14 +59,14 @@ const NavigationBar: React.FC<Props> = () => {
 
   const profileItems = [
     {
-      label: 'Yeni Kullanıcı Ekle',
+      label: 'Yönetici Paneli',
       icon: 'pi pi-user-plus',
       command: () => {
         router.push('/admin');
       },
     },
     {
-      label: 'Personel Ekle',
+      label: 'Personel Ayarları',
       icon: () => {
         return <Users className='w-4 mr-1.5' />;
       },

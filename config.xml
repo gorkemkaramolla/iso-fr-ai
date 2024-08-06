@@ -16,12 +16,15 @@
     <services>
         <auth_service port="5001" host="0.0.0.0" debug="true"/>
         <face_recognition_service port="5002" host="0.0.0.0" debug="true"/>
-        <speaker_diarization_service port="5003" host="0.0.0.0" debug="true" device="cuda">
-            <logging_collection>logs</logging_collection>  <!-- This should already be in place -->
+        <speaker_diarization_service port="5003" host="0.0.0.0" debug="true" device="cpu">
+            <logging_collection>logs</logging_collection>
             <temp_directory>temp</temp_directory>
         </speaker_diarization_service>
-        <utils_service port="5004" host="0.0.0.0" debug="true"/>
-
+        <utils_service port="5004" host="0.0.0.0" debug="true">
+            <logging_collection>logs</logging_collection>
+            <temp_directory>temp</temp_directory>
+            <solr_url>http://solr:8983/solr/isoai</solr_url> <!-- Added Solr URL for utils_service -->
+        </utils_service>
         <mongo uri="mongodb://isoai_root:isoai_secret@mongo:27017/isoai?authSource=admin"
                db_name="isoai"
                username="isoai_root"

@@ -314,7 +314,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
       setTranscription((prev) => (prev ? { ...prev, name: newName } : null));
       const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
       try {
-        await api.post(`/rename_transcription/${id}`, {
+        await api.put(`/transcriptions/${id}`, {
           name: newName,
         });
       } catch (error) {
@@ -375,7 +375,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
         <SkeletonLoader />
       ) : (
         <div className=''>
-          <div className='bg-white fixed bottom-0 left-1/2 transform -translate-x-1/2 border py-2 px-8 w-full rounded shadow z-50'>
+          <div className='bg-white fixed bottom-0 left-1/2 transform -translate-x-1/2   px-8 w-full  z-50'>
             <button className='right-0 absolute '>
               <FaAngleDown />
             </button>

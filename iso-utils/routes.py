@@ -1,3 +1,4 @@
+import os
 from flask import Flask, Blueprint, request, jsonify, abort, send_from_directory
 from pymongo import MongoClient
 from services.system_monitoring import SystemMonitoring
@@ -7,25 +8,32 @@ from logger import configure_logging
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required
 from bson import ObjectId
-import requests
-import os
 from werkzeug.utils import secure_filename
+from config import XMLConfig
+
+# Initialize the configuration for the 'utils_service'
+xml_config = XMLConfig(service_name='utils_service')
+xml_mongo_config = XMLConfig(service_name='mongo')
 
 app = Flask(__name__)
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
-app.config["JWT_COOKIE_SECURE"] = False
-app.config["JWT_COOKIE_CSRF_PROTECT"] = False
-CORS(app, supports_credentials=True, origins="*")
+
+# Configure CORS using the values from xml_config
+CORS(app, supports_credentials=xml_config.SUPPORTS_CREDENTIALS, origins=xml_config.CORS_ORIGINS)
+
+# Configure JWT using the values from xml_config
+app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
+app.config["JWT_TOKEN_LOCATION"] = xml_config.JWT_TOKEN_LOCATION
+app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
+app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT
 
 # Setup MongoDB
-client = MongoClient(os.environ.get("MONGO_DB_URI"))
-db = client[os.environ.get("MONGO_DB_NAME")]
+client = MongoClient(xml_mongo_config.MONGO_DB_URI)
+db = client[xml_mongo_config.MONGO_DB_NAME]
 
 # Setup Solr Searcher
-solr_url = os.environ.get("SOLR_URL", "http://solr:8983/solr/isoai")
-searcher = SolrSearcher(db,solr_url)  # Ensure SolrSearcher is correctly instantiated
+solr_url = xml_config.SOLR_URL
+searcher = SolrSearcher(db, solr_url)  # Ensure SolrSearcher is correctly instantiated
 
 # Create an instance of your class
 logger = configure_logging()
@@ -36,7 +44,8 @@ personel_service = PersonelService(db)
 solr_search_bp = Blueprint("solr_search_bp", __name__)
 system_check = Blueprint("system_check", __name__)
 personel_bp = Blueprint("personel_bp", __name__)
-##############################PERSONEL##############################################
+
+############################## PERSONEL ##############################################
 @personel_bp.route("/personel", methods=["POST"])
 def add_personel():
     data = request.form.to_dict()
@@ -79,9 +88,6 @@ def get_personel_by_id(id):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
-
-
-
 @personel_bp.route('/personel/<personel_id>', methods=['PUT'])
 @jwt_required()
 def update_personel_route(personel_id):
@@ -98,7 +104,6 @@ def update_personel_route(personel_id):
     except Exception as e:
         app.logger.error(f"Error in update_personel_route: {str(e)}")
         return jsonify({"status": "error", "message": "Internal Server Error"}), 500
-
 
 @personel_bp.route('/personel/image/', methods=['GET'])
 def get_user_images():
@@ -118,7 +123,8 @@ def get_user_images():
         return jsonify(image_paths)
 
 app.register_blueprint(personel_bp)
-##############################SOLR#########################################
+
+############################## SOLR #########################################
 @solr_search_bp.route("/add_to_solr", methods=["POST"])
 def add_to_solr():
     data = request.get_json()
@@ -144,10 +150,7 @@ def search_logs_route():
 
 app.register_blueprint(solr_search_bp)
 
-
-
-
-#########################System Check###################################
+######################### System Check ###################################
 @system_check.route("/system_check/", methods=["GET"])
 def system_check_route():
     system_info = monitoring_service.get_system_info()

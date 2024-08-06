@@ -229,7 +229,9 @@ const WhisperUpload: React.FC = () => {
                   {new Date(response.created_at).toLocaleString()} | Algılanılan
                   Dil: {response.transcription.language}
                 </p>
-                <Link href={`/transcription$/{response.id}`}>Go to Edit</Link>
+                <Link href={`/transcription/${response.id}`}>
+                  Düzenlemek için tıkla
+                </Link>
               </div>
               <ul className='divide-y  divide-gray-200'>
                 {response.transcription.segments.map((segment, index) => (

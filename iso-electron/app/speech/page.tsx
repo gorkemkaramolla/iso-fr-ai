@@ -19,9 +19,9 @@ const Speech: React.FC<Props> = () => {
           <Panel defaultSize={75} minSize={30}>
             <WhisperUpload />
           </Panel>
-          <PanelResizeHandle className='w-1 cursor-col-resize border-l-2 border-gray-100 relative md:flex hidden'>
+          <PanelResizeHandle className='w-1 z-0 cursor-col-resize border-l-2 border-gray-100 relative md:flex hidden'>
             <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
-              <GripVertical className='text-gray-400 w-4 h-4 mr-1' />
+              <GripVertical className='text-gray-400  ' />
             </div>
           </PanelResizeHandle>
           <Panel defaultSize={25} minSize={20} className='z-0 md:block hidden'>

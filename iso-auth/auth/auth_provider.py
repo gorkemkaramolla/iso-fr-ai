@@ -1,7 +1,15 @@
-from db import mongo_client, mongo_db
 from flask import jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity
 from werkzeug.security import check_password_hash, generate_password_hash
+from config import XMLConfig  # Import the XML configuration
+from pymongo import MongoClient
+
+# Initialize the XMLConfig for the mongo configuration
+xml_config = XMLConfig(service_name='mongo')
+
+# Setup MongoDB using XML config
+mongo_client = MongoClient(xml_config.MONGO_DB_URI)
+mongo_db = mongo_client[xml_config.MONGO_DB_NAME]
 
 class AuthProvider:
     def __init__(self):

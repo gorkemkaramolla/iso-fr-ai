@@ -1,20 +1,6 @@
-import os
 import xml.etree.ElementTree as ET
-from dotenv import load_dotenv
+import os
 from datetime import timedelta
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Environment variables
-DB_USER = os.environ.get("DB_USER")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-DB_PORT = os.environ.get("DB_PORT")
-DB_SERVICE_NAME = os.environ.get("DB_SERVICE_NAME")
-DB_HOST = os.environ.get("DB_HOST")
-
-MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME")
-MONGO_DB_URI = os.environ.get("MONGO_DB_URI")
 
 # Define the path to the XML configuration file
 CONFIG_XML_PATH = os.path.join(os.path.dirname(__file__), 'config.xml')
@@ -37,23 +23,45 @@ class XMLConfig:
         self.CORS_ORIGINS = auth_config.find('cors').get('origins')
         self.SUPPORTS_CREDENTIALS = auth_config.find('cors').get('supports_credentials').lower() == 'true'
 
+        # Initialize service-specific attributes with default values
+        self.FLASK_PORT = None
+        self.FLASK_HOST = None
+        self.FLASK_DEBUG = False
+        self.DEVICE = 'cpu'
+        self.LOGGING_COLLECTION = None
+        self.TEMP_DIRECTORY = None
+        self.SOLR_URL = None
+        self.MONGO_DB_URI = None
+        self.MONGO_DB_NAME = None
+
         # Extract service-specific configuration based on the provided service name
         if service_name:
             service_config = root.find(f"services/{service_name}")
             if service_config is not None:
-                self.FLASK_PORT = int(service_config.get('port'))
+                # Extract common attributes, checking if they exist
+                self.FLASK_PORT = int(service_config.get('port')) if service_config.get('port') else None
                 self.FLASK_HOST = service_config.get('host')
-                self.FLASK_DEBUG = service_config.get('debug').lower() == 'true'
-                self.DEVICE = service_config.get('device', 'cpu')  # Added for device configuration
-                self.LOGGING_COLLECTION = service_config.find('logging_collection').text  # Extract logging collection
-                self.TEMP_DIRECTORY = service_config.find('temp_directory').text  # Extract temp directory
+                self.FLASK_DEBUG = service_config.get('debug', 'false').lower() == 'true'
+                self.DEVICE = service_config.get('device', 'cpu')
+                
+                # Extract optional elements
+                self.LOGGING_COLLECTION = self._safe_find_text(service_config, 'logging_collection')
+                self.TEMP_DIRECTORY = self._safe_find_text(service_config, 'temp_directory')
+                self.SOLR_URL = self._safe_find_text(service_config, 'solr_url')
             else:
                 raise ValueError(f"Service '{service_name}' not found in configuration.")
         
-        # Extract values from the <mongo> section
-        mongo_config = root.find('services/mongo')
-        self.MONGO_DB_URI = mongo_config.get('uri')
-        self.MONGO_DB_NAME = mongo_config.get('db_name')
+        # Extract values from the <mongo> section if it is requested
+        if service_name == 'mongo':
+            mongo_config = root.find('services/mongo')
+            if mongo_config is not None:
+                self.MONGO_DB_URI = mongo_config.get('uri')
+                self.MONGO_DB_NAME = mongo_config.get('db_name')
+
+    def _safe_find_text(self, element, tag):
+        """Helper method to safely extract text from an XML element."""
+        found_element = element.find(tag)
+        return found_element.text if found_element is not None else None
 
     def get_jwt_expire_timedelta(self):
         return timedelta(seconds=self.JWT_EXPIRE_SECONDS)
@@ -61,6 +69,6 @@ class XMLConfig:
     def get_jwt_refresh_expire_timedelta(self):
         return timedelta(hours=2)  # Customize as needed
 
-# Usage Example:
-# Initialize the configuration for a specific service, e.g., 'speaker_diarization_service'
-xml_config = XMLConfig(service_name='speaker_diarization_service')
+# Example usage:
+# xml_config = XMLConfig(service_name='auth_service')
+# xml_config = XMLConfig(service_name='mongo')

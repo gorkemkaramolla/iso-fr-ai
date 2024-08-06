@@ -48,7 +48,7 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
         className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100'
         onClick={onEdit}
       >
-        <Edit2 size={16} /> Edit
+        <Edit2 size={16} /> Konuşmacı adını değiştir
       </button>
       <button
         className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600'
@@ -57,13 +57,13 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
             onDelete();
         }}
       >
-        <Trash2 size={16} /> Delete
+        <Trash2 size={16} /> Konuşma segmentini sil
       </button>
       <button
         className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100'
         onClick={onCopy}
       >
-        <Copy size={16} /> Copy
+        <Copy size={16} /> Kopyala
       </button>
     </motion.div>
   );

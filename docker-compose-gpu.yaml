@@ -18,15 +18,14 @@ services:
       - "8983:8983"
     volumes:
       - solr_data:/var/solr
-    command:
-      - solr-precreate
-      - logs
+      - ./solr-entrypoint.sh:/scripts/solr-entrypoint.sh
     environment:
       SOLR_HEAP: "1500m"
     networks:
       - isoai-network
     depends_on:
       - mongo
+    entrypoint: ["/bin/bash", "/scripts/solr-entrypoint.sh"]
 
   mongo:
     image: mongo:latest
@@ -154,8 +153,6 @@ volumes:
 networks:
   isoai-network:
     driver: bridge
-
-
 
 # version: "3.7"
 # services:

@@ -109,7 +109,7 @@ const NavigationBar: React.FC<Props> = () => {
               height={100}
               src='/logo.svg'
               alt='Logo'
-              className='w-full  ml-8 h-full'
+              className='w-full   h-full'
             />
           </Link>
         </div>

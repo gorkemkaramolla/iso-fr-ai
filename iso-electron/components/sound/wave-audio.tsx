@@ -35,21 +35,17 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const setStoreCurrentTime = useStore((state) => state.setCurrentTime);
 
+  useEffect(()=>{
+    console.log(duration)
+  },[duration])
   const customTimelinePlugin = useMemo(
     () =>
       Timeline.create({
         container: timelineContainerRef.current as HTMLElement,
         height: 12,
-        timeInterval: 15,
-        primaryLabelInterval: 60,
-        secondaryLabelInterval: 15,
-        formatTimeCallback: (seconds) => {
-          const minutes = Math.floor(seconds / 60);
-          const secs = Math.floor(seconds % 60);
-          return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
-        },
+        timeInterval: 45,
       }),
-    []
+    [ timelineContainerRef]
   );
 
   const regionsPlugin = useMemo(() => RegionsPlugin.create(), []);

@@ -14,9 +14,7 @@ const Page: React.FC = () => {
       <div className='max-w-3xl  mx-auto my-12'>
         <SearchComponent />
       </div>
-      <div className='container mx-auto'>
-        <ShowPersonel />
-      </div>
+      <div className='container mx-auto'>{/* <ShowPersonel /> */}</div>
     </div>
   );
 };

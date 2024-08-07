@@ -9,6 +9,8 @@ import { Search, User, Mail, Briefcase } from 'lucide-react';
 import Image from 'next/image';
 import { Toast } from 'primereact/toast';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'; // Import ConfirmDialog
+import { Card } from 'primereact/card';
+import { motion } from 'framer-motion';
 
 interface Personel {
   _id: string;
@@ -182,52 +184,59 @@ export default function ShowPersonel() {
   };
 
   return (
-    <div className='mx-auto bg-white shadow-lg rounded-lg overflow-hidden'>
-      <Toast ref={toastRef} />
-      <ConfirmDialog /> {/* Add ConfirmDialog component here */}
-      <div className='p-6'>
-        {header}
-        <DataTable
-          value={filteredPersonel}
-          onRowClick={handleRowClick}
-          emptyMessage='Kişi bulunamadı.'
-          className='p-datatable-sm'
-          stripedRows
-          responsiveLayout='stack'
-          breakpoint='960px'
-          rowHover
-          loading={loading}
-        >
-          <Column
-            body={profileImageBodyTemplate}
-            header='Profil'
-            style={{ width: '220px', textAlign: 'center' }}
-          />
-          <Column
-            body={nameBodyTemplate}
-            header='Adı'
-            sortable
-            sortField='name'
-          />
-          <Column
-            body={emailBodyTemplate}
-            header='E-posta'
-            sortable
-            sortField='email'
-          />
-          <Column
-            body={titleBodyTemplate}
-            header='Unvan'
-            sortable
-            sortField='title'
-          />
-          <Column
-            body={actionBodyTemplate}
-            header='İşlemler'
-            style={{ width: '100px', textAlign: 'center' }}
-          />
-        </DataTable>
-      </div>
-    </div>
+    <motion.div
+      className='w-full bg-white rounded-lg shadow-xl overflow-hidden'
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card title='Personel Listesi' className='p-6'>
+        <Toast ref={toastRef} />
+        <ConfirmDialog />
+        <div className='p-6'>
+          {header}
+          <DataTable
+            value={filteredPersonel}
+            onRowClick={handleRowClick}
+            emptyMessage='Kişi bulunamadı.'
+            className='p-datatable-sm'
+            stripedRows
+            responsiveLayout='stack'
+            breakpoint='960px'
+            rowHover
+            loading={loading}
+          >
+            <Column
+              body={profileImageBodyTemplate}
+              header='Profil'
+              style={{ width: '220px', textAlign: 'center' }}
+            />
+            <Column
+              body={nameBodyTemplate}
+              header='Adı'
+              sortable
+              sortField='name'
+            />
+            <Column
+              body={emailBodyTemplate}
+              header='E-posta'
+              sortable
+              sortField='email'
+            />
+            <Column
+              body={titleBodyTemplate}
+              header='Unvan'
+              sortable
+              sortField='title'
+            />
+            <Column
+              body={actionBodyTemplate}
+              header='İşlemler'
+              style={{ width: '100px', textAlign: 'center' }}
+            />
+          </DataTable>
+        </div>
+      </Card>
+    </motion.div>
   );
 }

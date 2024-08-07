@@ -122,3 +122,12 @@ interface Person {
   photo_file_type: string;
   image_path: string;
 }
+// types/User.ts
+
+export type User = {
+  id: string;
+  username: string;
+  email: string;
+  password?: string; // Optional password field
+  role: 'user' | 'admin';
+};

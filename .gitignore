@@ -45,3 +45,4 @@ iso-diarize/services/large-v3
 iso-diarize/services/models
 flask/services/camera_processor/face-images
 config.xml
+iso-fr/face-images

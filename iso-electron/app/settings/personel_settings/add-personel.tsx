@@ -9,10 +9,8 @@ import { Toast } from 'primereact/toast';
 import { z } from 'zod';
 import FileUploader from '@/components/FileUploader';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from 'primereact/card';
+import { motion } from 'framer-motion';
 import { Divider } from 'primereact/divider';
-import { Avatar } from 'primereact/avatar';
 
 interface FormDataState {
   name: string;
@@ -32,14 +30,14 @@ interface FormDataState {
 const formSchema = z.object({
   name: z.string().nonempty({ message: 'İsim boş bırakılmamalı' }),
   lastname: z.string().nonempty({ message: 'Soyisim boş bırakılmamalı' }),
-  title: z.string().optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
   email: z.string().email({ message: 'Geçersiz email adresi' }),
+  phone: z.string().optional(),
   gsm: z
     .string()
     .regex(/^\d+$/, { message: 'GSM sadece rakam içermelidir' })
     .optional(),
+  address: z.string().optional(),
+  title: z.string().optional(),
   resume: z.string().optional(),
   birth_date: z.string().optional(),
   iso_phone: z.string().optional(),
@@ -64,7 +62,7 @@ export default function AddPersonel() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false); // To lock form submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useRef<Toast>(null);
   const router = useRouter();
 
@@ -98,10 +96,10 @@ export default function AddPersonel() {
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
-
+    let fieldErrors: Record<string, string> = {}; // Initialize fieldErrors with an empty object
     try {
       formSchema.parse(formData);
       setErrors({});
@@ -110,16 +108,10 @@ export default function AddPersonel() {
 
       const fd = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null) {
-          fd.append(key, value as Blob);
-        }
+        if (value !== null) fd.append(key, value as Blob);
       });
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        body: fd,
-      });
-
+      const response = await fetch(apiUrl, { method: 'POST', body: fd });
       const data = await response.json();
 
       if (response.ok) {
@@ -130,11 +122,9 @@ export default function AddPersonel() {
       }
     } catch (e) {
       if (e instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
+        fieldErrors = {}; // Assign an empty object to fieldErrors
         e.errors.forEach((err) => {
-          if (err.path && err.path[0]) {
-            fieldErrors[err.path[0]] = err.message;
-          }
+          if (err.path && err.path[0]) fieldErrors[err.path[0]] = err.message;
         });
         setErrors(fieldErrors);
       } else {
@@ -145,316 +135,223 @@ export default function AddPersonel() {
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.05,
-        when: 'beforeChildren',
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: 'spring', damping: 12, stiffness: 100 },
-    },
-  };
-
   return (
-    <motion.div
-      className='container mx-auto px-4 py-8'
-      variants={containerVariants}
-      initial='hidden'
-      animate='visible'
-    >
+    <motion.div className='w-full bg-white rounded-lg shadow-xl overflow-hidden'>
       <Toast ref={toast} />
 
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        {/* Form Card */}
-        <motion.div
-          className='w-full bg-white rounded-lg shadow-xl overflow-hidden'
-          variants={itemVariants}
-        >
-          <div className='bg-indigo-600 text-white py-4 px-6'>
-            <h1 className='text-2xl font-bold'>Personel Ayarları</h1>
-            <p className='mt-1 text-indigo-200'>
-              Yeni personel bilgilerini ekleyin
-            </p>
-          </div>
-
-          <div className='p-6'>
-            <motion.div className='mb-6' variants={itemVariants}>
-              <FileUploader onFileUpload={handleFileUpload} />
-            </motion.div>
-
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='name'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  İsim
-                </label>
-                <InputText
-                  id='name'
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={`w-full p-2 border rounded-md ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.name && (
-                  <p className='mt-1 text-sm text-red-500'>{errors.name}</p>
-                )}
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='lastname'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  Soyisim
-                </label>
-                <InputText
-                  id='lastname'
-                  value={formData.lastname}
-                  onChange={handleChange}
-                  className={`w-full p-2 border rounded-md ${
-                    errors.lastname ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.lastname && (
-                  <p className='mt-1 text-sm text-red-500'>{errors.lastname}</p>
-                )}
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='title'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  Unvan
-                </label>
-                <InputText
-                  id='title'
-                  value={formData.title}
-                  onChange={handleChange}
-                  className='w-full p-2 border border-gray-300 rounded-md'
-                />
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='email'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  Email
-                </label>
-                <InputText
-                  id='email'
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`w-full p-2 border rounded-md ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.email && (
-                  <p className='mt-1 text-sm text-red-500'>{errors.email}</p>
-                )}
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='phone'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  Telefon
-                </label>
-                <InputText
-                  id='phone'
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className='w-full p-2 border border-gray-300 rounded-md'
-                />
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='gsm'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  GSM
-                </label>
-                <InputText
-                  id='gsm'
-                  value={formData.gsm}
-                  onChange={handleChange}
-                  className={`w-full p-2 border rounded-md ${
-                    errors.gsm ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.gsm && (
-                  <p className='mt-1 text-sm text-red-500'>{errors.gsm}</p>
-                )}
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='birth_date'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  Doğum Tarihi
-                </label>
-                <InputText
-                  id='birth_date'
-                  value={formData.birth_date}
-                  onChange={handleChange}
-                  type='date'
-                  lang='tr'
-                  className='w-full p-2 border border-gray-300 rounded-md'
-                />
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='iso_phone'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  ISO Telefon 1
-                </label>
-                <InputText
-                  id='iso_phone'
-                  value={formData.iso_phone}
-                  onChange={handleChange}
-                  className='w-full p-2 border border-gray-300 rounded-md'
-                />
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <label
-                  htmlFor='iso_phone2'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  ISO Telefon 2
-                </label>
-                <InputText
-                  id='iso_phone2'
-                  value={formData.iso_phone2}
-                  onChange={handleChange}
-                  className='w-full p-2 border border-gray-300 rounded-md'
-                />
-              </motion.div>
-            </div>
-
-            <Divider />
-
-            <motion.div className='mt-4' variants={itemVariants}>
-              <label
-                htmlFor='address'
-                className='block text-sm font-medium text-gray-700 mb-1'
-              >
-                Adres
-              </label>
-              <InputTextarea
-                id='address'
-                value={formData.address}
-                onChange={handleChange}
-                rows={3}
-                className='w-full p-2 border border-gray-300 rounded-md'
-              />
-            </motion.div>
-
-            <motion.div className='mt-4' variants={itemVariants}>
-              <label
-                htmlFor='resume'
-                className='block text-sm font-medium text-gray-700 mb-1'
-              >
-                Özgeçmiş
-              </label>
-              <InputTextarea
-                id='resume'
-                value={formData.resume}
-                onChange={handleChange}
-                rows={4}
-                className='w-full p-2 border border-gray-300 rounded-md'
-              />
-            </motion.div>
-
-            <motion.div
-              className='mt-6 flex justify-end'
-              variants={itemVariants}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
-                onClick={handleSubmit}
-                label='Yeni Personel Ekle'
-                icon='pi pi-user-plus'
-                className='p-button-md bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
-                disabled={isSubmitting} // Disable button while submitting
-              />
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Personnel List Card */}
-        <motion.div
-          className='w-full bg-white rounded-lg shadow-xl overflow-hidden'
-          variants={itemVariants}
-        >
-          <Card title='Personel Listesi' className='p-6'>
-            <ul className='space-y-4'>
-              {[
-                {
-                  name: 'John Doe',
-                  title: 'Yazılım Mühendisi',
-                  email: 'johndoe@example.com',
-                },
-                {
-                  name: 'Jane Smith',
-                  title: 'Ürün Yöneticisi',
-                  email: 'janesmith@example.com',
-                },
-                {
-                  name: 'Michael Johnson',
-                  title: 'UX Tasarımcısı',
-                  email: 'michaelj@example.com',
-                },
-              ].map((person, index) => (
-                <li
-                  key={index}
-                  className='flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200'
-                >
-                  <div className='flex items-center space-x-4'>
-                    <Avatar
-                      icon='pi pi-user'
-                      className='bg-blue-500'
-                      size='large'
-                      shape='circle'
-                    />
-                    <div>
-                      <p className='font-bold text-lg'>{person.name}</p>
-                      <p className='text-gray-600'>{person.title}</p>
-                      <p className='text-gray-500 text-sm'>{person.email}</p>
-                    </div>
-                  </div>
-                  <Button
-                    icon='pi pi-ellipsis-v'
-                    className='p-button-rounded p-button-text'
-                    aria-label='Seçenekler'
-                  />
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </motion.div>
+      <div className='bg-indigo-600 text-white py-4 px-6'>
+        <h1 className='text-2xl font-bold'>Personel Ayarları</h1>
+        <p className='mt-1 text-indigo-200'>
+          Yeni personel bilgilerini ekleyin
+        </p>
       </div>
+
+      <div className='p-6'>
+        <FileUploader onFileUpload={handleFileUpload} />
+
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <div>
+            <label
+              htmlFor='name'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              İsim
+            </label>
+            <InputText
+              id='name'
+              value={formData.name}
+              onChange={handleChange}
+              className={`w-full p-2 border rounded-md ${
+                errors.name ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.name && (
+              <p className='mt-1 text-sm text-red-500'>{errors.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor='lastname'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              Soyisim
+            </label>
+            <InputText
+              id='lastname'
+              value={formData.lastname}
+              onChange={handleChange}
+              className={`w-full p-2 border rounded-md ${
+                errors.lastname ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.lastname && (
+              <p className='mt-1 text-sm text-red-500'>{errors.lastname}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor='title'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              Unvan
+            </label>
+            <InputText
+              id='title'
+              value={formData.title}
+              onChange={handleChange}
+              className='w-full p-2 border border-gray-300 rounded-md'
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor='email'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              Email
+            </label>
+            <InputText
+              id='email'
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full p-2 border rounded-md ${
+                errors.email ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.email && (
+              <p className='mt-1 text-sm text-red-500'>{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor='phone'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              Telefon
+            </label>
+            <InputText
+              id='phone'
+              value={formData.phone}
+              onChange={handleChange}
+              className='w-full p-2 border border-gray-300 rounded-md'
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor='gsm'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              GSM
+            </label>
+            <InputText
+              id='gsm'
+              value={formData.gsm}
+              onChange={handleChange}
+              className={`w-full p-2 border rounded-md ${
+                errors.gsm ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.gsm && (
+              <p className='mt-1 text-sm text-red-500'>{errors.gsm}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor='birth_date'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              Doğum Tarihi
+            </label>
+            <InputText
+              id='birth_date'
+              value={formData.birth_date}
+              onChange={handleChange}
+              type='date'
+              className='w-full p-2 border border-gray-300 rounded-md'
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor='iso_phone'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              ISO Telefon 1
+            </label>
+            <InputText
+              id='iso_phone'
+              value={formData.iso_phone}
+              onChange={handleChange}
+              className='w-full p-2 border border-gray-300 rounded-md'
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor='iso_phone2'
+              className='block text-sm font-medium text-gray-700 mb-1'
+            >
+              ISO Telefon 2
+            </label>
+            <InputText
+              id='iso_phone2'
+              value={formData.iso_phone2}
+              onChange={handleChange}
+              className='w-full p-2 border border-gray-300 rounded-md'
+            />
+          </div>
+        </div>
+
+        <Divider />
+
+        <div className='mt-4'>
+          <label
+            htmlFor='address'
+            className='block text-sm font-medium text-gray-700 mb-1'
+          >
+            Adres
+          </label>
+          <InputTextarea
+            id='address'
+            value={formData.address}
+            onChange={handleChange}
+            rows={3}
+            className='w-full p-2 border border-gray-300 rounded-md'
+          />
+        </div>
+
+        <div className='mt-4'>
+          <label
+            htmlFor='resume'
+            className='block text-sm font-medium text-gray-700 mb-1'
+          >
+            Özgeçmiş
+          </label>
+          <InputTextarea
+            id='resume'
+            value={formData.resume}
+            onChange={handleChange}
+            rows={4}
+            className='w-full p-2 border border-gray-300 rounded-md'
+          />
+        </div>
+
+        <div className='mt-6 flex justify-end'>
+          <Button
+            onClick={handleSubmit}
+            label='Yeni Personel Ekle'
+            icon='pi pi-user-plus'
+            className='p-button-md bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
       <ConfirmDialog />
     </motion.div>
   );

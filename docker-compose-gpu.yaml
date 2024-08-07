@@ -40,7 +40,9 @@ services:
       - isoai-network
 
   auth_service:
-    build: ./iso-auth
+    build:
+      context: ./iso-auth
+      dockerfile: Dockerfile
     ports:
       - "5001:5001"
     env_file:
@@ -62,7 +64,9 @@ services:
       - fluentbit
 
   face_recognition_service:
-    build: ./iso-fr
+    build:
+      context: ./iso-fr
+      dockerfile: Dockerfile-gpu
     ports:
       - "5002:5002"
     env_file:
@@ -92,7 +96,9 @@ services:
       - fluentbit
 
   speaker_diarization_service:
-    build: ./iso-diarize
+    build:
+      context: ./iso-diarize
+      dockerfile: Dockerfile-gpu
     ports:
       - "5003:5003"
     env_file:
@@ -121,7 +127,9 @@ services:
       - fluentbit
 
   utils_service:
-    build: ./iso-utils
+    build:
+      context: ./iso-utils
+      dockerfile: Dockerfile
     ports:
       - "5004:5004"
     env_file:

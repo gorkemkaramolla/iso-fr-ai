@@ -83,7 +83,7 @@ services:
       - face_recognition_data:/app/data
       - ./config.xml:/app/config.xml
       - ./config.py:/app/config.py
-      - ./models/buffalo_l:/app/services/models/buffalo_l
+      - ./iso-fr/services/models/buffalo_l:/app/services/models/buffalo_l
     networks:
       - isoai-network
     logging:

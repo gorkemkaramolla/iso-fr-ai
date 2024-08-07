@@ -5,7 +5,7 @@ from routes import  camera_bp
 import flask.json.provider as provider
 from flask_jwt_extended import JWTManager
 from socketio_instance import socketio
-from datetime import timedelta
+
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
 CORS(app,origins="*")

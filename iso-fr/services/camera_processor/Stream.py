@@ -14,13 +14,14 @@ from services.camera_processor.arcface_onnx import ArcFaceONNX
 from services.camera_processor.attribute import Attribute
 from services.camera_processor.emotion import EmotionDetector
 from socketio_instance import notify_new_face
+import subprocess
 
 class Stream:
     def __init__(self, device: str = "cuda") -> None:
         self.device = torch.device(device)
         onnxruntime.set_default_logger_severity(3)  # 3: INFO, 2: WARNING, 1: ERROR
-        onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models/buffalo_l"))
-        print(f"ONNX Models Directory: {onnx_models_dir}")
+        onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models"))
+
         # Face Detection
         face_detector_model = os.path.join(onnx_models_dir, "det_10g.onnx")
         self.face_detector = SCRFD(face_detector_model)
@@ -74,6 +75,7 @@ class Stream:
                     kps = kpss[0]
                     embedding = face_recognizer.get(image, kps)
                     database[name] = embedding
+        print(f"--------------Database created with {len(database)} entries.--------------")
         return database
   
     def update_database(self, old_name: str, new_name: str) -> None:
@@ -118,26 +120,6 @@ class Stream:
         else:
             print(f"No image found for {new_name} with extensions {extensions}")
 
-    # def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, List[np.ndarray]]:
-    #     database: Dict[str, List[np.ndarray]] = {}
-        
-    #     for person_name in os.listdir(image_folder):
-    #         person_folder = os.path.join(image_folder, person_name)
-    #         if os.path.isdir(person_folder):
-    #             database[person_name] = []
-                
-    #             for filename in os.listdir(person_folder):
-    #                 if filename.lower().endswith((".jpg", ".jpeg", ".png")):
-    #                     image_path = os.path.join(person_folder, filename)
-    #                     image = cv2.imread(image_path)
-    #                     bboxes, kpss = face_detector.autodetect(image, max_num=1)
-                        
-    #                     if len(bboxes) > 0:
-    #                         kps = kpss[0]
-    #                         embedding = face_recognizer.get(image, kps)
-    #                         database[person_name].append(embedding)
-        
-    #     return database
     def _save_and_log_face(
         self, face_image: np.ndarray | None, label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool
     ) -> str:
@@ -248,11 +230,16 @@ class Stream:
 
         return bboxes, labels, sims, emotions, genders, ages
     
-    def recog_face_ip_cam(self, stream_id, camera, quality="Quality", is_recording=False):
-        self.stop_flag.clear()  # Clear the stop flag at the beginning
+    def recog_face_ip_cam(self, stream_id, camera: str, quality="Quality", is_recording=False):
+    
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
-       
-        cap = cv2.VideoCapture(camera + quality)
+        if camera is None:
+            raise ValueError("Camera URL must be provided and cannot be None")
+    
+        if quality is None:
+            quality = "Quality"  # Provide a default value if quality is None
+        
+        cap = cv2.VideoCapture(camera + "?" + quality)
         print("Camera Opened:  " + str(cap.isOpened()))
         writer = None
         if is_recording:
@@ -311,7 +298,7 @@ class Stream:
             now = datetime.datetime.now()
             directory = "./records/"
             os.makedirs(directory, exist_ok=True)
-            filename = directory + now.strftime("%H-%M-%S_%d-%m-%Y") + ".mp4"
+            filename = directory + now.strftime("%H:%M:%S_%d/%m/%Y_yerel_kamera") + ".mp4"
             frame_height, frame_width = frame.shape[:2]
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             self.video_writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
@@ -339,3 +326,44 @@ class Stream:
         _, buffer = cv2.imencode(".jpg", frame)
         processed_image = base64.b64encode(buffer).decode('utf-8')
         return 'data:image/jpeg;base64,' + processed_image
+    
+    def start_stream(self, stream_id, camera, quality="Quality", is_recording=False):
+   
+
+        self.stop_flag.clear()
+        self.stop_flag = threading.Event()  
+        logging.info(f"Starting stream: {stream_id} / camera: {camera}")
+     
+
+     
+
+    def stop_stream(self, stream_id: int) -> None:
+        """
+        Stops the ongoing video stream with the given ID by setting the stop flag.
+        Releases video capture and writer resources if they are in use.
+        """
+    
+        self.stop_flag.set()
+        
+        logging.info(f"Stream with ID {stream_id} stopped successfully")
+
+    def stop_recording(self):
+        if self.video_writer:
+            self.video_writer.release()
+            self.video_writer = None
+    
+            # Find the last saved file in the ./records folder
+            records_folder = './records'
+            files = [os.path.join(records_folder, f) for f in os.listdir(records_folder) if os.path.isfile(os.path.join(records_folder, f))]
+            last_saved_file = max(files, key=os.path.getctime)
+    
+            # Define output file path
+            output_file = last_saved_file.replace(".mp4", "_converted.mp4")
+    
+            # Execute ffmpeg command to convert video
+            command = ["ffmpeg", "-i", last_saved_file, "-vcodec", "h264", "-acodec", "aac", output_file]
+    
+            # Run the command
+            subprocess.run(command, capture_output=True, text=True)
+    
+            return output_file

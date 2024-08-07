@@ -15,7 +15,7 @@ from services.camera_processor.attribute import Attribute
 from services.camera_processor.emotion import EmotionDetector
 from socketio_instance import notify_new_face
 import subprocess
-VIDEO_FOLDER = './records'
+
 class Stream:
     def __init__(self, device: str = "cuda") -> None:
         self.device = torch.device(device)
@@ -62,9 +62,6 @@ class Stream:
 
         self.stop_flag = threading.Event()  # Initialize the stop flag
         self.video_writer = None
-        self.active_streams = {}  # Dictionary to track active streams by ID
-        self.camera_states = {}
-        self.lock = threading.Lock()
         
     def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, np.ndarray]:
         database: Dict[str, np.ndarray] = {}
@@ -73,7 +70,6 @@ class Stream:
                 name = os.path.splitext(filename)[0]
                 image_path = os.path.join(image_folder, filename)
                 image = cv2.imread(image_path)
-                image = cv2.resize(image, (640, 640))
                 bboxes, kpss = face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=2)
                 if len(bboxes) > 0:
                     kps = kpss[0]

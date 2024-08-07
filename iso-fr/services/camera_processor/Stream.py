@@ -20,8 +20,8 @@ class Stream:
     def __init__(self, device: str = "cuda") -> None:
         self.device = torch.device(device)
         onnxruntime.set_default_logger_severity(3)  # 3: INFO, 2: WARNING, 1: ERROR
-        onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models"))
-
+        onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models/buffalo_l"))
+        print(f"Loading models from: {onnx_models_dir}")
         # Face Detection
         face_detector_model = os.path.join(onnx_models_dir, "det_10g.onnx")
         self.face_detector = SCRFD(face_detector_model)
@@ -231,15 +231,15 @@ class Stream:
         return bboxes, labels, sims, emotions, genders, ages
     
     def recog_face_ip_cam(self, stream_id, camera: str, quality="Quality", is_recording=False):
-    
+        self.stop_flag.clear()
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
         if camera is None:
             raise ValueError("Camera URL must be provided and cannot be None")
     
         if quality is None:
             quality = "Quality"  # Provide a default value if quality is None
-        
-        cap = cv2.VideoCapture(camera + "?" + quality)
+        cap = cv2.VideoCapture(camera)
+        # cap = cv2.VideoCapture(camera + "?" + "streamProfile="+ quality)
         print("Camera Opened:  " + str(cap.isOpened()))
         writer = None
         if is_recording:

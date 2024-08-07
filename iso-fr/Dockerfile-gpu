@@ -35,13 +35,13 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 RUN python3.12 -m pip install --upgrade pip certifi six
 
 # Prepare the models directory within the /app directory and download model files
-RUN mkdir -p /app/services/models && \
-    wget -O /app/services/models/buffalo_l.zip "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip" && \
-    unzip /app/services/models/buffalo_l.zip -d /app/services/models && \
-    rm /app/services/models/buffalo_l.zip && \
-    wget -O /app/services/models/emotion_model.onnx "https://github.com/shangeth/Facial-Emotion-Recognition-PyTorch-ONNX/raw/master/ONNX/models/onnx_model.onnx" && \
+RUN mkdir -p /app/services/models/buffalo_l && \
+    wget -O /app/services/models/buffalo_l/buffalo_l.zip "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip" && \
+    unzip /app/services/models/buffalo_l/buffalo_l.zip -d /app/services/models/buffalo_l && \
+    rm /app/services/models/buffalo_l/buffalo_l.zip && \
+    wget -O /app/services/models/buffalo_l/emotion_model.onnx "https://github.com/shangeth/Facial-Emotion-Recognition-PyTorch-ONNX/raw/master/ONNX/models/onnx_model.onnx" && \
     echo "Listing contents of the model directory:" && \
-    ls -la /app/services/models/
+    ls -la /app/services/models/buffalo_l
 
 # Ensure CUDA libraries are installed
 RUN apt-get update && \

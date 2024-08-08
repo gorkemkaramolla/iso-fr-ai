@@ -10,6 +10,7 @@ import LogoSpinner from '@/components/ui/LogoSpinner';
 import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
 import 'primereact/resources/primereact.min.css'; //core css
 import 'primeicons/primeicons.css'; //icons
+import { Camera } from '@/types';
 
 // Define the types for the camera data and the component state
 
@@ -33,7 +34,7 @@ const CameraManager: React.FC = () => {
         console.error('Error fetching camera URLs:', error);
         setLoading(false);
       });
-  }, []);
+  }, [BASE_URL]);
 
   const handleDelete = (label: string) => {
     confirmDialog({

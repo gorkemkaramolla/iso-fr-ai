@@ -11,6 +11,7 @@ import Draggable from 'react-draggable';
 import { Quality } from '@/utils/enums';
 // import toast, { Toaster } from 'react-hot-toast';
 import StreamUtilButtons from '@/components/camera/StreamUtilButtons';
+import { Camera, CameraStream } from '@/types';
 const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
 const socket = io(BASE_URL!);
 

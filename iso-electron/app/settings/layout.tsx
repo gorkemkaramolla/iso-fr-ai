@@ -12,7 +12,7 @@ interface SettingsLayoutProps {
   children: React.ReactNode;
 }
 
-export const SettingsLayout = ({ children }: SettingsLayoutProps) => {
+const SettingsLayout = ({ children }: SettingsLayoutProps) => {
   const pathname = usePathname();
   const isSettingsPage = pathname === '/settings';
 

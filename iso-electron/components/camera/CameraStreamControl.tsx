@@ -4,6 +4,8 @@ import CameraControls from './CameraControls';
 import CameraStream from './CameraStream';
 import { Quality } from '@/utils/enums';
 import { Toast } from 'primereact/toast';
+import { Camera } from '@/types';
+import { CameraStream as CameraStreamType } from '@/types';
 
 interface CameraStreamProps {
   id: number;
@@ -20,8 +22,8 @@ interface CameraStreamProps {
   startStream?: (id: number) => void;
   onRemoveStream?: (id: number) => void;
   addCameraStream?: () => void;
-  cameraStreams: CameraStream[];
-  setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;
+  cameraStreams: CameraStreamType[];
+  setCameraStreams: React.Dispatch<React.SetStateAction<CameraStreamType[]>>;
   isLocalCamera?: boolean;
   toast: React.RefObject<Toast>;
   localCameraId?: number;

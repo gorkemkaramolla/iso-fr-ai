@@ -1,3 +1,4 @@
+import { Camera, CameraStream } from '@/types';
 import React from 'react';
 
 interface CameraDropdownProps {

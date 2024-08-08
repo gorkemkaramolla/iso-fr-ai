@@ -1,6 +1,7 @@
 import React from 'react';
 import { XIcon } from 'lucide-react';
 import RecogDetails from './RecogDetails';
+import { RecogFace } from '@/types';
 
 interface RecogDetailsDialogProps {
   index: number;

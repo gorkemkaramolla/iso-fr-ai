@@ -1,3 +1,4 @@
+from socketio_instance import socketio
 import subprocess
 import re
 import platform
@@ -6,11 +7,11 @@ import xmltodict
 import time
 from threading import Thread
 from logger import configure_logging
-from socketio_instance import socketio
 import json
 import docker
 from docker.errors import DockerException
 import logging
+
 class SystemMonitoring:
     def __init__(self):
     

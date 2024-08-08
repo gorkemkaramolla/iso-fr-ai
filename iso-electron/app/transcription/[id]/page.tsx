@@ -38,7 +38,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
   );
   const [isEditing, setIsEditing] = useState(false);
   const toast = useRef<Toast>(null);
-  const editingRef = useRef<HTMLInputElement>(null);
+  const editingRef = useRef<HTMLTextAreaElement>(null);
 
   const generateRandomColor = (): string => {
     const letters = '0123456789ABCDEF';
@@ -397,23 +397,11 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
                 transcription={transcription}
                 editingRef={editingRef}
                 handleEditName={handleEditName}
-                handleTranscriptionDelete={handleTranscriptionDelete}
-                handleGetExcel={handleGetExcel}
-                handleGetJSON={handleGetJSON}
                 handleDeleteSelected={() => {}}
-                handleSelectSegment={handleSelectSegment}
-                handleSelectAll={handleSelectAll}
-                handleSelectSpeaker={handleSelectSpeaker}
                 handleSpeakerNameChange={handleSpeakerNameChange}
                 handleTranscribedTextChange={handleTranscribedTextChange}
-                selectedSegments={selectedSegments}
-                selectedSpeakers={selectedSpeakers}
-                uniqueSpeakers={uniqueSpeakers}
-                highlightedSegment={highlightedSegment}
                 transcriptionRef={transcriptionRef}
-                getSpeakerBorderColor={getSpeakerBorderColor}
                 isEditing={isEditing}
-                setIsEditing={setIsEditing}
               />
             </div>
 

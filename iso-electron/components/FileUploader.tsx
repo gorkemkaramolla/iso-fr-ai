@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useState, useEffect, ChangeEvent } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Toast } from 'primereact/toast';
 import {
   FileUpload,
@@ -12,6 +12,10 @@ import { Button } from 'primereact/button';
 import { Tooltip } from 'primereact/tooltip';
 import { Tag } from 'primereact/tag';
 import Image from 'next/image';
+
+interface ExtendedFile extends File {
+  objectURL: string;
+}
 
 export default function FileUploader({
   onFileUpload,
@@ -29,9 +33,10 @@ export default function FileUploader({
 
   const onTemplateSelect = (e: FileUploadSelectEvent) => {
     let _totalSize = totalSize;
-    let files = e.files;
+    let files = Array.from(e.files) as ExtendedFile[];
 
     for (let i = 0; i < files.length; i++) {
+      files[i].objectURL = URL.createObjectURL(files[i]);
       _totalSize += files[i].size || 0;
       // Immediately call the parent prop function on file selection
       onFileUpload(files[i]);
@@ -40,7 +45,8 @@ export default function FileUploader({
     setTotalSize(_totalSize);
   };
 
-  const onTemplateRemove = (file: File, callback: Function) => {
+  const onTemplateRemove = (file: ExtendedFile, callback: Function) => {
+    URL.revokeObjectURL(file.objectURL); // Revoke the object URL to free memory
     setTotalSize(totalSize - file.size);
     callback();
   };
@@ -81,7 +87,7 @@ export default function FileUploader({
   };
 
   const itemTemplate = (inFile: object, props: ItemTemplateOptions) => {
-    const file = inFile as File;
+    const file = inFile as ExtendedFile;
     return (
       <div className='!flex items-center !justify-center'>
         <div className='flex align-items-center ' style={{ width: '40%' }}>

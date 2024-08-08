@@ -1,6 +1,7 @@
 import React from 'react';
 import { Divider } from 'primereact/divider';
 import InfoItem from './RecogDetailsInfoItem';
+import { RecogFace } from '@/types';
 
 interface RecogDetailsProps {
   selectedFace: RecogFace | null;

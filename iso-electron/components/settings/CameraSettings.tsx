@@ -10,6 +10,7 @@ import LogoSpinner from '@/components/ui/LogoSpinner';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import { Camera } from '@/types';
 
 const CameraManager: React.FC = () => {
   const [cameraUrls, setCameraUrls] = useState<Camera[]>([]);

@@ -7,6 +7,7 @@ import RecogFaceExpandedListItem from './Recog/RecogFaceExpandedListItem';
 import RecogFaceCollapsedItem from './Recog/RecogFaceCollapsedItem';
 import { getRecogFaces, updateRecogName } from '@/services/camera/service';
 import RecogFaceHeaderBar from './Recog/RecogFaceHeaderBar';
+import { GroupedRecogFaces, RecogFace } from '@/types';
 
 const socket = io(process.env.NEXT_PUBLIC_FLASK_URL!);
 interface IRecogFace {

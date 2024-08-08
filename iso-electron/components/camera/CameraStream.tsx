@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { Toast } from 'primereact/toast'; // Import PrimeReact Toast
 import { Quality } from '@/utils/enums';
+import { Camera } from '@/types';
+import { CameraStream as CameraStreamType } from '@/types';
 
 interface CameraStreamProps {
   id: number;
@@ -13,8 +15,8 @@ interface CameraStreamProps {
   isLocalCamera?: boolean;
   isRecording?: boolean;
   isClose?: boolean;
-  cameraStreams: CameraStream[];
-  setCameraStreams: React.Dispatch<React.SetStateAction<CameraStream[]>>;
+  cameraStreams: CameraStreamType[];
+  setCameraStreams: React.Dispatch<React.SetStateAction<CameraStreamType[]>>;
   toast: React.RefObject<Toast>; // Add this prop
   localCameraId?: number;
 }

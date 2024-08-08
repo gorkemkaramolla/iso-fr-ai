@@ -15,9 +15,9 @@ interface Segment {
 interface WaveAudioProps {
   audio_name?: string;
   transcript_id?: string;
-  segments: Segment[];
+  segments?: Segment[];
   onTimeUpdate?: (currentTime: number) => void;
-  speakerColors: Record<string, string>;
+  speakerColors?: Record<string, string>;
 }
 
 const WaveAudio: React.FC<WaveAudioProps> = ({
@@ -115,7 +115,9 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
                 regionsPlugin.addRegion({
                   start: segment.start_time,
                   end: segment.end_time,
-                  color: speakerColors[segment.speaker],
+                  color: speakerColors
+                    ? speakerColors[segment.speaker]
+                    : 'rgba(0,0,0,0.1)',
                   resize: false,
                   drag: false,
                 });

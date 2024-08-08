@@ -36,24 +36,13 @@ interface Transcript {
 
 interface TextEditorProps {
   transcription: Transcript | null;
-  editingRef: RefObject<HTMLInputElement>;
+  editingRef: RefObject<HTMLTextAreaElement>;
   handleEditName: (newName: string) => void;
-  handleTranscriptionDelete: () => void;
-  handleGetExcel: () => void;
-  handleGetJSON: () => void;
   handleDeleteSelected: (segmentId: string) => void;
-  handleSelectSegment: (segmentId: string) => void;
-  handleSelectAll: () => void;
-  handleSelectSpeaker: (speaker: string) => void;
   handleSpeakerNameChange: (segmentId: string, newName: string) => void;
   handleTranscribedTextChange: (segmentId: string, newText: string) => void;
-  selectedSegments: string[];
-  selectedSpeakers: string[];
-  highlightedSegment: string | null;
   transcriptionRef: RefObject<HTMLDivElement>;
-  getSpeakerBorderColor: (speaker: string) => string;
   isEditing: boolean;
-  setIsEditing: (value: boolean) => void;
   currentTime: number;
   speakerColors: Record<string, string>;
 }
@@ -69,22 +58,10 @@ const TextEditor: React.FC<TextEditorProps> = ({
   speakerColors,
   editingRef,
   handleEditName,
-  handleTranscriptionDelete,
-  handleGetExcel,
-  handleGetJSON,
   handleDeleteSelected,
-  handleSelectSegment,
-  handleSelectAll,
-  handleSelectSpeaker,
   handleSpeakerNameChange,
   handleTranscribedTextChange,
-  selectedSegments,
-  selectedSpeakers,
-  highlightedSegment,
   transcriptionRef,
-  getSpeakerBorderColor,
-  isEditing,
-  setIsEditing,
   currentTime,
 }) => {
   const [menuState, setMenuState] = useState<MenuState>({
@@ -113,13 +90,11 @@ const TextEditor: React.FC<TextEditorProps> = ({
     updateUniqueSpeakers(transcription?.segments || []);
   }, [transcription]);
 
-  const debouncedHandleEditName = useCallback(
+  const debouncedHandleEditName = useRef(
     debounce((newName: string) => {
       handleEditName(newName);
-      setTranscriptionName(newName);
-    }, 500),
-    [handleEditName]
-  );
+    }, 500)
+  ).current;
 
   const updateUniqueSpeakers = (segments: TranscriptSegment[]) => {
     const speakers = Array.from(

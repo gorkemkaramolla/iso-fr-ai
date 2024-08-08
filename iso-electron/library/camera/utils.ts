@@ -1,3 +1,5 @@
+import { RecogFace } from '@/types';
+
 export const truncateString = (str: string, num: number) => {
   if (str.length <= num) {
     return str;

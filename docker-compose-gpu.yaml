@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   fluentbit:
-    image: isoai/ai:fluentbit
+    image: fluentbit
     volumes:
       - ./fluent-bit/config:/fluent-bit/etc
     ports:
@@ -13,7 +13,7 @@ services:
       - solr
 
   solr:
-    image: isoai/ai:solr
+    image: solr
     ports:
       - '8983:8983'
     volumes:
@@ -28,7 +28,7 @@ services:
     entrypoint: ['/bin/bash', '/scripts/solr-entrypoint.sh']
 
   mongo:
-    image: isoai/ai:mongo
+    image: mongo
     ports:
       - '27017:27017'
     volumes:
@@ -40,7 +40,7 @@ services:
       - isoai-network
 
   auth_service:
-    image: isoai/ai:auth_service
+    image: auth_service
     build:
       context: ./iso-auth
       dockerfile: Dockerfile
@@ -65,7 +65,7 @@ services:
       - fluentbit
 
   face_recognition_service:
-    image: isoai/ai:face_recognition_service
+    image: face_recognition_service
     build:
       context: ./iso-fr
       dockerfile: Dockerfile-gpu
@@ -99,7 +99,7 @@ services:
       - fluentbit
 
   speaker_diarization_service:
-    image: isoai/ai:speaker_diarization_service
+    image: speaker_diarization_service
     build:
       context: ./iso-diarize
       dockerfile: Dockerfile-gpu
@@ -131,7 +131,7 @@ services:
       - fluentbit
 
   utils_service:
-    image: isoai/ai:utils_service
+    image: utils_service
     build:
       context: ./iso-utils
       dockerfile: Dockerfile

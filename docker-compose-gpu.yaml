@@ -40,7 +40,7 @@ services:
       - isoai-network
 
   auth_service:
-    image: auth_service
+    image: iso_ai-auth_service
     build:
       context: ./iso-auth
       dockerfile: Dockerfile
@@ -65,7 +65,7 @@ services:
       - fluentbit
 
   face_recognition_service:
-    image: face_recognition_service
+    image: iso_ai-face_recognition_service
     build:
       context: ./iso-fr
       dockerfile: Dockerfile-gpu
@@ -99,7 +99,7 @@ services:
       - fluentbit
 
   speaker_diarization_service:
-    image: speaker_diarization_service
+    image: iso_ai-speaker_diarization_service
     build:
       context: ./iso-diarize
       dockerfile: Dockerfile-gpu
@@ -131,7 +131,7 @@ services:
       - fluentbit
 
   utils_service:
-    image: utils_service
+    image: iso_ai-utils_service
     build:
       context: ./iso-utils
       dockerfile: Dockerfile

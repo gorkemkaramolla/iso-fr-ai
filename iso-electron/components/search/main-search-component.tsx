@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/config/routes';
+import { Personel } from '@/types';
+import { InputText } from 'primereact/inputtext';
 
 const getLatestSearches = (): string[] => {
   return JSON.parse(localStorage.getItem('latestSearches') || '[]');
@@ -72,6 +74,10 @@ const SearchComponent: React.FC = () => {
   const pathname = usePathname();
   const latestSearches = getLatestSearches();
   const searchRef = useRef<HTMLInputElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isCmdPressed, setIsCmdPressed] = useState(false);
+  const [isDotPressed, setIsDotPressed] = useState(false);
+  const [isEnterPressed, setIsEnterPressed] = useState(false);
 
   const currentRoute =
     Object.entries(ROUTES).find(([_, value]) => value.path === pathname)?.[0] ||
@@ -148,6 +154,7 @@ const SearchComponent: React.FC = () => {
   const handleClearSearch = () => {
     setQuery('');
     setSearchResults([]);
+    searchRef.current?.focus();
   };
 
   const getIcon = (name: string) => {
@@ -178,6 +185,22 @@ const SearchComponent: React.FC = () => {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.metaKey && e.key === 'k') {
+      searchRef.current?.focus();
+    }
+    if (e.key === 'Meta') {
+      setIsCmdPressed(true);
+    }
+    if (e.key === 'k') {
+      setIsDotPressed(true);
+    }
+    if (e.key === 'Escape') {
+      setIsCmdPressed(false);
+      setIsDotPressed(false);
+      setIsEnterPressed(false);
+      setIsFocused(false);
+      searchRef.current?.blur();
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex((prevIndex) =>
@@ -193,6 +216,9 @@ const SearchComponent: React.FC = () => {
         const linkPath = getLinkPath(selectedItem);
         if (linkPath !== '#') {
           router.push(linkPath);
+          setIsEnterPressed(true);
+          setIsFocused(false);
+          searchRef.current?.blur();
         } else {
           setQuery(selectedItem);
           // Trigger search with the selected latest search term
@@ -204,22 +230,110 @@ const SearchComponent: React.FC = () => {
       }
     }
   };
+  useEffect(() => {
+    setIsEnterPressed(false);
+  }, [pathname]);
+
+  const handleSearchKeyUp = (event: React.KeyboardEvent) => {
+    if (event.key === 'Meta') {
+      setIsCmdPressed(false);
+    }
+    if (event.key === 'k') {
+      setIsDotPressed(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey && event.key === 'k') {
+        searchRef.current?.focus();
+      }
+      if (event.key === 'Meta') {
+        setIsCmdPressed(true);
+      }
+      if (event.key === 'k') {
+        setIsDotPressed(true);
+      }
+    };
+
+    const handleGlobalKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Meta') {
+        setIsCmdPressed(false);
+      }
+      if (event.key === 'k') {
+        setIsDotPressed(false);
+      }
+    };
+
+    window.addEventListener(
+      'keydown',
+      handleGlobalKeyDown as unknown as EventListener
+    );
+    window.addEventListener(
+      'keyup',
+      handleGlobalKeyUp as unknown as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        'keydown',
+        handleGlobalKeyDown as unknown as EventListener
+      );
+      window.removeEventListener(
+        'keyup',
+        handleGlobalKeyUp as unknown as EventListener
+      );
+    };
+  }, []);
 
   return (
     <div className='relative'>
       <div className='relative'>
-        <input
+        <Search className='absolute left-3 top-3.5 text-gray-400 w-4 h-4' />
+        <InputText
           type='text'
+          size={'sm'}
           value={query}
           onChange={handleSearchChange}
-          onFocus={() => setShowLatestSearches(true)}
-          onBlur={() => setTimeout(() => setShowLatestSearches(false), 200)}
+          onFocus={() => {
+            setShowLatestSearches(true);
+            setIsFocused(true);
+          }}
+          onBlur={() => {
+            setTimeout(() => setShowLatestSearches(false), 200);
+            setIsFocused(false);
+          }}
           onKeyDown={handleKeyDown}
+          onKeyUp={handleSearchKeyUp}
           placeholder='Search'
-          className='w-full px-4 py-3 pl-10 pr-10 text-gray-700 bg-white border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+          className='p-inputtext-sm w-full px-4 py-3 pl-10 pr-10 text-gray-700 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
           ref={searchRef}
         />
-        <Search className='absolute left-3 top-3.5 text-gray-400 w-5 h-5' />
+        {!isFocused && (
+          <div
+            className={`absolute ${
+              query ? 'right-10' : 'right-3'
+            } top-1.5 text-gray-400 select-none`}
+          >
+            <kbd
+              className={`kbd bg-slate-100 text-black ${
+                isCmdPressed ? 'scale-90 transition-all duration-300' : ''
+              }`}
+            >
+              ⌘
+            </kbd>{' '}
+            +{' '}
+            <kbd
+              className={`kbd bg-slate-100 text-black nunito-500 ${
+                isDotPressed
+                  ? 'scale-90 transition-all duration-300 ease-in'
+                  : ''
+              }`}
+            >
+              K
+            </kbd>
+          </div>
+        )}
         {query && (
           <button
             onClick={handleClearSearch}
@@ -229,8 +343,8 @@ const SearchComponent: React.FC = () => {
           </button>
         )}
       </div>
-      {showLatestSearches && filteredSearches.length > 0 && (
-        <div className='absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg'>
+      {showLatestSearches && filteredSearches.length > 0 && !isEnterPressed && (
+        <div className='absolute z-10 w-full top-12 bg-white border border-gray-200 rounded-md shadow-lg'>
           {filteredSearches.map((search: string, index: number) => {
             const isRouteLink = allRouteLinks.some(
               (link) => link.name === search
@@ -312,13 +426,13 @@ const SearchComponent: React.FC = () => {
         </div>
       )}
 
-      {query &&
+      {/* {query &&
         searchResults.length === 0 &&
         !allRouteLinks.some((link) => link.name === query) && (
           <div className='mt-8 text-center text-gray-600'>
             {query} ile ilgili sonuç bulunamadı.
           </div>
-        )}
+        )} */}
     </div>
   );
 };

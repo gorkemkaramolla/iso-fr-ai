@@ -6,6 +6,7 @@ import { Button } from 'primereact/button';
 import { AudioLines, Contact, ScanFace, User, Users } from 'lucide-react';
 import { Menu } from 'primereact/menu';
 import { useRouter } from 'next/navigation';
+import SearchComponent from '../search/main-search-component';
 interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
@@ -93,16 +94,7 @@ const NavigationBar: React.FC<Props> = () => {
   return (
     <div style={{ zIndex: 100 }} className='sticky top-0 bg-white w-full '>
       <nav className='navbar h-[7vh] w-full mx-auto container z-40 flex justify-between items-center bg-base-100'>
-        <div className='flex items-center space-x-4'>
-          <Button
-            icon='pi pi-bars'
-            className='p-button-rounded p-button-text [&>span]:font-extrabold [&>span]:text-2xl text-black'
-            onClick={(event) => menu?.current?.toggle(event)}
-          />
-          <Menu model={menuItems} popup ref={menu} />
-        </div>
-
-        <div className='flex justify-center items-center flex-1'>
+        <div className='flex justify-center items-center'>
           <Link href={'/'} className='btn-md text-xl'>
             <Image
               width={100}
@@ -113,18 +105,30 @@ const NavigationBar: React.FC<Props> = () => {
             />
           </Link>
         </div>
-
-        <Button
-          tabIndex={0}
-          role='button'
-          className='btn btn-ghost btn-circle avatar'
-          onClick={(event) => profileMenu.current?.toggle(event)}
-        >
-          <div className='w-8'>
-            <User className='w-8 h-8' />
+        <div className='flex items-center justify-center gap-4'>
+          <div>
+            <SearchComponent />
           </div>
-        </Button>
-        <Menu model={profileItems} popup ref={profileMenu} />
+          <div className='flex items-center space-x-4'>
+            <Button
+              icon='pi pi-bars'
+              className='p-button-rounded p-button-text [&>span]:font-extrabold [&>span]:text-2xl text-black'
+              onClick={(event) => menu?.current?.toggle(event)}
+            />
+            <Menu model={menuItems} popup ref={menu} popupAlignment='right' />
+          </div>
+          <Button
+            tabIndex={0}
+            role='button'
+            className='btn btn-ghost btn-circle avatar'
+            onClick={(event) => profileMenu.current?.toggle(event)}
+          >
+            <div className='w-8'>
+              <User className='w-8 h-8' />
+            </div>
+          </Button>
+          <Menu model={profileItems} popup ref={profileMenu} />
+        </div>
       </nav>
     </div>
   );

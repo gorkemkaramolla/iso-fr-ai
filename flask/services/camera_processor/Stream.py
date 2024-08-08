@@ -70,7 +70,13 @@ class Stream:
                 name = os.path.splitext(filename)[0]
                 image_path = os.path.join(image_folder, filename)
                 image = cv2.imread(image_path)
-                bboxes, kpss = face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=2)
+                image = cv2.copyMakeBorder(
+                    image, 
+                    640, 640, 640, 640, 
+                    cv2.BORDER_CONSTANT, 
+                    value=[255, 255, 255]
+                )
+                bboxes, kpss = face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=1, metric="max")
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = face_recognizer.get(image, kps)

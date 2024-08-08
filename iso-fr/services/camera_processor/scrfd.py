@@ -6,7 +6,7 @@ import os
 import os.path as osp
 import cv2
 import sys
-
+import traceback
 
 def softmax(z):
     assert len(z.shape) == 2
@@ -75,9 +75,9 @@ class SCRFD:
         self.batched = False
         if self.session is None:
             assert self.model_file is not None
-            assert osp.exists(self.model_file)
+            assert osp.isfile(self.model_file)
             self.session = onnxruntime.InferenceSession(
-                self.model_file, providers=["CUDAExecutionProvider"]
+                self.model_file, providers=["CPUExecutionProvider"]
             )
         self.center_cache = {}
         self.nms_thresh = 0.4
@@ -130,6 +130,8 @@ class SCRFD:
     def prepare(self, ctx_id, **kwargs):
         if ctx_id < 0:
             self.session.set_providers(["CPUExecutionProvider"])
+        else:
+            self.session.set_providers(["CoreMLExecutionProvider", "CUDAExecutionProvider"])
         nms_thresh = kwargs.get("nms_thresh", None)
         if nms_thresh is not None:
             self.nms_thresh = nms_thresh
@@ -279,15 +281,28 @@ class SCRFD:
                     )  # some extra weight on the centering
                 bindex = np.argsort(values)[::-1]  # some extra weight on the cientering
                 bindex = bindex[0:max_num]
-                det = det[bindex, :]
+                det = np.array(det[bindex, :])
                 if kpss is not None:
-                    kpss = kpss[bindex, :]
+                    kpss = np.array(kpss[bindex, :])
             return det, kpss
         except ZeroDivisionError:
-            print("Warning: Image height is zero, cannot perform detection.")
+            print("Error: Division by zero encountered in the image height or width calculation.")
+            return [], None
+        except AssertionError:
+            print("Error: Input size is not provided.")
+            return [], None
+        except cv2.error as e:
+            print(f"OpenCV Error: {e}")
+            return [], None
+        except ValueError as e:
+            print(f"Value Error: {e}")
+            return [], None
+        except TypeError as e:
+            print(f"Type Error: {e}")
             return [], None
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print("An unexpected error occurred:")
+            traceback.print_exc()
             return [], None
 
     # def detect(self, img, input_size=None, thresh=None, max_num=0, metric="default"):
@@ -411,123 +426,48 @@ class SCRFD:
         return keep
 
 
-# def test():
-#     assets_dir = os.path.expanduser("~/.insightface/models/buffalo_l")
 
-#     # Initialize the SCRFD detector with the model file
-#     det_10g_model_path = os.path.join(assets_dir, "det_10g.onnx")
-#     img = cv2.imread("../../../face-images/FatihYavuz.jpg")
-#     model = SCRFD(model_file=det_10g_model_path)
-#     model.prepare(0)
-#     dets, kpss = model.detect(img, input_size=(640, 640), thresh=0.5)
-#     print(dets)
-#     if kpss is not None:
-#         print(kpss)
-
-
-# if __name__ == "__main__":
-#     test()
-
-
-class GenderAgeModel:
-    def __init__(self, model_file=None, session=None):
-        self.model_file = model_file
-        self.session = session
-        if self.session is None:
-            assert self.model_file is not None
-            assert osp.exists(self.model_file)
-            self.session = onnxruntime.InferenceSession(
-                self.model_file, providers=["CUDAExecutionProvider"]
-            )
-        self.input_mean = 127.5
-        self.input_std = 128.0
-
-    def predict(self, face_img):
-        blob = cv2.dnn.blobFromImage(
-            face_img,
-            1.0 / self.input_std,
-            (96, 96),
-            (self.input_mean, self.input_mean, self.input_mean),
-            swapRB=True,
-        )
-        net_outs = self.session.run(None, {self.session.get_inputs()[0].name: blob})
-        print(net_outs)
-
-        # Assuming net_outs[0] contains both gender and age information.
-        gender_age_pred = net_outs[0][
-            0
-        ]  # Assuming the first element contains the predictions
-
-        # The first value is gender and the second value is age.
-        gender_prob = gender_age_pred[0]
-        age_pred = gender_age_pred[2]
-
-        gender = "Male" if gender_prob > 0.5 else "Female"
-        age = max(0, int(age_pred * 100))
-
-        return gender, age
-
-    # def predict(self, face_img):
-    #     blob = cv2.dnn.blobFromImage(
-    #         face_img,
-    #         1.0 / self.input_std,
-    #         (96, 96),
-    #         (self.input_mean, self.input_mean, self.input_mean),
-    #         swapRB=True,
-    #     )
-    #     net_outs = self.session.run(None, {self.session.get_inputs()[0].name: blob})
-    #     print("---------------------" + str(net_outs))
-    #     gender_prob = net_outs[0]
-    #     age = net_outs[1][0][0] * 100
-    #     # print("gender: ", gender_prob)
-    #     # print("Age: ", str(age))
-    #     gender = "Male" if gender_prob[0][0] > 0.5 else "Female"
-    #     # print("gender: ", gender)
-    #     return gender, int(age)
-
-
-def detect_gender_and_age(image_path):
-    # Initialize models
+def test():
     assets_dir = os.path.expanduser("~/.insightface/models/buffalo_l")
+    onnxruntime.set_default_logger_severity(3)  # 3: INFO, 2: WARNING, 1: ERROR
+
+    # Initialize the SCRFD detector with the model file
     det_10g_model_path = os.path.join(assets_dir, "det_10g.onnx")
-    gender_age_model_path = os.path.join(assets_dir, "genderage.onnx")
+    if not os.path.exists(det_10g_model_path):
+        print(f"Model file not found: {det_10g_model_path}")
+        return
 
-    face_detector = SCRFD(model_file=det_10g_model_path)
-    face_detector.prepare(0)
+    img_path = "../../face-images/fatih.jpeg"
+    img = cv2.imread(img_path)
+    if img is None:
+        print(f"Image file not found or could not be read: {img_path}")
+        return
 
-    gender_age_model = GenderAgeModel(model_file=gender_age_model_path)
+    # Resize the image
+    # img = cv2.resize(img, (640, 640))
 
-    # Read the input image
-    img = cv2.imread(image_path)
-    img = cv2.resize(img, (1080, 720))
+    # Add white border
+    border_size = 640
+    img_with_border = cv2.copyMakeBorder(
+        img, 
+        border_size, border_size, border_size, border_size, 
+        cv2.BORDER_CONSTANT, 
+        value=[255, 255, 255]
+    )
+
+    # Display the image with the white border
+    # cv2.imshow("Image with White Border", img_with_border)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+    model = SCRFD(model_file=det_10g_model_path)
+    model.prepare(0)
 
     # Detect faces
-    dets, kpss = face_detector.detect(img, input_size=(640, 640), thresh=0.5)
-    print(dets)
-    print(kpss)
-    # Process each detected face
-    for det in dets:
-        x1, y1, x2, y2, score = det.astype(int)
-        face_img = img[y1:y2, x1:x2]
-        gender, age = gender_age_model.predict(face_img)
+    dets, kpss = model.detect(img_with_border, input_size=(640, 640), thresh=0.8, max_num=1)
+    print("Detections:", dets)
+    if kpss is not None:
+        print("Keypoints:", kpss)
 
-        # Draw bounding box
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
-        # Annotate gender and age
-        label = f"{gender}, Age: {age}"
-        print(label)
-        cv2.putText(
-            img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2
-        )
-
-    # Display the result
-    cv2.imshow("Gender and Age Detection", img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-# Example usage
 if __name__ == "__main__":
-    image_path = "../../../face-images/Yılmaz.jpg"
-    detect_gender_and_age(image_path)
+    test()

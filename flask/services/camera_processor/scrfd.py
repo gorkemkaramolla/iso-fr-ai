@@ -75,7 +75,7 @@ class SCRFD:
         self.batched = False
         if self.session is None:
             assert self.model_file is not None
-            assert osp.exists(self.model_file)
+            assert osp.isfile(self.model_file)
             self.session = onnxruntime.InferenceSession(
                 self.model_file, providers=["CoreMLExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"]
             )

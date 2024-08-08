@@ -18,6 +18,9 @@ import numpy as np
 from socketio_instance import notify_new_camera_url, socketio, emit, join_room, leave_room
 import logging
 import pytz
+from dotenv import load_dotenv
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
@@ -28,15 +31,27 @@ app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 # jwt = JWTManager(app)
 
 ###################################################### Setup MongoDB
-client = MongoClient(os.environ.get("MONGO_DB_URI"))
-db = client[os.environ.get("MONGO_DB_NAME")]
+# Get environment variables
+mongo_db_uri = os.getenv("MONGO_DB_URI")
+mongo_db_name = os.getenv("MONGO_DB_NAME")
+
+# Debug prints to check environment variable values
+print(f"MONGO_DB_URI: {mongo_db_uri}")
+print(f"MONGO_DB_NAME: {mongo_db_name}")
+
+# Ensure environment variables are set
+if not mongo_db_uri or not mongo_db_name:
+    raise ValueError("MONGO_DB_URI and MONGO_DB_NAME environment variables must be set")
+
+# Initialize MongoDB client and collections
+client = MongoClient(mongo_db_uri)
+db = client[mongo_db_name]
 logs_collection = db["logs"]
 camera_collection = db["cameras"]
 
-
 ###################################################### Create an instance of your class
 # camera_processor = CameraProcessor(device="cuda")
-stream_instance = Stream(device="cuda")
+stream_instance = Stream(device="cpu")
 logger = configure_logging()
 
 # Setup Blueprint

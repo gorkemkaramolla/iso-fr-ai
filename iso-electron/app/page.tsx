@@ -11,9 +11,9 @@ const Page: React.FC = () => {
   }, []);
   return (
     <div className='h-[91vh] bg-gray-50 py-8 px-4 sm:px-6 lg:px-8'>
-      <div className='max-w-3xl  mx-auto my-12'>
+      {/* <div className='max-w-3xl  mx-auto my-12'>
         <SearchComponent />
-      </div>
+      </div> */}
       <div className='container mx-auto'>{/* <ShowPersonel /> */}</div>
     </div>
   );

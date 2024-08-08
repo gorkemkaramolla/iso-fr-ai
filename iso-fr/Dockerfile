@@ -16,13 +16,15 @@ RUN apt-get update && \
 RUN python3 -m pip install --upgrade pip certifi six
 
 # Prepare the models directory within the /app directory and download model files
-RUN mkdir -p /app/services/models && \
-    wget -O /app/services/models/buffalo_l.zip "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip" && \
-    unzip /app/services/models/buffalo_l.zip -d /app/services/models && \
-    rm /app/services/models/buffalo_l.zip && \
-    wget -O /app/services/models/emotion_model.onnx "https://github.com/shangeth/Facial-Emotion-Recognition-PyTorch-ONNX/raw/master/ONNX/models/onnx_model.onnx" && \
-    echo "Listing contents of the model directory:" && \
-    ls -la /app/services/models/
+# RUN mkdir -p /app/services/models/buffalo_l && \
+#     wget -O /app/services/models/buffalo_l/buffalo_l.zip "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip" && \
+#     unzip /app/services/models/buffalo_l/buffalo_l.zip -d /app/services/models/buffalo_l && \
+#     rm /app/services/models/buffalo_l/buffalo_l.zip && \
+#     wget -O /app/services/models/buffalo_l/emotion_model.onnx "https://github.com/shangeth/Facial-Emotion-Recognition-PyTorch-ONNX/raw/master/ONNX/models/onnx_model.onnx" && \
+#     echo "Listing contents of the model directory:" && \
+#     ls -la /app/services/models/buffalo_l
+
+# COPY ~/.insightface/models/buffalo_l/ /app/services/models/buffalo_l/
 
 # Copy the local directory contents to the container's working directory
 COPY . /app

@@ -21,6 +21,7 @@ class Stream:
         self.device = torch.device(device)
         onnxruntime.set_default_logger_severity(3)  # 3: INFO, 2: WARNING, 1: ERROR
         onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models/buffalo_l"))
+        # onnx_models_dir = os.path.expanduser("~/.insightface/models/buffalo_l")
         print(f"Loading models from: {onnx_models_dir}")
         # Face Detection
         face_detector_model = os.path.join(onnx_models_dir, "det_10g.onnx")
@@ -70,7 +71,13 @@ class Stream:
                 name = os.path.splitext(filename)[0]
                 image_path = os.path.join(image_folder, filename)
                 image = cv2.imread(image_path)
-                bboxes, kpss = face_detector.autodetect(image, max_num=1)
+                image = cv2.copyMakeBorder(
+                    image, 
+                    640, 640, 640, 640, 
+                    cv2.BORDER_CONSTANT, 
+                    value=[255, 255, 255]
+                )
+                bboxes, kpss = face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=1, metric="max")
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = face_recognizer.get(image, kps)
@@ -107,7 +114,7 @@ class Stream:
         if new_image_path:
             if self.database.get(new_name) is None:
                 image = cv2.imread(new_image_path)
-                bboxes, kpss = self.face_detector.autodetect(image, max_num=1)
+                bboxes, kpss = self.face_detector.detect(image, input_size=(640,640), max_num=1)
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = self.face_recognizer.get(image, kps)
@@ -184,7 +191,7 @@ class Stream:
         if frame is None or len(frame.shape) < 2:
             return [], [], [], [], [], []
 
-        bboxes, kpss = self.face_detector.autodetect(frame, max_num=49)
+        bboxes, kpss = self.face_detector.detect(frame, input_size=(640,640), max_num=49)
         if len(bboxes) == 0:
             return [], [], [], [], [], []
 

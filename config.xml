@@ -16,7 +16,7 @@
     <services>
         <auth_service port="5001" host="0.0.0.0" debug="true"/>
         <face_recognition_service port="5002" host="0.0.0.0" debug="true"/>
-        <speaker_diarization_service port="5003" host="0.0.0.0" debug="true" device="cuda">
+        <speaker_diarization_service port="5003" host="0.0.0.0" debug="true" device="cpu">
             <logging_collection>logs</logging_collection>
             <temp_directory>temp</temp_directory>
         </speaker_diarization_service>

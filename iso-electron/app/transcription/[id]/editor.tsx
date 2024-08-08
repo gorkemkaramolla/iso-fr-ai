@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { debounce } from 'lodash';
 import SegmentMenu from './segment-menu';
+import Card from '@/components/ui/card';
 
 interface TranscriptSegment {
   segment_id: string;
@@ -296,13 +297,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
   }, []);
 
   return (
-    <div className='bg-base-100 p-4 rounded-box shadow-lg'>
+    <Card>
       <div className='flex items-center justify-between mb-4'>
-        <div className='flex items-center space-x-4 w-full px-4'>
+        <div className='flex items-center space-x-4 w-10/12  px-4'>
           {isTranscriptionNameEditing ? (
             <textarea
               ref={editingRef}
-              className='text-2xl w-full cursor-text min-w-52 font-bold p-2 rounded border focus:outline-none'
+              className='text-2xl w-full cursor-text min-w-52 font-bold p-2 rounded border focus:outline-none break-words whitespace-pre-wrap'
               rows={2}
               value={transcriptionName}
               onBlur={handleNameChange}
@@ -310,7 +311,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
             />
           ) : (
             <h1
-              className='text-2xl cursor-text min-w-52  font-bold'
+              className='text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap'
               onClick={handleTranscriptionNameChange}
             >
               {transcriptionName}
@@ -321,7 +322,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
         <div className='flex space-x-2'>
           <div className='dropdown dropdown-end'>
             <label tabIndex={0} className='btn btn-primary btn-sm'>
-              Speakers
+              Konuşmacılar
             </label>
             <ul
               tabIndex={0}
@@ -373,7 +374,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2, delay: index * 0.03 }}
+                transition={{ duration: 0.1, delay: index * 0.01 }}
                 ref={(el) => {
                   segmentRefs.current[segment.segment_id] = el;
                 }}
@@ -420,7 +421,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
         onEdit={handleEditSegment}
         onCopy={handleCopySegment}
       />
-    </div>
+    </Card>
   );
 };
 

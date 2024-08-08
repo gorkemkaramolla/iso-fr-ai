@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiUploadCloud, FiX, FiMusic } from 'react-icons/fi';
 import WaveAudio from '@/components/sound/wave-audio';
 import Link from 'next/link';
+import Card from '../ui/card';
 
 interface Segment {
   id: number;
@@ -106,68 +107,70 @@ const WhisperUpload: React.FC = () => {
         <h1 className='text-3xl font-bold  mb-8'>Konuşma Sentezleyici</h1>
 
         <motion.div
-          className='bg-white rounded-lg shadow-lg p-8 mb-8'
+          className=''
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className='relative'>
-            {file ? (
-              <div className='mb-4'>
-                <div className='flex items-center justify-between bg-indigo-100 rounded-lg p-4'>
-                  <div className='flex items-center space-x-3'>
-                    <FiMusic className='text-indigo-600 text-xl' />
-                    <span className='font-medium text-indigo-800'>
-                      {file.name}
-                    </span>
+          <Card>
+            <div className='relative'>
+              {file ? (
+                <div className='mb-4'>
+                  <div className='flex items-center justify-between bg-indigo-100 rounded-lg p-4'>
+                    <div className='flex items-center space-x-3'>
+                      <FiMusic className='text-indigo-600 text-xl' />
+                      <span className='font-medium text-indigo-800'>
+                        {file.name}
+                      </span>
+                    </div>
+                    <button
+                      onClick={cancelSelection}
+                      className='text-indigo-600 hover:text-indigo-800 transition-colors'
+                    >
+                      <FiX className='text-xl' />
+                    </button>
                   </div>
-                  <button
-                    onClick={cancelSelection}
-                    className='text-indigo-600 hover:text-indigo-800 transition-colors'
+                  <div className='mt-4'>
+                    <WaveAudio audio_name={URL.createObjectURL(file)} />
+                  </div>
+                </div>
+              ) : (
+                <div className='flex items-center justify-center w-full'>
+                  <label
+                    htmlFor='dropzone-file'
+                    className='flex flex-col items-center justify-center w-full h-64 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition duration-300'
                   >
-                    <FiX className='text-xl' />
-                  </button>
+                    <div className='flex flex-col items-center justify-center pt-5 pb-6'>
+                      <FiUploadCloud className='w-10 h-10 mb-3 text-indigo-500' />
+                      <p className='mb-2 text-sm text-indigo-600'>
+                        <span className='font-semibold'>
+                          Karşıya yükleme için tıklayın
+                        </span>{' '}
+                        veya sürükleyip bırakın
+                      </p>
+                      <p className='text-xs text-indigo-500'>
+                        Ses veya video dosyası (max. 50MB)
+                      </p>
+                    </div>
+                    <input
+                      id='dropzone-file'
+                      type='file'
+                      className='hidden'
+                      onChange={onFileChange}
+                      accept='audio/*'
+                    />
+                  </label>
                 </div>
-                <div className='mt-4'>
-                  <WaveAudio audio_name={URL.createObjectURL(file)} />
-                </div>
-              </div>
-            ) : (
-              <div className='flex items-center justify-center w-full'>
-                <label
-                  htmlFor='dropzone-file'
-                  className='flex flex-col items-center justify-center w-full h-64 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition duration-300'
-                >
-                  <div className='flex flex-col items-center justify-center pt-5 pb-6'>
-                    <FiUploadCloud className='w-10 h-10 mb-3 text-indigo-500' />
-                    <p className='mb-2 text-sm text-indigo-600'>
-                      <span className='font-semibold'>
-                        Karşıya yükleme için tıklayın
-                      </span>{' '}
-                      veya sürükleyip bırakın
-                    </p>
-                    <p className='text-xs text-indigo-500'>
-                      Ses veya video dosyası (max. 50MB)
-                    </p>
-                  </div>
-                  <input
-                    id='dropzone-file'
-                    type='file'
-                    className='hidden'
-                    onChange={onFileChange}
-                    accept='audio/*'
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-          <button
-            className='mt-4 px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-300 disabled:opacity-50'
-            onClick={onFileUpload}
-            disabled={loading || !file}
-          >
-            {loading ? 'İşlem devam ediyor...' : 'Sentezi Başlat'}
-          </button>
+              )}
+            </div>
+            <button
+              className='mt-4 px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-300 disabled:opacity-50'
+              onClick={onFileUpload}
+              disabled={loading || !file}
+            >
+              {loading ? 'İşlem devam ediyor...' : 'Sentezi Başlat'}
+            </button>
+          </Card>
         </motion.div>
 
         <AnimatePresence>

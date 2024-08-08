@@ -18,6 +18,7 @@ import { PanelBottomClose, Trash2, TrashIcon } from 'lucide-react';
 import { FaAngleDown } from 'react-icons/fa';
 
 import TextEditor from './editor';
+import { Segment, Transcript } from '@/types';
 interface Props {
   params: {
     id: string;
@@ -185,12 +186,14 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
         setSelectedSpeakers([]);
       } else {
         const allSegmentIds = transcription.segments.map(
-          (segment) => segment.segment_id
+          (segment: Segment) => segment.segment_id
         );
         setSelectedSegments(allSegmentIds);
 
         const allSpeakers = [
-          ...new Set(transcription.segments.map((segment) => segment.speaker)),
+          ...new Set(
+            transcription.segments.map((segment: Segment) => segment.speaker)
+          ),
         ];
         setSelectedSpeakers(allSpeakers);
       }
@@ -386,7 +389,7 @@ const Transcription: React.FC<Props> = ({ params: { id } }) => {
             />
           </div>
 
-          <div className='flex flex-col lg:flex-row min-h-screen bg-gray-50'>
+          <div className='flex flex-col lg:flex-row min-h-screen'>
             <div className='p-4 lg:w-9/12'>
               <TextEditor
                 speakerColors={speakerColors}

@@ -35,9 +35,9 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const setStoreCurrentTime = useStore((state) => state.setCurrentTime);
 
-  useEffect(()=>{
-    console.log(duration)
-  },[duration])
+  useEffect(() => {
+    console.log(duration);
+  }, [duration]);
   const customTimelinePlugin = useMemo(
     () =>
       Timeline.create({
@@ -45,7 +45,7 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
         height: 12,
         timeInterval: 45,
       }),
-    [ timelineContainerRef]
+    [timelineContainerRef]
   );
 
   const regionsPlugin = useMemo(() => RegionsPlugin.create(), []);
@@ -95,8 +95,8 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             waveColor: '#818cf8',
             progressColor: '#4f46e5',
             cursorColor: '#4f46e5',
-            barWidth: 2,
-            barRadius: 3,
+            barWidth: 4,
+            barRadius: 12,
             height: 60,
             normalize: true,
             plugins: [customTimelinePlugin, regionsPlugin],

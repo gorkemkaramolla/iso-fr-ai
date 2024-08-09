@@ -66,14 +66,12 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   const totalPages = Math.ceil(responses.length / itemsPerPage);
 
   return (
-    <div className='h-full sticky top-0 bg-white border-gray-200 overflow-y-auto'>
+    <div className='h-full sticky top-0 border-gray-200 overflow-y-auto'>
       {loading ? (
         <ChatSideMenuSkeleton />
       ) : (
         <div className='py-4 px-4'>
-          <h2 className='text-lg font-semibold mb-4 text-gray-700'>
-            Transkriptler
-          </h2>
+          <h2 className='text-lg font-semibold mb-4 text-gray-700'>Geçmiş</h2>
           <ul className='space-y-2'>
             {currentItems.length === 0 ? (
               <p className='text-center text-sm text-gray-500'>
@@ -84,19 +82,19 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                 <li key={response.transcription_id}>
                   <Link href={`/transcription/${response.transcription_id}`}>
                     <div
-                      className={`p-2 hover:bg-gray-100 rounded transition-colors ${
+                      className={`p-2   rounded transition-colors ${
                         response.transcription_id === activePageId
-                          ? 'bg-gray-200'
-                          : ''
+                          ? 'bg-indigo-500 text-gray-100'
+                          : 'hover:bg-indigo-100'
                       }`}
                     >
-                      <p className='text-sm font-medium text-gray-800 truncate'>
+                      <p className='text-sm font-medium  truncate'>
                         {response.name}
                       </p>
-                      <p className='text-sm font-medium text-gray-600 truncate'>
+                      <p className='text-sm font-medium  truncate'>
                         {response.transcription_id}
                       </p>
-                      <p className='text-xs text-gray-500 mt-1'>
+                      <p className='text-xs a mt-1'>
                         {formatDate(response.created_at)}
                       </p>
                     </div>

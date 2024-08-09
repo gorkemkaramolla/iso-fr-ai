@@ -1,9 +1,10 @@
 'use client';
+import { Personel } from '@/types';
 import React, { useState } from 'react';
 
 const PersonelSettings: React.FC = () => {
   const [personelData, setPersonelData] = useState<Personel>({
-    id: '',
+    _id: '',
     name: '',
     lastname: '',
     title: '',
@@ -15,6 +16,7 @@ const PersonelSettings: React.FC = () => {
     birth_date: '',
     iso_phone: '',
     iso_phone2: '',
+    file_path: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

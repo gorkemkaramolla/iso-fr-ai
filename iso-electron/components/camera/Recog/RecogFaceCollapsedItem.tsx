@@ -3,6 +3,7 @@ import {
   getLatestTimestamp,
   truncateString,
 } from '@/library/camera/utils';
+import { GroupedRecogFaces } from '@/types';
 import React from 'react';
 
 interface RecogFaceCollapsedItemProps {

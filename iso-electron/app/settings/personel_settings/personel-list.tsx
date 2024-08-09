@@ -75,7 +75,6 @@ export default function ShowPersonel() {
 
   const header = (
     <div className='flex justify-between items-center mb-4'>
-      <h1 className='text-xl font-bold'>Personel Listesi</h1>
       <div className='relative'>
         <Search
           className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'

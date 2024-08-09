@@ -151,6 +151,7 @@ def search_logs_route():
 app.register_blueprint(solr_search_bp)
 
 ######################### System Check ###################################
+
 @system_check.route("/system_check/", methods=["GET"])
 def system_check_route():
     system_info = monitoring_service.get_system_info()

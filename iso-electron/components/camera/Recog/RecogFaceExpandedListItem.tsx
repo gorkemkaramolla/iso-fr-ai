@@ -1,6 +1,7 @@
 import React from 'react';
 import RecogDetailsDialog from './RecogDetailsDialog';
 import { formatLastSeen } from '@/library/camera/utils';
+import { RecogFace } from '@/types';
 interface RecogFaceExpandedListItemProps {
   face: RecogFace;
   index: number;

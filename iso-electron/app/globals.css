@@ -23,6 +23,11 @@
     width: 3.3rem !important;
   }
 }
+@layer base {
+  body {
+    @apply bg-slate-50;
+  }
+}
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

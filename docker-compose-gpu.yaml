@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   fluentbit:
-    image: fluent/fluent-bit:latest
+    image: isoai/ai:fluent-bit
     volumes:
       - ./fluent-bit/config:/fluent-bit/etc
     ports:
@@ -13,7 +13,7 @@ services:
       - solr
 
   solr:
-    image: solr:latest
+    image: isoai/ai:solr
     ports:
       - '8983:8983'
     volumes:
@@ -28,7 +28,7 @@ services:
     entrypoint: ['/bin/bash', '/scripts/solr-entrypoint.sh']
 
   mongo:
-    image: mongo:latest
+    image: isoai/ai:mongo
     ports:
       - '27017:27017'
     volumes:
@@ -40,6 +40,7 @@ services:
       - isoai-network
 
   auth_service:
+    image: isoai/ai:iso_ai-auth_service
     build:
       context: ./iso-auth
       dockerfile: Dockerfile
@@ -64,6 +65,7 @@ services:
       - fluentbit
 
   face_recognition_service:
+    image: isoai/ai:iso_ai-face_recognition_service
     build:
       context: ./iso-fr
       dockerfile: Dockerfile-gpu
@@ -97,6 +99,7 @@ services:
       - fluentbit
 
   speaker_diarization_service:
+    image: isoai/ai:iso_ai-speaker_diarization_service
     build:
       context: ./iso-diarize
       dockerfile: Dockerfile-gpu
@@ -128,6 +131,7 @@ services:
       - fluentbit
 
   utils_service:
+    image: isoai/ai:iso_ai-utils_service
     build:
       context: ./iso-utils
       dockerfile: Dockerfile
@@ -162,6 +166,170 @@ volumes:
 networks:
   isoai-network:
     driver: bridge
+# version: '3.8'
+
+# services:
+#   fluentbit:
+#     image: fluent/fluent-bit:latest
+#     volumes:
+#       - ./fluent-bit/config:/fluent-bit/etc
+#     ports:
+#       - '24224:24224'
+#     networks:
+#       - isoai-network
+#     depends_on:
+#       - solr
+
+#   solr:
+#     image: solr:latest
+#     ports:
+#       - '8983:8983'
+#     volumes:
+#       - solr_data:/var/solr
+#       - ./solr-entrypoint.sh:/scripts/solr-entrypoint.sh
+#     environment:
+#       SOLR_HEAP: '1500m'
+#     networks:
+#       - isoai-network
+#     depends_on:
+#       - mongo
+#     entrypoint: ['/bin/bash', '/scripts/solr-entrypoint.sh']
+
+#   mongo:
+#     image: mongo:latest
+#     ports:
+#       - '27017:27017'
+#     volumes:
+#       - mongo_data:/data/db
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
+#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
+#     networks:
+#       - isoai-network
+
+#   auth_service:
+#     build:
+#       context: ./iso-auth
+#       dockerfile: Dockerfile
+#     ports:
+#       - '5001:5001'
+#     env_file:
+#       - .env
+#     volumes:
+#       - ./iso-auth:/app # Bind mount for development
+#       - ./config.xml:/app/config.xml
+#       - ./config.py:/app/config.py
+#     networks:
+#       - isoai-network
+#     logging:
+#       driver: 'fluentd'
+#       options:
+#         fluentd-address: localhost:24224
+#         tag: auth_service
+#     depends_on:
+#       - mongo
+#       - solr
+#       - fluentbit
+
+#   face_recognition_service:
+#     build:
+#       context: ./iso-fr
+#       dockerfile: Dockerfile-gpu
+#     ports:
+#       - '5002:5002'
+#     env_file:
+#       - .env
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: all
+#               capabilities: [gpu]
+#     volumes:
+#       - ./iso-fr:/app # Bind mount for development
+#       - face_recognition_data:/app/data
+#       - ./config.xml:/app/config.xml
+#       - ./config.py:/app/config.py
+#       - ./iso-fr/services/models/buffalo_l:/app/services/models/buffalo_l
+#     networks:
+#       - isoai-network
+#     logging:
+#       driver: 'fluentd'
+#       options:
+#         fluentd-address: localhost:24224
+#         tag: face_recognition_service
+#     depends_on:
+#       - mongo
+#       - solr
+#       - fluentbit
+
+#   speaker_diarization_service:
+#     build:
+#       context: ./iso-diarize
+#       dockerfile: Dockerfile-gpu
+#     ports:
+#       - '5003:5003'
+#     env_file:
+#       - .env
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: all
+#               capabilities: [gpu]
+#     volumes:
+#       - ./iso-diarize:/app # Bind mount for development
+#       - ./config.xml:/app/config.xml
+#       - ./config.py:/app/config.py
+#     networks:
+#       - isoai-network
+#     logging:
+#       driver: 'fluentd'
+#       options:
+#         fluentd-address: localhost:24224
+#         tag: speaker_diarization_service
+#     depends_on:
+#       - mongo
+#       - solr
+#       - fluentbit
+
+#   utils_service:
+#     build:
+#       context: ./iso-utils
+#       dockerfile: Dockerfile
+#     ports:
+#       - '5004:5004'
+#     env_file:
+#       - .env
+#     volumes:
+#       - ./iso-utils:/app # Bind mount for development
+#       - personel_images:/app/personel_images
+#       - /var/run/docker.sock:/var/run/docker.sock
+#       - ./config.xml:/app/config.xml
+#       - ./config.py:/app/config.py
+#     networks:
+#       - isoai-network
+#     logging:
+#       driver: 'fluentd'
+#       options:
+#         fluentd-address: localhost:24224
+#         tag: utils_service
+#     depends_on:
+#       - mongo
+#       - solr
+#       - fluentbit
+
+# volumes:
+#   mongo_data:
+#   solr_data:
+#   face_recognition_data:
+#   personel_images:
+
+# networks:
+#   isoai-network:
+#     driver: bridge
 # version: "3.7"
 # services:
 #   es01:

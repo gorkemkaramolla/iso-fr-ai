@@ -1,10 +1,9 @@
-// pages/admin.tsx
 'use client';
+
 import React, { useState, useEffect } from 'react';
 import AddUser from './add-user';
 import UserList from './list-user';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from 'primereact/button';
 import createApi from '@/utils/axios_instance';
 import { User } from '@/types';
 
@@ -59,53 +58,51 @@ export default function AdminPage() {
 
   return (
     <motion.div
-      initial='initial'
-      animate='in'
-      exit='out'
-      variants={{
-        initial: { opacity: 0, y: -20 },
-        in: { opacity: 1, y: 0 },
-        out: { opacity: 0, y: 20 },
-      }}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
       transition={{ type: 'tween', ease: 'anticipate', duration: 0.5 }}
-      className='min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-12 px-4 sm:px-6 lg:px-8'
+      className='min-h-screen'
     >
       <div className='max-w-7xl mx-auto'>
         <motion.h1
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className='text-4xl font-extrabold text-gray-900 text-center mb-12'
+          initial={{ opacity: 0, y: -50, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.8, ease: 'easeOut' }}
+          className='text-4xl font-bold text-black text-center mb-16 tracking-wide'
         >
           Admin Kontrol Paneli
         </motion.h1>
 
-        <ul className='menu menu-horizontal rounded-box'>
-          <li>
-            <button
-              onClick={() => setActiveView('addUser')}
-              className={`mr-2 ${
-                activeView === 'addUser' ? 'btn-primary' : 'btn-secondary'
+        <nav className='flex justify-center mb-8'>
+          <ul className='flex space-x-8 border-b border-gray-300'>
+            <li
+              className={`cursor-pointer py-2 px-4 ${
+                activeView === 'addUser'
+                  ? 'text-blue-500 border-b-4 border-blue-500'
+                  : 'text-gray-500 border-b-4 border-transparent hover:text-gray-700'
               }`}
+              onClick={() => setActiveView('addUser')}
             >
               Kullanıcı Ekle
-            </button>
-          </li>
-          <li>
-            <button
-              onClick={() => setActiveView('userList')}
-              className={`${
-                activeView === 'userList' ? 'btn-primary' : 'btn-secondary'
+            </li>
+            <li
+              className={`cursor-pointer py-2 px-4 ${
+                activeView === 'userList'
+                  ? 'text-blue-500 border-b-4 border-blue-500'
+                  : 'text-gray-500 border-b-4 border-transparent hover:text-gray-700'
               }`}
+              onClick={() => setActiveView('userList')}
             >
               Kullanıcı Listesi
-            </button>
-          </li>
-        </ul>
+            </li>
+          </ul>
+        </nav>
 
-        {/* Active View Component */}
         <AnimatePresence>
-          {activeView === 'addUser' && <AddUser fetchUsers={fetchUsers} />}
+          {activeView === 'addUser' && (
+            <AddUser setActiveView={setActiveView} fetchUsers={fetchUsers} />
+          )}
           {activeView === 'userList' && (
             <UserList
               users={users}
@@ -116,11 +113,12 @@ export default function AdminPage() {
         </AnimatePresence>
       </div>
 
-      {/* Modal */}
       {isModalOpen && currentUser && (
         <div className='modal modal-open'>
-          <div className='modal-box'>
-            <h3 className='font-bold text-lg'>Update User Information</h3>
+          <div className='modal-box bg-white rounded-lg shadow-lg'>
+            <h3 className='font-bold text-lg text-gray-800'>
+              Update User Information
+            </h3>
             <div className='mt-4 space-y-4'>
               <div>
                 <label className='block text-sm font-medium text-gray-700'>
@@ -158,7 +156,10 @@ export default function AdminPage() {
                   name='role'
                   value={currentUser.role}
                   onChange={(e) =>
-                    setCurrentUser({ ...currentUser, role: e.target.value })
+                    setCurrentUser({
+                      ...currentUser,
+                      role: e.target.value as 'user' | 'admin',
+                    })
                   }
                   className='mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
                 >
@@ -168,10 +169,16 @@ export default function AdminPage() {
               </div>
             </div>
             <div className='modal-action'>
-              <button className='btn btn-primary' onClick={handleUpdateUser}>
+              <button
+                className='btn btn-primary bg-indigo-500 hover:bg-indigo-600 text-white'
+                onClick={handleUpdateUser}
+              >
                 Confirm
               </button>
-              <button className='btn' onClick={closeModal}>
+              <button
+                className='btn bg-gray-200 hover:bg-gray-300 text-gray-800'
+                onClick={closeModal}
+              >
                 Cancel
               </button>
             </div>

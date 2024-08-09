@@ -7,18 +7,22 @@ import { ZodError } from 'zod';
 import { FaUser, FaEnvelope, FaLock, FaUserCog, FaPlus } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import createApi from '@/utils/axios_instance';
+import CardComponent from '@/components/ui/card';
 
 const userSchema = z.object({
   id: z.string().optional(),
-  username: z.string().min(3, 'Username must be at least 3 characters long'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters long'),
+  username: z.string().min(3, 'Kullanıcı adı en az 3 karakter olmalıdır'),
+  email: z.string().email('Geçersiz e-posta adresi'),
+  password: z.string().min(6, 'Şifre en az 6 karakter olmalıdır'),
   role: z.enum(['user', 'admin']),
 });
 
 type User = z.infer<typeof userSchema>;
-
-export default function AddUser({ fetchUsers }: { fetchUsers: () => void }) {
+type Props = {
+  setActiveView: React.Dispatch<React.SetStateAction<'addUser' | 'userList'>>;
+  fetchUsers: () => void;
+};
+export default function AddUser({ setActiveView, fetchUsers }: Props) {
   const [newUser, setNewUser] = useState<User>({
     id: '',
     username: '',
@@ -68,6 +72,7 @@ export default function AddUser({ fetchUsers }: { fetchUsers: () => void }) {
         role: 'user',
       });
       fetchUsers();
+      setActiveView('userList');
     } catch (error) {
       setMessage('Error adding user: ' + (error as Error).message);
     }
@@ -79,9 +84,9 @@ export default function AddUser({ fetchUsers }: { fetchUsers: () => void }) {
       initial={{ opacity: 0, x: -50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 50 }}
-      className='bg-white overflow-hidden shadow-xl rounded-lg'
+      className=''
     >
-      <div className='px-4 py-5 sm:p-6'>
+      <CardComponent>
         <h2 className='text-2xl font-bold text-gray-900 mb-6'>
           Yeni Kullanıcı Ekle
         </h2>
@@ -163,7 +168,7 @@ export default function AddUser({ fetchUsers }: { fetchUsers: () => void }) {
               </AnimatePresence>
             </motion.div>
           ))}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <button
               type='submit'
               className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
@@ -189,7 +194,7 @@ export default function AddUser({ fetchUsers }: { fetchUsers: () => void }) {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </CardComponent>
     </motion.div>
   );
 }

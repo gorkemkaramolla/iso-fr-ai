@@ -78,7 +78,7 @@ const SearchComponent: React.FC = () => {
   const [isCmdPressed, setIsCmdPressed] = useState(false);
   const [isDotPressed, setIsDotPressed] = useState(false);
   const [isEnterPressed, setIsEnterPressed] = useState(false);
-
+  const [isMac, setIsMac] = useState(false);
   const currentRoute =
     Object.entries(ROUTES).find(([_, value]) => value.path === pathname)?.[0] ||
     '';
@@ -185,10 +185,10 @@ const SearchComponent: React.FC = () => {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.metaKey && e.key === 'k') {
+    if ((isMac ? e.metaKey : e.ctrlKey) && e.key === 'k') {
       searchRef.current?.focus();
     }
-    if (e.key === 'Meta') {
+    if (e.key === (isMac ? 'Meta' : 'Control')) {
       setIsCmdPressed(true);
     }
     if (e.key === 'k') {
@@ -218,6 +218,8 @@ const SearchComponent: React.FC = () => {
           router.push(linkPath);
           setIsEnterPressed(true);
           setIsFocused(false);
+          setIsCmdPressed(false);
+          setIsDotPressed(false);
           searchRef.current?.blur();
         } else {
           setQuery(selectedItem);
@@ -235,7 +237,7 @@ const SearchComponent: React.FC = () => {
   }, [pathname]);
 
   const handleSearchKeyUp = (event: React.KeyboardEvent) => {
-    if (event.key === 'Meta') {
+    if (event.key === (isMac ? 'Meta' : 'Control')) {
       setIsCmdPressed(false);
     }
     if (event.key === 'k') {
@@ -244,11 +246,14 @@ const SearchComponent: React.FC = () => {
   };
 
   useEffect(() => {
+    setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey && event.key === 'k') {
+      if ((isMac ? event.metaKey : event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
         searchRef.current?.focus();
       }
-      if (event.key === 'Meta') {
+      if (event.key === (isMac ? 'Meta' : 'Control')) {
         setIsCmdPressed(true);
       }
       if (event.key === 'k') {
@@ -257,7 +262,7 @@ const SearchComponent: React.FC = () => {
     };
 
     const handleGlobalKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Meta') {
+      if (event.key === (isMac ? 'Meta' : 'Control')) {
         setIsCmdPressed(false);
       }
       if (event.key === 'k') {
@@ -284,7 +289,7 @@ const SearchComponent: React.FC = () => {
         handleGlobalKeyUp as unknown as EventListener
       );
     };
-  }, []);
+  }, [isMac]);
 
   return (
     <div className='relative'>
@@ -301,6 +306,9 @@ const SearchComponent: React.FC = () => {
           }}
           onBlur={() => {
             setTimeout(() => setShowLatestSearches(false), 200);
+            setIsCmdPressed(false);
+            setIsDotPressed(false);
+            setIsEnterPressed(false);
             setIsFocused(false);
           }}
           onKeyDown={handleKeyDown}
@@ -316,17 +324,19 @@ const SearchComponent: React.FC = () => {
             } top-1.5 text-gray-400 select-none`}
           >
             <kbd
-              className={`kbd bg-slate-100 text-black ${
-                isCmdPressed ? 'scale-90 transition-all duration-300' : ''
+              className={`kbd bg-slate-100 text-black nunito-500 ${
+                isCmdPressed
+                  ? 'scale-90 transition-all duration-100 ease-in'
+                  : ''
               }`}
             >
-              ⌘
+              {isMac ? '⌘' : 'Ctrl'}
             </kbd>{' '}
             +{' '}
             <kbd
               className={`kbd bg-slate-100 text-black nunito-500 ${
                 isDotPressed
-                  ? 'scale-90 transition-all duration-300 ease-in'
+                  ? 'scale-90 transition-all duration-100 ease-in'
                   : ''
               }`}
             >

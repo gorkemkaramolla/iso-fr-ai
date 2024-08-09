@@ -1,3 +1,4 @@
+# app.py (or your main application file)
 import os
 from flask import Flask
 from flask_cors import CORS
@@ -10,6 +11,7 @@ from routes import (
 )
 from socketio_instance import socketio
 from config import XMLConfig
+from services.system_monitoring import SystemMonitoring  # Import here instead of within system_monitoring.py
 
 # Initialize the configuration for the 'utils_service'
 xml_config = XMLConfig(service_name='utils_service')
@@ -46,7 +48,12 @@ app.register_blueprint(personel_bp)
 os.makedirs(xml_config.TEMP_DIRECTORY, exist_ok=True)
 os.makedirs(xml_config.LOGGING_COLLECTION, exist_ok=True)
 
+# Initialize socketio with the app
+socketio.init_app(app, cors_allowed_origins=xml_config.CORS_ORIGINS, async_mode="gevent")
+
+# Initialize SystemMonitoring after socketio is properly initialized
+monitoring_service = SystemMonitoring()
+
 # Run the application
 if __name__ == "__main__":
-    socketio.init_app(app, cors_allowed_origins=xml_config.CORS_ORIGINS)
     socketio.run(app, debug=xml_config.FLASK_DEBUG, host=xml_config.FLASK_HOST, port=xml_config.FLASK_PORT, allow_unsafe_werkzeug=True)

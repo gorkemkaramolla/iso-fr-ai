@@ -65,7 +65,7 @@ services:
       - fluentbit
 
   face_recognition_service:
-    image: isoai/ai:iso_ai-face_recognition_service
+    image: isoai/ai:iso_ai-face_recognition_service:latest
     build:
       context: ./iso-fr
       dockerfile: Dockerfile-gpu
@@ -99,7 +99,7 @@ services:
       - fluentbit
 
   speaker_diarization_service:
-    image: isoai/ai:iso_ai-speaker_diarization_service
+    image: isoai/ai:iso_ai-speaker_diarization_service:latest
     build:
       context: ./iso-diarize
       dockerfile: Dockerfile-gpu

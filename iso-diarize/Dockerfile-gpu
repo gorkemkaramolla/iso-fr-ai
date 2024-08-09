@@ -1,3 +1,55 @@
+FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Set environment variables to ensure non-interactive installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Berlin
+
+# Install system dependencies and Python 3.12
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev unzip wget libgomp1 software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-distutils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install CUDA libraries
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libcublas-11-0 libcusparse-11-0 libcudnn8=8.0.5.39-1+cuda11.1 libcublas-dev-11-0 libcusparse-dev-11-0 libcudnn8-dev=8.0.5.39-1+cuda11.1 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create and activate the virtual environment
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3.12 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Install pip in the virtual environment
+RUN $VIRTUAL_ENV/bin/python -m ensurepip --upgrade
+RUN pip install --upgrade pip certifi six setuptools
+
+# Install Python dependencies from the requirements.txt file in the virtual environment
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
+
+# Install transformers with the --use-feature=truststore option in the virtual environment
+RUN pip install transformers --use-feature=truststore
+
+# Copy the application code to the container
+COPY . /app
+
+# Inform Docker that the container listens on the specified port at runtime
+EXPOSE 5003
+
+# Run app.py using the virtual environment's Python interpreter when the container launches
+CMD ["python", "app.py"]
+
+
 # # # Use an official NVIDIA CUDA runtime as a parent image
 # # # FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
 # # # FROM pytorch/pytorch:2.3.0-cuda11.8-cudnn8-runtime
@@ -102,47 +154,47 @@
 # # Run app.py using the virtual environment's Python interpreter when the container launches
 # CMD ["/app/venv/bin/python", "app.py"]
 # Use an official NVIDIA CUDA runtime as a parent image
-FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
+# FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
 
-# Set the working directory in the container
-WORKDIR /app
+# # Set the working directory in the container
+# WORKDIR /app
 
-# Set environment variables to ensure non-interactive installation
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/Berlin
+# # Set environment variables to ensure non-interactive installation
+# ENV DEBIAN_FRONTEND=noninteractive
+# ENV TZ=Europe/Berlin
 
-# Install system dependencies and Python 3.12
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev unzip wget libgomp1 software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-distutils && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libcublas-11-0 libcusparse-11-0 libcudnn8=8.0.5.39-1+cuda11.1 libcublas-dev-11-0 libcusparse-dev-11-0 libcudnn8-dev=8.0.5.39-1+cuda11.1 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-# Copy the current directory contents into the container at /app
-COPY . /app
+# # Install system dependencies and Python 3.12
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#     ffmpeg libsm6 libxext6 build-essential gcc libssl-dev libffi-dev unzip wget libgomp1 software-properties-common && \
+#     add-apt-repository ppa:deadsnakes/ppa && \
+#     apt-get update && \
+#     apt-get install -y python3.12 python3.12-venv python3.12-dev python3.12-distutils && \
+#     apt-get clean && \
+#     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#     libcublas-11-0 libcusparse-11-0 libcudnn8=8.0.5.39-1+cuda11.1 libcublas-dev-11-0 libcusparse-dev-11-0 libcudnn8-dev=8.0.5.39-1+cuda11.1 && \
+#     apt-get clean && \
+#     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# # Copy the current directory contents into the container at /app
+# COPY . /app
 
-# Create a virtual environment with Python 3.12
-RUN python3.12 -m venv /app/venv
+# # Create a virtual environment with Python 3.12
+# RUN python3.12 -m venv /app/venv
 
-# Activate the virtual environment and install pip
-RUN /app/venv/bin/python -m ensurepip --upgrade
-RUN /app/venv/bin/python -m pip install --upgrade pip certifi six setuptools
+# # Activate the virtual environment and install pip
+# RUN /app/venv/bin/python -m ensurepip --upgrade
+# RUN /app/venv/bin/python -m pip install --upgrade pip certifi six setuptools
 
-# Install Python dependencies from the requirements.txt file in the virtual environment
-RUN /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
+# # Install Python dependencies from the requirements.txt file in the virtual environment
+# RUN /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
-# Install transformers with the --use-feature=truststore option in the virtual environment
-RUN /app/venv/bin/pip install transformers --use-feature=truststore
+# # Install transformers with the --use-feature=truststore option in the virtual environment
+# RUN /app/venv/bin/pip install transformers --use-feature=truststore
 
-# Inform Docker that the container listens on the specified port at runtime
-EXPOSE 5003
+# # Inform Docker that the container listens on the specified port at runtime
+# EXPOSE 5003
 
-# Run app.py using the virtual environment's Python interpreter when the container launches
-CMD ["/app/venv/bin/python", "app.py"]
+# # Run app.py using the virtual environment's Python interpreter when the container launches
+# CMD ["/app/venv/bin/python", "app.py"]

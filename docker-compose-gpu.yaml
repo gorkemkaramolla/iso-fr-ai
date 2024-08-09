@@ -86,7 +86,7 @@ services:
       - ./config.xml:/app/config.xml
       - ./config.py:/app/config.py
       - ./iso-fr/services/models/buffalo_l:/app/services/models/buffalo_l
-    command: /bin/bash -c "chmod -R 777 /app/services/models/buffalo_l"
+    # command: /bin/bash -c "chmod -R 777 /app/services/models/buffalo_l"
     networks:
       - isoai-network
     logging:

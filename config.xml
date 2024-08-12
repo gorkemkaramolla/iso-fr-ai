@@ -2,7 +2,7 @@
     <!-- General Authentication and CORS Configuration -->
     <auth_config>
         <jwt secret_key="isoai" expire_seconds="6000000">
-            <token_location>["cookies"]</token_location>
+            <token_location>["cookies","headers"]</token_location>
             <cookie_paths>
                 <access path="/"/>
                 <refresh path="/refresh"/>

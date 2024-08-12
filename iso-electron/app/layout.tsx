@@ -1,16 +1,16 @@
+'use client';
 import type { Metadata } from 'next';
 import './globals.css';
 import { PrimeReactProvider } from 'primereact/api';
-import { isAuthenticated } from '@/library/auth/is_authenticated'; // Import the utility function
 import Provider from '@/components/providers';
 import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
 import 'primereact/resources/primereact.min.css'; //core css
 import 'primeicons/primeicons.css'; //icons
 
-export const metadata: Metadata = {
-  title: 'ISOAI',
-  description: 'ISOAI Electron App',
-};
+// export const metadata: Metadata = {
+//   title: 'ISOAI',
+//   description: 'ISOAI Electron App',
+// };
 
 export default function RootLayout({
   children,
@@ -31,13 +31,9 @@ export default function RootLayout({
       <body
         className={' w-full max-w-screen overflow-x-hidden flex justify-center'}
       >
-        <PrimeReactProvider>
-          <div className='w-full h-[100dvh]'>
-            <Provider></Provider>
-
-            <div className=' '>{children}</div>
-          </div>
-        </PrimeReactProvider>
+        <div className='w-full h-[100dvh]'>
+          <Provider>{children}</Provider>
+        </div>
       </body>
     </html>
   );

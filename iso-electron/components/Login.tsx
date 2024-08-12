@@ -9,10 +9,11 @@ import useStore from '@/library/store';
 import Image from 'next/image';
 import { Toast } from 'primereact/toast';
 import { ZodError } from 'zod';
+import createApi from '@/utils/axios_instance';
 
 export default function LoginForm() {
   const router = useRouter();
-  const { setAccessToken, setRefreshToken } = useStore();
+  const { setAccessToken } = useStore();
   const toastRef = useRef<Toast>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -47,20 +48,24 @@ export default function LoginForm() {
 
     try {
       // Post data to the server if validation is successful
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_SIDE_URL}/login`,
-        formValues
-      );
+      const api = createApi(`${process.env.NEXT_PUBLIC_AUTH_URL}`);
+      const response = await api.post(`/login`, formValues, {
+        withCredentials: true,
+      });
+      console.log(response);
       if (response.status === 200) {
         setAccessToken(response.data.access_token);
-        setRefreshToken(response.data.refresh_token);
         toastRef.current?.show({
           severity: 'success',
           summary: 'Success',
           detail: 'Login successful',
           life: 3000,
         });
-        router.push('/'); // Redirect to home page
+        if (typeof window !== 'undefined' && localStorage !== null) {
+          localStorage.setItem('access_token', response.data.access_token);
+        }
+
+        if (window) router.push('/'); // Redirect to home page
       }
     } catch (error) {
       toastRef.current?.show({

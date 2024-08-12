@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import QualityDropdown from './QualityDropdown';
 import CameraControls from './CameraControls';

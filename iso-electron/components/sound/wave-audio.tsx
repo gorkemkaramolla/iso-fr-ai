@@ -5,6 +5,7 @@ import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import { FiPlay, FiPause, FiSkipBack, FiSkipForward } from 'react-icons/fi';
 import axios from 'axios';
 import useStore from '@/library/store';
+import createApi from '@/utils/axios_instance';
 
 interface Segment {
   start_time: number;
@@ -38,17 +39,20 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
   useEffect(() => {
     console.log(duration);
   }, [duration]);
-  const customTimelinePlugin = useMemo(
-    () =>
-      Timeline.create({
-        container: timelineContainerRef.current as HTMLElement,
-        height: 12,
-        timeInterval: 45,
-      }),
-    [timelineContainerRef]
-  );
 
-  const regionsPlugin = useMemo(() => RegionsPlugin.create(), []);
+  const customTimelinePlugin = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return Timeline.create({
+      container: timelineContainerRef.current as HTMLElement,
+      height: 12,
+      timeInterval: 45,
+    });
+  }, [timelineContainerRef]);
+
+  const regionsPlugin = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return RegionsPlugin.create();
+  }, []);
 
   const handlePlayPause = () => {
     if (waveAudioRef.current) {
@@ -73,14 +77,15 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     let isMounted = true;
 
     const fetchAudio = async () => {
-      if (audioContainerRef.current) {
+      if (audioContainerRef.current && typeof window !== 'undefined') {
         try {
           const audioUrl = audio_name
             ? audio_name
-            : `${process.env.NEXT_PUBLIC_DIARIZE_URL}/stream-audio/${transcript_id}`;
+            : `${process.env.NEXT_PUBLIC_DIARIZE_URL}/`;
 
-          const response = await axios.get(audioUrl, {
-            withCredentials: true,
+          const api = createApi(audioUrl);
+
+          const response = await api.get(`stream-audio/${transcript_id}`, {
             responseType: 'blob',
           });
 
@@ -99,7 +104,7 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             barRadius: 12,
             height: 60,
             normalize: true,
-            plugins: [customTimelinePlugin, regionsPlugin],
+            plugins: [customTimelinePlugin!, regionsPlugin!],
           });
 
           waveform.load(blobUrl);
@@ -112,7 +117,7 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
 
             segments &&
               segments.forEach((segment: Segment) => {
-                regionsPlugin.addRegion({
+                regionsPlugin?.addRegion({
                   start: segment.start_time,
                   end: segment.end_time,
                   color: speakerColors
@@ -170,7 +175,8 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     customTimelinePlugin,
     regionsPlugin,
     setStoreCurrentTime,
-    onTimeUpdate, // Add this dependency to ensure the callback is up-to-date
+    onTimeUpdate,
+    speakerColors,
   ]);
 
   const formatTime = (seconds: number) => {

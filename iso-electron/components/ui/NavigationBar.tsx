@@ -92,8 +92,8 @@ const NavigationBar: React.FC<Props> = () => {
   ];
 
   return (
-    <div style={{ zIndex: 100 }} className='sticky top-0 bg-white w-full '>
-      <nav className='navbar h-[7vh] w-full mx-auto container z-40 flex justify-between items-center bg-base-100'>
+    <nav style={{ zIndex: 100 }} className='sticky top-0 bg-white w-full '>
+      <div className='navbar h-[7vh] w-full mx-auto container z-40 flex justify-between items-center bg-base-100'>
         <div className='flex justify-center items-center'>
           <Link href={'/'} className='btn-md text-xl'>
             <Image
@@ -129,8 +129,8 @@ const NavigationBar: React.FC<Props> = () => {
           </Button>
           <Menu model={profileItems} popup ref={profileMenu} />
         </div>
-      </nav>
-    </div>
+      </div>
+    </nav>
   );
 };
 

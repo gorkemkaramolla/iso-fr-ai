@@ -31,21 +31,28 @@ import { Personel } from '@/types';
 import { InputText } from 'primereact/inputtext';
 
 const getLatestSearches = (): string[] => {
-  return JSON.parse(localStorage.getItem('latestSearches') || '[]');
+  if (typeof window !== 'undefined') {
+    return JSON.parse(localStorage.getItem('latestSearches') || '[]');
+  }
+  return [];
 };
 
 const addSearchTerm = (query: string) => {
-  let latestSearches = getLatestSearches();
-  if (!latestSearches.includes(query)) {
-    latestSearches.push(query);
+  if (typeof window !== 'undefined') {
+    let latestSearches = getLatestSearches();
+    if (!latestSearches.includes(query)) {
+      latestSearches.push(query);
+    }
+    localStorage.setItem('latestSearches', JSON.stringify(latestSearches));
   }
-  localStorage.setItem('latestSearches', JSON.stringify(latestSearches));
 };
 
 const removeSearchTerm = (query: string) => {
-  let latestSearches = getLatestSearches();
-  latestSearches = latestSearches.filter((search) => search !== query);
-  localStorage.setItem('latestSearches', JSON.stringify(latestSearches));
+  if (typeof window !== 'undefined') {
+    let latestSearches = getLatestSearches();
+    latestSearches = latestSearches.filter((search) => search !== query);
+    localStorage.setItem('latestSearches', JSON.stringify(latestSearches));
+  }
 };
 
 const fetchSearchResults = async (query: string): Promise<Personel[]> => {
@@ -72,7 +79,7 @@ const SearchComponent: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const router = useRouter();
   const pathname = usePathname();
-  const latestSearches = getLatestSearches();
+  const [latestSearches, setLatestSearches] = useState<string[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isCmdPressed, setIsCmdPressed] = useState(false);
@@ -117,6 +124,12 @@ const SearchComponent: React.FC = () => {
   }, [query, latestSearches, currentRoute, allRouteLinks]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setLatestSearches(getLatestSearches());
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchSearchData = async () => {
       if (query && !allRouteLinks.some((link) => link.name === query)) {
         try {
@@ -148,6 +161,7 @@ const SearchComponent: React.FC = () => {
 
   const handleRemoveSearchTerm = (term: string) => {
     removeSearchTerm(term);
+    setLatestSearches(getLatestSearches());
     router.refresh();
   };
 
@@ -232,6 +246,7 @@ const SearchComponent: React.FC = () => {
       }
     }
   };
+
   useEffect(() => {
     setIsEnterPressed(false);
   }, [pathname]);
@@ -435,14 +450,6 @@ const SearchComponent: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* {query &&
-        searchResults.length === 0 &&
-        !allRouteLinks.some((link) => link.name === query) && (
-          <div className='mt-8 text-center text-gray-600'>
-            {query} ile ilgili sonuç bulunamadı.
-          </div>
-        )} */}
     </div>
   );
 };

@@ -1,6 +1,7 @@
+'use client';
 import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Copy, Edit2, Trash2, X } from 'lucide-react';
+import { Copy, Edit2, Trash2 } from 'lucide-react';
 
 interface SegmentMenuProps {
   isOpen: boolean;
@@ -22,14 +23,20 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
+    if (typeof document !== 'undefined') {
+      const handleOutsideClick = (event: MouseEvent) => {
+        if (
+          menuRef.current &&
+          !menuRef.current.contains(event.target as Node)
+        ) {
+          onClose();
+        }
+      };
 
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('mousedown', handleOutsideClick); // Safe use of document
+      return () =>
+        document.removeEventListener('mousedown', handleOutsideClick); // Safe use of document
+    }
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

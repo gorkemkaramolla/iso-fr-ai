@@ -76,16 +76,21 @@ const WhisperUpload: React.FC = () => {
       const res = await api.post<ApiResponse>('/process-audio/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'X-Client-ID': localStorage.getItem('client_id') || '123456',
+          'X-Client-ID':
+            typeof window !== 'undefined'
+              ? localStorage.getItem('client_id') || '123456'
+              : '123456',
         },
       });
       setResponse(res.data);
       setLoading(false);
       setProgress(100);
 
-      let responses = JSON.parse(localStorage.getItem('responses') || '[]');
-      responses.push(res.data);
-      localStorage.setItem('responses', JSON.stringify(responses));
+      if (typeof window !== 'undefined') {
+        let responses = JSON.parse(localStorage.getItem('responses') || '[]');
+        responses.push(res.data);
+        localStorage.setItem('responses', JSON.stringify(responses));
+      }
     } catch (error: any) {
       console.error('Error uploading file:', error);
       setError(
@@ -102,12 +107,11 @@ const WhisperUpload: React.FC = () => {
   };
 
   return (
-    <div className='w-full min-h-screen p-8   '>
+    <div className='w-full min-h-screen p-8'>
       <div className='max-w-3xl mx-auto'>
-        <h1 className='text-3xl font-bold  mb-8'>Konuşma Sentezleyici</h1>
+        <h1 className='text-3xl font-bold mb-8'>Konuşma Sentezleyici</h1>
 
         <motion.div
-          className=''
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -196,7 +200,7 @@ const WhisperUpload: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <div className=' h-2 mb-4 text-xs flex rounded bg-indigo-200'>
+                  <div className='h-2 mb-4 text-xs flex rounded bg-indigo-200'>
                     <div
                       style={{ width: `${progress}%` }}
                       className='shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 transition-all duration-300 ease-in-out'
@@ -220,12 +224,12 @@ const WhisperUpload: React.FC = () => {
         <AnimatePresence>
           {response && (
             <motion.div
-              className='bg-white rounded-lg shadow-lg  '
+              className='bg-white rounded-lg shadow-lg'
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className='px-6 py-4  bg-indigo-600 text-white'>
+              <div className='px-6 py-4 bg-indigo-600 text-white'>
                 <h2 className='text-xl font-semibold'>Konuşma Sentezi</h2>
                 <p className='text-sm opacity-80'>
                   Bu tarihte işlendi:{' '}
@@ -236,7 +240,7 @@ const WhisperUpload: React.FC = () => {
                   Düzenlemek için tıkla
                 </Link>
               </div>
-              <ul className='divide-y  divide-gray-200'>
+              <ul className='divide-y divide-gray-200'>
                 {response.transcription.segments.map((segment, index) => (
                   <li
                     key={index}

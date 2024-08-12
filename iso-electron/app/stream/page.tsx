@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { Toast } from 'primereact/toast';
 import { io } from 'socket.io-client';
@@ -9,9 +10,9 @@ import CameraStreamControl from '@/components/camera/CameraStreamControl';
 import { Resizable } from 're-resizable';
 import Draggable from 'react-draggable';
 import { Quality } from '@/utils/enums';
-// import toast, { Toaster } from 'react-hot-toast';
 import StreamUtilButtons from '@/components/camera/StreamUtilButtons';
 import { Camera, CameraStream } from '@/types';
+
 const BASE_URL = process.env.NEXT_PUBLIC_FLASK_URL;
 const socket = io(BASE_URL!);
 
@@ -25,6 +26,8 @@ const VideoStream: React.FC = () => {
   const [cameraStreams, setCameraStreams] = useState<CameraStream[]>([]);
   const [isModified, setIsModified] = useState(false);
   const [isGrid, setIsGrid] = useState(false);
+
+  // Load camera streams from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedStreams = localStorage.getItem('cameraStreams');
@@ -44,6 +47,7 @@ const VideoStream: React.FC = () => {
     }
   }, []);
 
+  // Fetch camera URLs
   useEffect(() => {
     const fetchCameraUrls = async () => {
       try {
@@ -59,6 +63,7 @@ const VideoStream: React.FC = () => {
     fetchCameraUrls();
   }, []);
 
+  // Socket listener for new cameras
   useEffect(() => {
     socket.on('new_camera', (newCamera) => {
       setCameraUrls((prevCameraUrls) => [...prevCameraUrls, newCamera]);
@@ -68,18 +73,25 @@ const VideoStream: React.FC = () => {
       socket.off('new_camera');
     };
   }, []);
-  // Step 3: Load `isGrid` from localStorage when the component mounts
+
+  // Load `isGrid` from localStorage on mount
   useEffect(() => {
-    const storedIsGrid = localStorage.getItem('isGrid');
-    if (storedIsGrid) {
-      setIsGrid(JSON.parse(storedIsGrid));
+    if (typeof window !== 'undefined') {
+      const storedIsGrid = localStorage.getItem('isGrid');
+      if (storedIsGrid) {
+        setIsGrid(JSON.parse(storedIsGrid));
+      }
     }
   }, []);
 
-  // Step 4: Update localStorage when `isGrid` changes
+  // Update localStorage when `isGrid` changes
   useEffect(() => {
-    localStorage.setItem('isGrid', JSON.stringify(isGrid));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isGrid', JSON.stringify(isGrid));
+    }
   }, [isGrid]);
+
+  // Add new camera stream
   const addCameraStream = (camera: Camera) => {
     if (availableIds.length > 0) {
       const newId = availableIds[0]; // Take the smallest available ID
@@ -123,6 +135,7 @@ const VideoStream: React.FC = () => {
     }
   };
 
+  // Save camera stream position
   const saveCameraStreamPosition = (
     id: number,
     position: { x: number; y: number }
@@ -134,13 +147,16 @@ const VideoStream: React.FC = () => {
         camera.id === id ? { ...camera, position } : camera
       );
 
-      // Save the updated streams to localStorage
-      localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+      if (typeof window !== 'undefined') {
+        // Save the updated streams to localStorage
+        localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+      }
 
       return updatedStreams;
     });
   };
 
+  // Save camera stream size
   const saveCameraStreamSize = (
     id: number,
     size: { width: string | number; height: string | number }
@@ -152,20 +168,25 @@ const VideoStream: React.FC = () => {
         camera.id === id ? { ...camera, size } : camera
       );
 
-      // Save the updated streams to localStorage
-      localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+      if (typeof window !== 'undefined') {
+        // Save the updated streams to localStorage
+        localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+      }
 
       return updatedStreams;
     });
   };
 
+  // Delete all camera streams
   const deleteAllCameraStreams = () => {
     const confirmed = window.confirm(
       'Tüm yayınları kapatmak istediğinizden emin misiniz?'
     );
     if (confirmed) {
-      // Clear local storage
-      localStorage.removeItem('cameraStreams');
+      if (typeof window !== 'undefined') {
+        // Clear local storage
+        localStorage.removeItem('cameraStreams');
+      }
       // Clear the state
       setCameraStreams([]);
       setAvailableIds([1, 2, 3, 4]);
@@ -179,6 +200,7 @@ const VideoStream: React.FC = () => {
     }
   };
 
+  // Reset camera streams to default positions and sizes
   const resetCameraStreams = () => {
     // Get the current cameraStreams state
     setCameraStreams((currentStreams) => {
@@ -189,8 +211,10 @@ const VideoStream: React.FC = () => {
         size: { width: '100%', height: '100%' }, // Set the default size
       }));
 
-      // Update local storage
-      localStorage.setItem('cameraStreams', JSON.stringify(resetStreams));
+      if (typeof window !== 'undefined') {
+        // Update local storage
+        localStorage.setItem('cameraStreams', JSON.stringify(resetStreams));
+      }
 
       // Return the updated streams
       return resetStreams;
@@ -200,7 +224,6 @@ const VideoStream: React.FC = () => {
 
   return (
     <div className='h-full w-full overflow-auto'>
-      {/* <Toaster /> */}
       <Toast ref={toast} />
 
       <div className='container mx-auto mb-20'>

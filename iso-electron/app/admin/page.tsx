@@ -22,9 +22,7 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      const response = await api.get<User[]>('/users', {
-        withCredentials: true,
-      });
+      const response = await api.get<User[]>('/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);

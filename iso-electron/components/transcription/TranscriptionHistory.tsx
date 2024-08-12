@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import createApi from '@/utils/axios_instance';
@@ -45,9 +46,11 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   };
 
   useEffect(() => {
-    const lastPage = localStorage.getItem('currentTranscriptionPage');
-    if (lastPage) {
-      setCurrentPage(Number(lastPage) || 1);
+    if (typeof window !== 'undefined') {
+      const lastPage = localStorage.getItem('currentTranscriptionPage');
+      if (lastPage) {
+        setCurrentPage(Number(lastPage) || 1);
+      }
     }
   }, []);
 
@@ -56,7 +59,9 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('currentTranscriptionPage', currentPage.toString());
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentTranscriptionPage', currentPage.toString());
+    }
   }, [currentPage]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -82,19 +87,19 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                 <li key={response.transcription_id}>
                   <Link href={`/transcription/${response.transcription_id}`}>
                     <div
-                      className={`p-2   rounded transition-colors ${
+                      className={`p-2 rounded transition-colors ${
                         response.transcription_id === activePageId
                           ? 'bg-indigo-500 text-gray-100'
                           : 'hover:bg-indigo-100'
                       }`}
                     >
-                      <p className='text-sm font-medium  truncate'>
+                      <p className='text-sm font-medium truncate'>
                         {response.name}
                       </p>
-                      <p className='text-sm font-medium  truncate'>
+                      <p className='text-sm font-medium truncate'>
                         {response.transcription_id}
                       </p>
-                      <p className='text-xs a mt-1'>
+                      <p className='text-xs mt-1'>
                         {formatDate(response.created_at)}
                       </p>
                     </div>

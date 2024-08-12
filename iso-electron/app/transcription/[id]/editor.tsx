@@ -1,3 +1,5 @@
+'use client';
+
 import React, {
   useState,
   useCallback,
@@ -6,18 +8,7 @@ import React, {
   useRef,
 } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  AlignStartHorizontal,
-  AlignStartVertical,
-  EllipsisVertical,
-  FileJson,
-  FileX,
-  SquarePen,
-  Trash2,
-  User,
-  Copy,
-} from 'lucide-react';
-import { debounce } from 'lodash';
+import { AlignStartHorizontal, AlignStartVertical, User } from 'lucide-react';
 import SegmentMenu from './segment-menu';
 import Card from '@/components/ui/card';
 
@@ -90,12 +81,6 @@ const TextEditor: React.FC<TextEditorProps> = ({
     updateUniqueSpeakers(transcription?.segments || []);
   }, [transcription]);
 
-  const debouncedHandleEditName = useRef(
-    debounce((newName: string) => {
-      handleEditName(newName);
-    }, 500)
-  ).current;
-
   const updateUniqueSpeakers = (segments: TranscriptSegment[]) => {
     const speakers = Array.from(
       new Set(segments.map((segment) => segment.speaker))
@@ -106,34 +91,28 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const handleNameChange = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     const newName = e.currentTarget.value || '';
     setTranscriptionName(newName);
-    debouncedHandleEditName(newName);
+    handleEditName(newName);
     setIsTranscriptionNameEditing(false);
   };
 
   const handleTranscriptionNameChange = () => {
     setIsTranscriptionNameEditing(true);
 
-    const el = editingRef.current;
-    if (el) {
+    if (typeof document !== 'undefined' && editingRef.current) {
       setTimeout(() => {
-        el.focus();
+        const el = editingRef.current;
+        if (el) {
+          el.focus();
 
-        // Create a new range
-        const range = document.createRange();
+          const range = document.createRange(); // Safe use of document
+          range.selectNodeContents(el);
+          range.collapse(false);
 
-        // Select the contents of the element
-        range.selectNodeContents(el);
-
-        // Move the range's end point to its end
-        range.collapse(false);
-
-        // Clear any existing selection
-        const selection = window.getSelection();
-        if (selection) {
-          selection.removeAllRanges();
-
-          // Add the new range
-          selection.addRange(range);
+          const selection = window.getSelection(); // Safe use of window
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
       }, 0);
     }
@@ -164,7 +143,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   };
 
   useEffect(() => {
-    if (segments.length > 0) {
+    if (typeof document !== 'undefined' && segments.length > 0) {
       const activeSegment = segments.find(
         (segment) =>
           currentTime >= segment.start_time && currentTime <= segment.end_time
@@ -237,7 +216,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   const handleCopySegment = useCallback(() => {
     const segment = segments.find((s) => s.segment_id === menuState.segmentId);
-    if (segment) {
+    if (segment && typeof navigator !== 'undefined') {
       navigator.clipboard.writeText(segment.transcribed_text);
     }
     closeMenu();
@@ -368,7 +347,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   suppressContentEditableWarning
                   className={`${
                     viewMode === 'list' ? 'block mt-1' : 'inline'
-                  } focus:outline-none focus:bg-base-300 rounded p-1 transition-colors duration-200`}
+                  } focus:outline-none focus:bg-red-500 rounded p-1 transition-colors duration-200`}
                   style={{
                     backgroundColor: isHovered
                       ? 'rgba(191, 255, 0, 0.2)'

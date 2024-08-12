@@ -77,7 +77,7 @@ class Stream:
                     cv2.BORDER_CONSTANT, 
                     value=[255, 255, 255]
                 )
-                bboxes, kpss = face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=1, metric="max")
+                bboxes, kpss = face_detector.autodetect(image, max_num=1, metric="max")
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = face_recognizer.get(image, kps)
@@ -114,7 +114,7 @@ class Stream:
         if new_image_path:
             if self.database.get(new_name) is None:
                 image = cv2.imread(new_image_path)
-                bboxes, kpss = self.face_detector.detect(image, input_size=(640,640), max_num=1)
+                bboxes, kpss = self.face_detector.autodetect(image, max_num=1)
                 if len(bboxes) > 0:
                     kps = kpss[0]
                     embedding = self.face_recognizer.get(image, kps)
@@ -191,7 +191,7 @@ class Stream:
         if frame is None or len(frame.shape) < 2:
             return [], [], [], [], [], []
 
-        bboxes, kpss = self.face_detector.detect(frame, input_size=(640,640), max_num=49)
+        bboxes, kpss = self.face_detector.autodetect(frame, max_num=49)
         if len(bboxes) == 0:
             return [], [], [], [], [], []
 

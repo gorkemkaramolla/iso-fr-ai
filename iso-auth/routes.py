@@ -40,11 +40,11 @@ CORS(app, origins=xml_config.CORS_ORIGINS, supports_credentials=xml_config.SUPPO
 
 # Set Flask app configuration using the parsed XML values
 app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
-app.config["JWT_TOKEN_LOCATION"] = xml_config.JWT_TOKEN_LOCATION
+app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
 app.config["JWT_REFRESH_COOKIE_PATH"] = xml_config.JWT_REFRESH_COOKIE_PATH
-app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT
+app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to False in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT  # Enable CSRF protection in production
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = xml_config.get_jwt_expire_timedelta()
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_timedelta()
 
@@ -80,18 +80,18 @@ app.register_blueprint(users_bp)
 
 auth_provider = AuthProvider()
 
-@auth_bp.after_request
-def refresh_expiring_jwts(response):
-    try:
-        exp_timestamp = get_jwt()["exp"]
-        now = datetime.now(timezone.utc)
-        target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
-        if target_timestamp > exp_timestamp:
-            access_token = create_access_token(identity=get_jwt_identity())
-            set_access_cookies(response, access_token)
-        return response
-    except (RuntimeError, KeyError):
-        return response
+# @auth_bp.after_request
+# def refresh_expiring_jwts(response):
+#     try:
+#         exp_timestamp = get_jwt()["exp"]
+#         now = datetime.now(timezone.utc)
+#         target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+#         if target_timestamp > exp_timestamp:
+#             access_token = create_access_token(identity=get_jwt_identity())
+#             set_access_cookies(response, access_token)
+#         return response
+#     except (RuntimeError, KeyError):
+#         return response
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -118,9 +118,26 @@ def login():
     if isinstance(tokens, tuple):  # Check if tokens is a tuple indicating an error
         return tokens
 
-    response = jsonify({"message": "Login successful"})
+    response = jsonify({"message": "Login successful","access_token":tokens["access_token"],"refresh_token":tokens["refresh_token"]})
+    
+
+    # Set the HTTP-only access token cookie
     set_access_cookies(response, tokens["access_token"], max_age=int(xml_config.JWT_EXPIRE_SECONDS))
+
+    # Set the HTTP-only refresh token cookie
     set_refresh_cookies(response, tokens["refresh_token"])
+
+    # Set an additional non-HTTP-only cookie with the same expiration date
+    response.set_cookie(
+        'client_access_token',  # This can be any name you choose
+        tokens["access_token"],  # The value of the token
+        max_age=int(xml_config.JWT_EXPIRE_SECONDS),  # Same expiration time as the access token
+        secure=xml_config.JWT_COOKIE_SECURE,  # Secure flag depending on your environment
+        httponly=False,  # This makes the cookie accessible via JavaScript
+        samesite='Lax',  # Adjust based on your needs
+        path=xml_config.JWT_ACCESS_COOKIE_PATH
+    )
+
     return response, 200
 
 @auth_bp.route('/logout', methods=['POST'])

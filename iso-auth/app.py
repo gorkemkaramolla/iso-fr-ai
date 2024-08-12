@@ -5,8 +5,6 @@ from flask_jwt_extended import JWTManager
 from routes import auth_bp, users_bp
 import flask.json.provider as provider
 from config import XMLConfig  # Import the XML configuration
-
-
 # Initialize Flask app
 app = Flask(__name__)
 provider.DefaultJSONProvider.sort_keys = False
@@ -17,7 +15,7 @@ CORS(app, origins=xml_config.CORS_ORIGINS, supports_credentials=xml_config.SUPPO
 
 # Set Flask app configuration using the parsed XML values
 app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
-app.config["JWT_TOKEN_LOCATION"] = xml_config.JWT_TOKEN_LOCATION
+app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
 app.config["JWT_REFRESH_COOKIE_PATH"] = xml_config.JWT_REFRESH_COOKIE_PATH
 app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to False in production with HTTPS

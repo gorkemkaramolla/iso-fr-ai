@@ -142,10 +142,14 @@ xml_mongo_config = XMLConfig(service_name='mongo')
 
 # Configure JWT using XML config
 app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
-app.config["JWT_TOKEN_LOCATION"] = xml_config.JWT_TOKEN_LOCATION
+app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
-app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE
-app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT
+app.config["JWT_REFRESH_COOKIE_PATH"] = xml_config.JWT_REFRESH_COOKIE_PATH
+app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to False in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT  # Enable CSRF protection in production
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = xml_config.get_jwt_expire_timedelta()
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_timedelta()
+
 
 # Configure CORS using XML config
 CORS(app, supports_credentials=xml_config.SUPPORTS_CREDENTIALS, origins=xml_config.CORS_ORIGINS)
@@ -198,7 +202,7 @@ def hello_route():
 
 @audio_bp.route("/transcriptions/", defaults={"id": None}, methods=["GET"])
 @audio_bp.route("/transcriptions/<id>", methods=["GET"])
-@jwt_required()
+# @jwt_required()
 def get_transcription_route(id):
     if id is None:
         response = diarization_processor.get_all_transcriptions()

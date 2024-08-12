@@ -77,7 +77,7 @@ class SCRFD:
             assert self.model_file is not None
             assert osp.isfile(self.model_file)
             self.session = onnxruntime.InferenceSession(
-                self.model_file, providers=[["CUDAExecutionProvider", "CPUExecutionProvider" ]]
+                self.model_file, providers=["CUDAExecutionProvider", "CPUExecutionProvider" ]
             )
         self.center_cache = {}
         self.nms_thresh = 0.4

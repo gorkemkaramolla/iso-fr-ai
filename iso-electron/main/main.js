@@ -1,37 +1,42 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow } = require('electron');
+const serve = require('electron-serve');
 const path = require('path');
 
-app.on('ready', () => {
-  let mainWindow = new BrowserWindow({
-    fullscreen: true,
-    icon: path.join(__dirname, 'iso_logo_yazisiz.jpg'), // Add this line
+// Set the path to the icon file
+console;
+const iconPath = path.join(__dirname, '../assets/iso_logo_yazisiz.icns');
+
+const appServe = app.isPackaged
+  ? serve({
+      directory: path.join(__dirname, '../out'),
+    })
+  : null;
+
+const createWindow = () => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    icon: iconPath, // Add the icon here
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'), // Pointing to the preload script
-      contextIsolation: true, // Security feature
-      nodeIntegration: false, // Security feature
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
-  mainWindow.loadURL('http://localhost:3000');
+  if (app.isPackaged) {
+    appServe(win).then(() => {
+      win.loadURL('app://-');
+    });
+  } else {
+    win.loadURL('http://localhost:3000');
+    win.webContents.openDevTools();
+    win.webContents.on('did-fail-load', (e, code, desc) => {
+      win.webContents.reloadIgnoringCache();
+    });
+  }
+};
 
-  const { shell, ipcMain } = require('electron');
-  const { exec } = require('child_process');
-
-  ipcMain.on('open-url', (event, url) => {
-    let command;
-    switch (process.platform) {
-      case 'darwin':
-        command = `open -a "Google Chrome" ${url}`;
-        break;
-      case 'win32':
-        command = `"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe" --app=${url}`;
-        break;
-      default:
-        command = `google-chrome ${url}`;
-        break;
-    }
-    exec(command);
-  });
+app.on('ready', () => {
+  createWindow();
 });
 
 app.on('window-all-closed', () => {

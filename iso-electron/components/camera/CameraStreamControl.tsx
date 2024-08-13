@@ -60,7 +60,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isRecording: true,
               streamSrc: `${BASE_URL}/stream/${id}?camera=${
                 selectedCamera?.url
-              }?quality=${camera.selectedQuality}&is_recording=${true}`,
+              }&streamProfile=${camera.selectedQuality}&is_recording=${true}`,
             }
           : camera
       )
@@ -84,7 +84,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isRecording: false,
               streamSrc: `${BASE_URL}/stream/${id}?camera=${
                 selectedCamera?.url
-              }?quality=${camera.selectedQuality}&is_recording=${false}`,
+              }&streamProfile=${camera.selectedQuality}&is_recording=${false}`,
             }
           : camera
       )
@@ -126,7 +126,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isClose: false,
               streamSrc: `${BASE_URL}/stream/${id}?camera=${
                 selectedCamera?.url
-              }?quality=${camera.selectedQuality}&is_recording=${false}`,
+              }&streamProfile=${camera.selectedQuality}&is_recording=${false}`,
             }
           : camera
       )
@@ -171,7 +171,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
           ? {
               ...camera,
               selectedQuality: selectedQuality,
-              streamSrc: `${BASE_URL}/stream/${id}?camera=${selectedCamera?.url}&quality=${selectedQuality}&is_recording=${camera.isRecording}`,
+              streamSrc: `${BASE_URL}/stream/${id}?camera=${selectedCamera?.url}&streamProfile=${selectedQuality}&is_recording=${camera.isRecording}`,
             }
           : camera
       )

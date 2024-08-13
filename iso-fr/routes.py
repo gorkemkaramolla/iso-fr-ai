@@ -145,7 +145,8 @@ def update_camera_url(label):
 def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
     camera = request.args.get("camera")
-    quality = request.args.get("quality")
+    print("------------- Route-Camera: ", camera)
+    quality = request.args.get("streamProfile")
     return Response(
         stream_instance.recog_face_ip_cam(
             stream_id,
@@ -160,7 +161,7 @@ def stream(stream_id):
 def start_stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
     camera = request.args.get("camera")
-    quality = request.args.get("quality")
+    quality = request.args.get("streamProfile")
 
     # Start the stream if it's not already running
     stream_instance.start_stream(

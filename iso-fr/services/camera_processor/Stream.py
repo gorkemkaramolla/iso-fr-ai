@@ -245,8 +245,10 @@ class Stream:
     
         if quality is None:
             quality = "Quality"  # Provide a default value if quality is None
-        cap = cv2.VideoCapture(camera)
-        # cap = cv2.VideoCapture(camera + "?" + "streamProfile="+ quality)
+        # cap = cv2.VideoCapture(camera)
+        url = camera + "?streamProfile=" + quality
+        print("------------Camera URL: " + url)
+        cap = cv2.VideoCapture(url)
         print("Camera Opened:  " + str(cap.isOpened()))
         writer = None
         if is_recording:

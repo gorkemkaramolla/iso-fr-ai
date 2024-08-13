@@ -58,9 +58,8 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isLoading: false,
               isPlaying: true,
               isRecording: true,
-              streamSrc: `${BASE_URL}/stream/${id}?camera=${
-                selectedCamera?.url
-              }?quality=${camera.selectedQuality}&is_recording=${true}`,
+              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(true)}`
+
             }
           : camera
       )
@@ -82,9 +81,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isLoading: false,
               isPlaying: true,
               isRecording: false,
-              streamSrc: `${BASE_URL}/stream/${id}?camera=${
-                selectedCamera?.url
-              }?quality=${camera.selectedQuality}&is_recording=${false}`,
+              streamSrc: "",
             }
           : camera
       )
@@ -124,9 +121,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isPlaying: true,
               isRecording: false,
               isClose: false,
-              streamSrc: `${BASE_URL}/stream/${id}?camera=${
-                selectedCamera?.url
-              }?quality=${camera.selectedQuality}&is_recording=${false}`,
+               streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
             }
           : camera
       )
@@ -171,7 +166,8 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
           ? {
               ...camera,
               selectedQuality: selectedQuality,
-              streamSrc: `${BASE_URL}/stream/${id}?camera=${selectedCamera?.url}&quality=${selectedQuality}&is_recording=${camera.isRecording}`,
+              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
+
             }
           : camera
       )
@@ -191,13 +187,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
             <span className='text-red-500'>{selectedCamera?.label}</span>
           </div>
           <div className='flex flex-row gap-4 items-center'>
-            {isNaN(parseFloat(selectedCamera?.url ?? '')) ? (
+            {/* {isNaN(parseFloat(selectedCamera?.url ?? '')) ? ( */}
               <QualityDropdown
                 id={id}
                 selectedQuality={selectedQuality}
                 handleQualityChange={handleQualityChange}
               />
-            ) : null}
+            {/* // ) : null} */}
             <CameraControls
               isPlaying={isPlaying}
               isLoading={isLoading}

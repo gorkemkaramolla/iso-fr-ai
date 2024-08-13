@@ -339,7 +339,7 @@ const SearchComponent: React.FC = () => {
             } top-1.5 text-gray-400 select-none`}
           >
             <kbd
-              className={`kbd bg-slate-100 text-black nunito-500 ${
+              className={`kbd bg-slate-100 text-gray-700 nunito-500 ${
                 isCmdPressed
                   ? 'scale-90 transition-all duration-100 ease-in'
                   : ''
@@ -349,7 +349,7 @@ const SearchComponent: React.FC = () => {
             </kbd>{' '}
             +{' '}
             <kbd
-              className={`kbd bg-slate-100 text-black nunito-500 ${
+              className={`kbd bg-slate-100 text-gray-700 nunito-500 ${
                 isDotPressed
                   ? 'scale-90 transition-all duration-100 ease-in'
                   : ''

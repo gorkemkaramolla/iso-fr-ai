@@ -1,6 +1,7 @@
 import base64
 import glob
 import shutil
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import bson
 import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file, abort
@@ -140,17 +141,66 @@ def update_camera_url(label):
 
 
 # ****************************************************************************
+# @camera_bp.route("/stream/<int:stream_id>", methods=["GET"])
+# # @jwt_required()
+# def stream(stream_id):
+#     is_recording = request.args.get("is_recording") == "true"
+#     camera = request.args.get("camera")
+
+#     print("------------- Route-Camera: ", camera)
+#     resolution = request.args.get("resolution")
+#     print("------------- Route-Resolution: ", resolution)
+#     quality = request.args.get("streamProfile")
+#     print("------------- Route-Quality: ", quality)
+
+
+#     return Response(
+#         stream_instance.recog_face_ip_cam(
+#             stream_id,
+#             camera=camera,
+#             quality=quality,
+#             is_recording=is_recording,
+#         ),
+#         mimetype="multipart/x-mixed-replace; boundary=frame",
+#     )
 @camera_bp.route("/stream/<int:stream_id>", methods=["GET"])
 # @jwt_required()
 def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
     camera = request.args.get("camera")
-    quality = request.args.get("quality")
+    quality = request.args.get("streamProfile")
+
+    print("------------- Route-Camera: ", camera)
+    print("------------- Route-Quality: ", quality)
+
+    # Parse the camera URL
+    parsed_url = urlparse(camera)
+    query_params = parse_qs(parsed_url.query)
+
+    # Adjust the resolution and compression based on the quality parameter
+    if quality == "Quality":
+        query_params["resolution"] = ["1920x1080"]
+        query_params["compression"] = ["20"]
+    elif quality == "Balanced":
+        query_params["resolution"] = ["1280x720"]
+        query_params["compression"] = ["50"]
+    elif quality == "Bandwidth":
+        query_params["resolution"] = ["1280x720"]
+        query_params["compression"] = ["75"]
+    elif quality == "Mobile":
+        query_params["resolution"] = ["800x450"]
+        query_params["compression"] = ["75"]
+
+    # Reconstruct the camera URL with updated query parameters
+    new_query_string = urlencode(query_params, doseq=True)
+    new_camera_url = urlunparse(parsed_url._replace(query=new_query_string))
+
+    print("------------- Updated Camera URL: ", new_camera_url)
+
     return Response(
         stream_instance.recog_face_ip_cam(
             stream_id,
-            camera=camera,
-            quality=quality,
+            camera=new_camera_url,
             is_recording=is_recording,
         ),
         mimetype="multipart/x-mixed-replace; boundary=frame",
@@ -160,7 +210,7 @@ def stream(stream_id):
 def start_stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
     camera = request.args.get("camera")
-    quality = request.args.get("quality")
+    quality = request.args.get("streamProfile")
 
     # Start the stream if it's not already running
     stream_instance.start_stream(

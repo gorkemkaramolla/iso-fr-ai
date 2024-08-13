@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode, FilterService } from 'primereact/api';
 import { InputIcon } from 'primereact/inputicon';
@@ -21,6 +21,9 @@ import { InputNumber, InputNumberChangeEvent } from 'primereact/inputnumber';
 import CalendarComponent from '@/components/camera/Calendar';
 import { Nullable } from 'primereact/ts-helpers';
 import { getRecogFaces } from '@/services/camera/service';
+import { Button } from 'primereact/button';
+import { Menu } from 'primereact/menu';
+import { Ripple } from 'primereact/ripple';
 interface RecognizedFace {
   _id: {
     $oid: string;
@@ -32,6 +35,10 @@ interface RecognizedFace {
   gender: number;
   age: number;
   image_path: string;
+}
+interface ColumnMeta {
+  field: string;
+  header: string;
 }
 
 const defaultFilters: DataTableFilterMeta = {
@@ -68,8 +75,10 @@ const RecognizedFacesTable: React.FC = () => {
     null
   );
   const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(new Date()); // State for selected date
-
+  const dt = useRef<DataTable<RecognizedFace[]>>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const exportItemsMenu = useRef<Menu>(null);
+
   useEffect(() => {
     // console.log('selec tedDate:', selectedDate);
     const fetchRecogFaces = async () => {
@@ -125,20 +134,83 @@ const RecognizedFacesTable: React.FC = () => {
     setFilters(defaultFilters);
     setGlobalFilterValue('');
   };
+  const exportCSV = (selectionOnly: boolean) => {
+    dt.current?.exportCSV({ selectionOnly });
+};
+const cols: ColumnMeta[] = [
+  { field: 'timestamp', header: 'Timestamp' },
+  { field: 'label', header: 'Label' },
+  { field: 'similarity', header: 'Similarity' },
+  { field: 'emotion', header: 'Emotion' },
+  { field: 'gender', header: 'Gender' },
+  { field: 'age', header: 'Age' },
+  { field: 'image_path', header: 'Image' },
+
+];
+const exportColumns = cols.map((col) => ({ title: col.header, dataKey: col.field }));
+
+const exportPdf = () => {
+    import('jspdf').then((jsPDF) => {
+        import('jspdf-autotable').then(() => {
+            const doc = new jsPDF.default("portrait", "px", "a4") as any;
+
+            doc.autoTable(exportColumns, recognizedFaces);
+            doc.save('products.pdf');
+        });
+    });
+};
+const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+        const worksheet = xlsx.utils.json_to_sheet(recognizedFaces);
+        const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+        const excelBuffer = xlsx.write(workbook, {
+            bookType: 'xlsx',
+            type: 'array'
+        });
+
+        saveAsExcelFile(excelBuffer, 'products');
+    });
+};
+
+const saveAsExcelFile = (buffer: any, fileName="tanınan_yüzler_excel") => {
+    import('file-saver').then((module) => {
+        if (module && module.default) {
+            let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+            let EXCEL_EXTENSION = '.xlsx';
+            const data = new Blob([buffer], {
+                type: EXCEL_TYPE
+            });
+
+            module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+        }
+    });
+};
+
+const exportItems = [
+  {
+    label: 'CSV',
+    icon: 'pi pi-file',
+    command: () => exportCSV(false)
+  },
+  {
+    label: 'Excel',
+    icon: 'pi pi-file-excel',
+    command: () => exportExcel()
+  },
+  {
+    label: 'PDF',
+    icon: 'pi pi-file-pdf',
+    command: () => exportPdf()
+  }
+];
 
   const renderHeader = () => {
     return (
       <div className='flex justify-between w-full items-center px-2'>
         <div className='text-4xl nunito-700 '>Tanınan Yüzler</div>
+   
         <div className='flex items-center gap-4'>
-          {selectedFaces && selectedFaces?.length > 0 && (
-            <button
-              className='p-button p-component p-button-danger'
-              onClick={handleDeleteSelected}
-            >
-              <span className='p-button-label'>Delete Selected</span>
-            </button>
-          )}
+    
           <IconField iconPosition='left'>
             <InputIcon className='pi pi-search' />
             <InputText
@@ -149,6 +221,25 @@ const RecognizedFacesTable: React.FC = () => {
             />
           </IconField>
         </div>
+        <div className='flex items-center'>
+        {selectedFaces && selectedFaces?.length > 0 && (
+            <button
+              className='p-button p-component p-button-danger'
+              onClick={handleDeleteSelected}
+            >
+              <span className='p-button-label'>Delete Selected</span>
+            </button>
+          )}
+      <div style={{ fontSize: '1.5rem' }} className="pi pi-file-export text-blue-500 p-4 p-ripple" onClick={(event) => exportItemsMenu?.current?.toggle(event)}> 
+      
+      <Ripple
+        pt={{
+            root: { style: { background: 'rgba(156, 39, 176, 0.3)' } }
+        }}
+    />
+      </div>
+      <Menu model={exportItems} popup  ref={exportItemsMenu} />
+    </div>
       </div>
     );
   };
@@ -225,7 +316,7 @@ const RecognizedFacesTable: React.FC = () => {
     return (
       <Calendar
         placeholder='gg/aa/yy ss:dd'
-        value={options.value}
+        value={new Date(options.value)}
         onChange={(e) =>
           options.editorCallback && options.editorCallback(e.value)
         }
@@ -394,6 +485,7 @@ const RecognizedFacesTable: React.FC = () => {
       {
         // @ts-ignore
         <DataTable
+        ref={dt}
           className='custom-datatable'
           value={recognizedFaces}
           size='small'
@@ -512,8 +604,8 @@ const RecognizedFacesTable: React.FC = () => {
             header='Age'
             filterField='age'
             showFilterMenu={false}
-            filterMenuStyle={{ width: '11rem' }}
-            style={{ maxWidth: '11rem' }}
+            filterMenuStyle={{ width: '14rem' }}
+            style={{ maxWidth: '14rem' }}
             sortable
             filter
             filterElement={ageRowFilterTemplate}

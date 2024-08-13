@@ -28,6 +28,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
   setCameraStreams,
   isLocalCamera,
   isRecording,
+  selectedQuality,
   isClose,
   toast,
   localCameraId,
@@ -72,24 +73,50 @@ const CameraStream: React.FC<CameraStreamProps> = ({
             : videoDevices[localCameraId || 0].deviceId;
           setDeviceId(selectedDeviceId);
 
+          let resolution;
+          let compression;
+          switch (selectedQuality) {
+            case 'Quality':
+              resolution = { width: 1920, height: 1080 };
+              compression = 1;
+              break;
+            case 'Balanced':
+              resolution = { width: 1280, height: 720 };
+              compression = .5;
+              break;
+            case 'Bandwidth':
+              resolution = { width: 1280, height: 720 };
+              compression = .25;
+              break;
+            case 'Mobile':
+              resolution = { width: 800, height: 450 };
+              compression =.25;
+              break;
+            default:
+              resolution = { width: 1280, height: 720 };
+              compression = .5;
+          }
+
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
               deviceId: selectedDeviceId
                 ? { exact: selectedDeviceId }
                 : undefined,
+              width: resolution.width,
+              height: resolution.height,
             },
           });
 
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
           }
-          sendVideoFrames();
+          sendVideoFrames(compression);
         } catch (error) {
           console.error('Error accessing camera:', error);
         }
       };
 
-      const sendVideoFrames = () => {
+      const sendVideoFrames = (compression: number) => {
         const canvas = canvasRef.current;
         const context = canvas?.getContext('2d');
         const video = videoRef.current;
@@ -98,7 +125,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
 
         frameIntervalRef.current = setInterval(() => {
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const frame = canvas.toDataURL('image/jpeg');
+          const frame = canvas.toDataURL('image/jpeg', compression);
           socket.current?.emit('video_frames', {
             room: `camera-${id}`,
             frames: [frame],
@@ -106,6 +133,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
           });
         }, 100);
       };
+
 
       getCameraStream();
     }
@@ -129,7 +157,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
         frameIntervalRef.current = null;
       }
     };
-  }, [isLocalCamera, isRecording, isClose]);
+  }, [isLocalCamera, isRecording, isClose, selectedQuality]);
 
   useEffect(() => {
     if (isClose && isLocalCamera) {
@@ -155,7 +183,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
       }
     }
   }, [isClose, isLocalCamera, id, isPlaying]);
-
+  console.log(streamSrc);
   return (
     <div>
       {isPlaying && (

@@ -234,6 +234,7 @@ def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
     camera = request.args.get("camera")
     quality = request.args.get("quality")
+    print("-------------------Camera Route:" + camera)
     return Response(
         stream_instance.recog_face_ip_cam(
             stream_id,

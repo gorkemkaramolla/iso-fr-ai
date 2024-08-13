@@ -236,18 +236,13 @@ class Stream:
 
         return bboxes, labels, sims, emotions, genders, ages
     
-    def recog_face_ip_cam(self, stream_id, camera: str, quality="Quality", is_recording=False):
+    def recog_face_ip_cam(self, stream_id, camera: str, is_recording=False):
         self.stop_flag.clear()
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
         if camera is None:
             raise ValueError("Camera URL must be provided and cannot be None")
-    
-        if quality is None:
-            quality = "Quality"  # Provide a default value if quality is None
-        # cap = cv2.VideoCapture(camera)
-        url = camera + "?streamProfile=" + quality
-        print("------------Camera URL: " + url)
-        cap = cv2.VideoCapture(url)
+        
+        cap = cv2.VideoCapture(camera)
         print("Camera Opened:  " + str(cap.isOpened()))
         writer = None
         if is_recording:

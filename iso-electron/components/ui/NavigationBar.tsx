@@ -7,9 +7,29 @@ import { AudioLines, Contact, ScanFace, User, Users } from 'lucide-react';
 import { Menu } from 'primereact/menu';
 import { useRouter } from 'next/navigation';
 import SearchComponent from '../search/main-search-component';
+import createApi from '@/utils/axios_instance';
 interface Props {}
 
 const NavigationBar: React.FC<Props> = () => {
+  const handleLogout = async () => {
+    // Remove local storage item
+    localStorage.removeItem('access_token');
+    const api = createApi(`${process.env.NEXT_PUBLIC_AUTH_URL}`);
+    const response = await api.post('/logout');
+    if (response.status === 200) {
+      document.cookie =
+        'access_token_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie =
+        'client_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie =
+        'csrf_access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie =
+        'csrf_refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+      // Redirect to login page
+      router.push('/login');
+    }
+  };
   const router = useRouter();
   const menu = useRef<Menu>(null);
   const profileMenu = useRef<Menu>(null);
@@ -86,7 +106,7 @@ const NavigationBar: React.FC<Props> = () => {
       label: 'Çıkış Yap',
       icon: 'pi pi-sign-out',
       command: () => {
-        router.push('/api/logout');
+        handleLogout();
       },
     },
   ];

@@ -10,7 +10,7 @@ export default function Page() {
 
   return (
     <div className='container mx-auto px-4 '>
-      <nav className='flex justify-center mb-6'>
+      <nav className='flex justify-center'>
         <ul className='flex space-x-8 border-b border-gray-300'>
           <li
             className={`cursor-pointer py-2 px-4 ${

@@ -2,8 +2,9 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import NavigationBar from './ui/NavigationBar';
 import { CookiesProvider, useCookies } from 'react-cookie';
 import { PrimeReactProvider } from 'primereact/api';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { isElectron } from '@/utils/checkPlatform';
+
 interface ProviderProps {
   children: React.ReactNode;
 }
@@ -13,6 +14,7 @@ const Provider: React.FC<ProviderProps> = ({ children }: ProviderProps) => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+
   console.log(isElectron() ? 'Electron' : 'Browser');
 
   useEffect(() => {
@@ -42,7 +44,7 @@ const Provider: React.FC<ProviderProps> = ({ children }: ProviderProps) => {
           ripple: true,
         }}
       >
-        {isHydrated && accessToken ? <NavigationBar /> : <div />}
+        {isHydrated && accessToken && <NavigationBar />}
         {children}
       </PrimeReactProvider>
     </CookiesProvider>

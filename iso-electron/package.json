@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev \" \"electron .\"",
     "build": "next build  && electron-builder",
-    "build2": "next build  ",
+    "build2": "next build",
     "start": "next start",
     "test": "next dev --experimental-https --hostname 10.15.95.233",
     "lint": "next lint",
@@ -90,15 +90,17 @@
     ],
     "mac": {
       "identity": null,
-      "category": "public.app-category.utilities"
+      "category": "public.app-category.utilities",
+      "icon": "assets/icons/app-icon.icns"
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "assets/icons/app-icon.ico"
     },
     "linux": {
       "target": "AppImage",
-      "category": "Utility"
+      "category": "Utility",
+      "icon": "assets/icons/app-icon.png"
     }
   }
 }

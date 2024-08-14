@@ -1,24 +1,7 @@
+import { SystemInfo } from '@/types';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
-
-interface ContainerInfo {
-  container: string;
-  cpu: string;
-  memory: string;
-  gpu: string;
-}
-
-interface SystemInfo {
-  host_cpu_usage: string;
-  host_gpu_usage: string;
-  host_gpu_temp: string;
-  host_cpu_temp: string;
-  host_memory_usage: string;
-  container_info: ContainerInfo[];
-  logs_data: string;
-  total_container_cpus: number;
-}
 
 interface UsageData {
   name: string;

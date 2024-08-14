@@ -18,7 +18,15 @@ export default function LoginForm() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    router.refresh();
+    const accessToken = localStorage.getItem('access_token') || null;
+    const access_token_cookie = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('access_token_cookie='));
+
+    if (accessToken || access_token_cookie) {
+      // If already logged in, redirect to the home page
+      router.push('/');
+    }
   }, [router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -52,7 +60,7 @@ export default function LoginForm() {
       const response = await api.post(`/login`, formValues, {
         withCredentials: true,
       });
-      console.log(response);
+
       if (response.status === 200) {
         setAccessToken(response.data.access_token);
         toastRef.current?.show({
@@ -65,7 +73,7 @@ export default function LoginForm() {
           localStorage.setItem('access_token', response.data.access_token);
         }
 
-        if (window) router.push('/'); // Redirect to home page
+        router.push('/'); // Redirect to home page after login
       }
     } catch (error) {
       toastRef.current?.show({
@@ -81,7 +89,7 @@ export default function LoginForm() {
   return (
     <div className='w-full h-[100dvh] flex justify-center items-center bg-gradient-to-r from-indigo-600 to-blue-500'>
       <Toast ref={toastRef} />
-      <div className='flex w-full  justify-center flex-col items-center'>
+      <div className='flex w-full justify-center flex-col items-center'>
         <div className='card card-compact items-center bg-white shadow-2xl p-12 rounded-lg'>
           <Image
             alt='Logo'

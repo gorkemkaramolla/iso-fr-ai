@@ -16,7 +16,7 @@ export default function CalendarComponent({
   return (
     <div className='card flex justify-content-center'>
       <Calendar
-        className='w-40'
+        className='w-44'
         value={selectedDate}
         onChange={(e) => setSelectedDate(e.value)}
         minDate={minDate}

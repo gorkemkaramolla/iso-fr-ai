@@ -78,23 +78,23 @@ const CameraStream: React.FC<CameraStreamProps> = ({
           switch (selectedQuality) {
             case 'Quality':
               resolution = { width: 1920, height: 1080 };
-              compression = 1;
+              compression = 0.99;
               break;
             case 'Balanced':
               resolution = { width: 1280, height: 720 };
-              compression = .5;
+              compression = 0.5;
               break;
             case 'Bandwidth':
               resolution = { width: 1280, height: 720 };
-              compression = .25;
+              compression = 0.25;
               break;
             case 'Mobile':
               resolution = { width: 800, height: 450 };
-              compression =.25;
+              compression = 0.25;
               break;
             default:
               resolution = { width: 1280, height: 720 };
-              compression = .5;
+              compression = 0.5;
           }
 
           const stream = await navigator.mediaDevices.getUserMedia({
@@ -133,7 +133,6 @@ const CameraStream: React.FC<CameraStreamProps> = ({
           });
         }, 100);
       };
-
 
       getCameraStream();
     }

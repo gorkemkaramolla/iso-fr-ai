@@ -2,9 +2,15 @@ const { app, BrowserWindow } = require('electron');
 const serve = require('electron-serve');
 const path = require('path');
 
-// Set the path to the icon file
-console;
-const iconPath = path.join(__dirname, '../assets/iso_logo_yazisiz.icns');
+// Determine the correct icon based on the platform
+let iconPath;
+if (process.platform === 'win32') {
+  iconPath = path.join(__dirname, '../assets/icons/app-icon.ico');
+} else if (process.platform === 'darwin') {
+  iconPath = path.join(__dirname, '../assets/icons/app-icon.icns');
+} else {
+  iconPath = path.join(__dirname, '../assets/icons/app-icon.png');
+}
 
 const appServe = app.isPackaged
   ? serve({
@@ -16,7 +22,7 @@ const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
-    icon: iconPath, // Add the icon here
+    icon: iconPath, // Set the platform-specific icon
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },

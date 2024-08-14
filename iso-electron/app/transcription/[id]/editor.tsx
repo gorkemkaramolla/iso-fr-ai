@@ -11,6 +11,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AlignStartHorizontal, AlignStartVertical, User } from 'lucide-react';
 import SegmentMenu from './segment-menu';
 import Card from '@/components/ui/card';
+import Link from 'next/link';
+import { Button } from 'primereact/button';
+import { Segment } from '@/types';
 
 interface TranscriptSegment {
   segment_id: string;
@@ -28,10 +31,18 @@ interface Transcript {
 interface TextEditorProps {
   transcription: Transcript | null;
   editingRef: RefObject<HTMLTextAreaElement>;
-  handleEditName: (newName: string) => void;
-  handleDeleteSelected: (segmentId: string) => void;
-  handleSpeakerNameChange: (segmentId: string, newName: string) => void;
-  handleTranscribedTextChange: (segmentId: string, newText: string) => void;
+  handleEditName?: (newName: string) => void;
+  handleDeleteSelected?: (segmentId: string) => void;
+  handleSpeakerNameChange?: (
+    segmentId: string,
+    oldName: string,
+    newName: string
+  ) => void;
+  handleTranscribedTextChange?: (
+    segments: Segment[],
+    segmentId: string,
+    newText: string
+  ) => void;
   transcriptionRef: RefObject<HTMLDivElement>;
   isEditing: boolean;
   currentTime: number;
@@ -48,10 +59,10 @@ const TextEditor: React.FC<TextEditorProps> = ({
   transcription,
   speakerColors,
   editingRef,
-  handleEditName,
-  handleDeleteSelected,
-  handleSpeakerNameChange,
-  handleTranscribedTextChange,
+  handleEditName = () => {},
+  handleDeleteSelected = () => {},
+  handleSpeakerNameChange = () => {},
+  handleTranscribedTextChange = () => {},
   transcriptionRef,
   currentTime,
 }) => {
@@ -122,7 +133,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
     const newName = prompt(`${speaker} adlı konuşmacıyı değiştir:`);
     if (newName && newName.trim() !== '') {
       const confirmChange = window.confirm(
-        `"${speaker}" adlı konuşmacının tüm segmentlerini "${newName} olarak değiştirmeyi onaylayın"`
+        `"${speaker}" adlı konuşmacının tüm segmentlerini "${newName}" olarak değiştirmeyi onaylayın`
       );
       if (confirmChange) {
         renameAllSegments(speaker, newName);
@@ -133,7 +144,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const renameAllSegments = (oldName: string, newName: string) => {
     const updatedSegments = segments.map((segment) => {
       if (segment.speaker === oldName) {
-        handleSpeakerNameChange(segment.segment_id, newName);
+        handleSpeakerNameChange(segment.segment_id, oldName, newName);
         return { ...segment, speaker: newName };
       }
       return segment;
@@ -205,9 +216,19 @@ const TextEditor: React.FC<TextEditorProps> = ({
         (s) => s.segment_id === menuState.segmentId
       );
       if (segment) {
-        const newSpeakerName = prompt('Edit Speaker Name:', segment.speaker);
+        const oldName = segment.speaker; // Get the old speaker name
+        const newSpeakerName = prompt('Edit Speaker Name:', oldName);
         if (newSpeakerName && newSpeakerName.trim() !== '') {
-          handleSpeakerNameChange(segment.segment_id, newSpeakerName);
+          handleSpeakerNameChange(segment.segment_id, oldName, newSpeakerName);
+
+          // Update the local state immediately
+          setSegments((prevSegments) =>
+            prevSegments.map((s) =>
+              s.segment_id === segment.segment_id
+                ? { ...s, speaker: newSpeakerName }
+                : s
+            )
+          );
         }
       }
     }
@@ -230,7 +251,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
     ) => {
       const newText = e.currentTarget.textContent || '';
       if (newText !== originalText) {
-        handleTranscribedTextChange(segmentId, newText);
+        handleTranscribedTextChange(segments, segmentId, newText);
         const updatedSegments = segments.map((segment) =>
           segment.segment_id === segmentId
             ? { ...segment, transcribed_text: newText }
@@ -252,6 +273,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   return (
     <Card>
+      <Link href='/speech' passHref>
+        <Button
+          icon='pi pi-arrow-left'
+          label='Sentezleyici'
+          className='p-button-text  p-button-plain'
+        />
+      </Link>
       <div className='flex items-center justify-between mb-4'>
         <div className='flex items-center space-x-4 w-10/12  px-4'>
           {isTranscriptionNameEditing ? (

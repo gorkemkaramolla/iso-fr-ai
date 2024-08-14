@@ -29,8 +29,12 @@ interface ApiResponse {
   created_at: string;
   transcription: Transcript;
 }
-
-const WhisperUpload: React.FC = () => {
+interface WhisperUploadProps {
+  isProcessing: boolean;
+}
+const WhisperUpload: React.FC<WhisperUploadProps> = ({
+  isProcessing,
+}: WhisperUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -40,7 +44,7 @@ const WhisperUpload: React.FC = () => {
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files ? event.target.files[0] : null;
-    if (selectedFile && selectedFile.size > 250 * 1024 * 1024) {
+    if (selectedFile && selectedFile.size > 50 * 1024 * 1024) {
       setError('File size should be less than 50MB');
       return;
     }
@@ -130,6 +134,7 @@ const WhisperUpload: React.FC = () => {
                     <button
                       onClick={cancelSelection}
                       className='text-indigo-600 hover:text-indigo-800 transition-colors'
+                      disabled={isProcessing}
                     >
                       <FiX className='text-xl' />
                     </button>
@@ -142,7 +147,9 @@ const WhisperUpload: React.FC = () => {
                 <div className='flex items-center justify-center w-full'>
                   <label
                     htmlFor='dropzone-file'
-                    className='flex flex-col items-center justify-center w-full h-64 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition duration-300'
+                    className={`flex flex-col items-center justify-center w-full h-64 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-indigo-50 hover:bg-indigo-100 transition duration-300 ${
+                      isProcessing ? 'cursor-not-allowed' : ''
+                    }`}
                   >
                     <div className='flex flex-col items-center justify-center pt-5 pb-6'>
                       <FiUploadCloud className='w-10 h-10 mb-3 text-indigo-500' />
@@ -162,6 +169,7 @@ const WhisperUpload: React.FC = () => {
                       className='hidden'
                       onChange={onFileChange}
                       accept='audio/*'
+                      disabled={isProcessing}
                     />
                   </label>
                 </div>
@@ -170,9 +178,11 @@ const WhisperUpload: React.FC = () => {
             <button
               className='mt-4 px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-300 disabled:opacity-50'
               onClick={onFileUpload}
-              disabled={loading || !file}
+              disabled={loading || !file || isProcessing}
             >
-              {loading ? 'İşlem devam ediyor...' : 'Sentezi Başlat'}
+              {loading || isProcessing
+                ? 'İşlem devam ediyor...'
+                : 'Sentezi Başlat'}
             </button>
           </Card>
         </motion.div>

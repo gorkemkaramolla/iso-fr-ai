@@ -144,20 +144,19 @@ services:
       - solr
 
   solr:
-    image: solr:latest
+    image: isoai/ai:solr
     ports:
       - '8983:8983'
     volumes:
       - solr_data:/var/solr
-    command:
-      - solr-precreate
-      - logs
+      - ./solr-entrypoint.sh:/scripts/solr-entrypoint.sh
     environment:
       SOLR_HEAP: '1500m'
     networks:
       - isoai-network
     depends_on:
       - mongo
+    entrypoint: ['/bin/bash', '/scripts/solr-entrypoint.sh']
 
   mongo:
     image: mongo:latest
@@ -208,7 +207,7 @@ services:
       - face_recognition_data:/app/data
       - ./config.xml:/app/config.xml
       - ./config.py:/app/config.py
-      - ~/.insightface/models/buffalo_l:/app/services/models/buffalo_l
+      - ./iso-fr/services/models/buffalo_l:/app/services/models/buffalo_l
     networks:
       - isoai-network
     logging:

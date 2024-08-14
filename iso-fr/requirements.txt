@@ -17,3 +17,4 @@ torchvision==0.18.0
 insightface==0.7.3
 six==1.16.0
 requests==2.27.1
+werkzeug==3.0.3

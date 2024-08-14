@@ -102,9 +102,8 @@ const VideoStream: React.FC = () => {
         selectedCamera: camera,
         streamSrc: isLocalCamera
           ? ''
-          : `${BASE_URL}/stream/${newId}?camera=${
-              selectedCamera?.url
-            }?quality=${Object.keys(Quality)[0]}&is_recording=${false}`,
+          :  `${BASE_URL}/stream/${newId}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(Object.keys(Quality)[0])}&is_recording=${encodeURIComponent(false)}`,
+
         selectedQuality: Object.keys(Quality)[0],
         isPlaying: true,
         isLoading: true,

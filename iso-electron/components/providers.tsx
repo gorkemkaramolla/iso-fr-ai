@@ -39,7 +39,11 @@ const Provider: React.FC<ProviderProps> = ({ children }: ProviderProps) => {
 
   return (
     <CookiesProvider>
-      <PrimeReactProvider>
+      <PrimeReactProvider
+        value={{
+          ripple: true,
+        }}
+      >
         {isHydrated && accessToken && <NavigationBar />}
         {children}
       </PrimeReactProvider>

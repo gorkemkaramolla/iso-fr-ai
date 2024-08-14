@@ -128,8 +128,9 @@
 
 # app.register_blueprint(audio_bp)
 import os
+from threading import Lock
 from flask import Flask, Blueprint, request, jsonify, abort, Response
-from flask_jwt_extended import JWTManager, jwt_required
+from flask_jwt_extended import JWTManager, jwt_required,get_jwt_identity
 from flask_cors import CORS
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
@@ -178,12 +179,61 @@ logger = configure_logging()
 
 # Setup Blueprint
 audio_bp = Blueprint("audio_bp", __name__)
+processing_flags = {}
+lock = Lock()
+def set_processing_flag(user_id):
+    with lock:
+        processing_flags[user_id] = True
+
+def clear_processing_flag(user_id):
+    with lock:
+        if user_id in processing_flags:
+            del processing_flags[user_id]
+
+def is_processing(user_id):
+    return processing_flags.get(user_id, False)
 
 @audio_bp.route("/process-audio/", methods=["POST"])
 @jwt_required()
 def process_audio_route():
-    response = diarization_processor.process_audio()
-    return jsonify(response), 200 if "error" not in response else 500
+    identity = get_jwt_identity()  # This returns a dictionary
+    username = identity.get("username")  # Extract the unique user identifier
+    
+    if not username:
+        return jsonify({"error": f"Invalid user identity {identity}"}), 400
+    if is_processing(username):
+        return jsonify({"error": "A process is already running"}), 429
+
+    set_processing_flag(username)
+    try:
+        response = diarization_processor.process_audio()
+        return jsonify(response), 200 if "error" not in response else 500
+    finally:
+        clear_processing_flag(username)
+
+        
+@audio_bp.route("/check-process/", methods=["GET"], strict_slashes=False)
+@jwt_required()
+def check_process_route():
+    identity = get_jwt_identity()  # This returns a dictionary
+    username = identity.get("username")  # Extract the username
+    
+    if not username:
+        return jsonify({"error": f"Invalid user identity: {identity}"}), 400
+    
+    if is_processing(username):
+        return jsonify({"processing": True}), 200
+    else:
+        return jsonify({"processing": False}), 200
+
+
+
+# @audio_bp.route("/process-audio/", methods=["POST"])
+# @jwt_required()
+# def process_audio_route():
+#     response = diarization_processor.process_audio()
+#     return jsonify(response), 200 if "error" not in response else 500
+
 
 @audio_bp.route("/hello", methods=["GET"])
 @jwt_required()
@@ -254,11 +304,24 @@ def rename_segments_route(transcription_id):
     old_names = data.get("old_names")
     new_name = data.get("new_name")
     segment_ids = data.get("segment_ids")
+
+    # Debugging: Log the incoming data
+    logger.debug(f"Received data: old_names={old_names}, new_name={new_name}, segment_ids={segment_ids}")
+
+    # Ensure segment_ids is a list
+    if not isinstance(segment_ids, list):
+        segment_ids = [segment_ids]
     
-    if segment_ids:
+    try:
+        # Ensure segment_ids is still a list here before passing to the processor
+        if not isinstance(segment_ids, list):
+            raise ValueError("segment_ids must be a list")
+            
         result = diarization_processor.rename_selected_segments(transcription_id, old_names, new_name, segment_ids)
-    else:
-        result = diarization_processor.rename_segments(transcription_id, old_names, new_name)
+        logger.debug(f"Renaming segments result: {result}")
+    except Exception as e:
+        logger.error(f"Error renaming segments: {str(e)}")
+        return jsonify({"error": str(e)}), 500
     
     return jsonify(result), 200 if result["status"] == "success" else 500
 
@@ -276,6 +339,17 @@ def rename_transcribed_text_route(transcription_id):
         result = diarization_processor.rename_transcribed_text(transcription_id, old_texts, new_text)
     
     return jsonify(result), 200 if result["status"] == "success" else 500
+
+
+
+
+
+
+
+
+
+
+
 
 @audio_bp.route("/delete_segments/<transcription_id>", methods=["POST"])
 @jwt_required()

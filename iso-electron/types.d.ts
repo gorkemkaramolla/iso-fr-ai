@@ -11,6 +11,7 @@ interface Transcript {
   segments: Segment[];
   language: string;
   transcription_id: string;
+  full_text: string;
 }
 
 interface ApiResponse {
@@ -31,16 +32,6 @@ interface CameraStream {
   size?: { width: string | number; height: string | number };
   isLocalCamera?: boolean;
   localCameraId?: number;
-}
-interface SystemInfo {
-  logs_data: string;
-  cpu_temperature: string;
-  cpu_core_temps: { [key: string]: number };
-  cpu_usage: string;
-  gpu_temperature: string;
-  gpu_usage: string;
-  gpu_memory_usage: string;
-  memory_usage: string;
 }
 
 interface UsageData {
@@ -131,3 +122,20 @@ export type User = {
   password?: string; // Optional password field
   role: 'user' | 'admin';
 };
+
+interface ContainerInfo {
+  container: string;
+  cpu: string;
+  memory: string;
+  gpu: string;
+}
+interface SystemInfo {
+  host_cpu_usage: string;
+  host_gpu_usage: string;
+  host_gpu_temp: string;
+  host_cpu_temp: string;
+  host_memory_usage: string;
+  container_info: ContainerInfo[];
+  logs_data: string;
+  total_container_cpus: number;
+}

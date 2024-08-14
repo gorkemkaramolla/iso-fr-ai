@@ -46,17 +46,46 @@ class SpeakerDiarizationProcessor:
 
     def rename_selected_segments(self, transcription_id, old_names, new_name, segment_ids):
         collection = self.mongo_db["segments"]
+        
+        if not isinstance(segment_ids, list):
+            segment_ids = [segment_ids]
+        
+        object_ids = []
+        for segment_id in segment_ids:
+            try:
+                object_ids.append(ObjectId(segment_id))
+            except Exception as e:
+                self.logger.error(f"Invalid segment ID: {segment_id}, Error: {str(e)}")
+        
+        if not object_ids:
+            return {"status": "error", "message": "No valid segment IDs provided"}
+        
+        # Log the individual parameters
+        self.logger.info(f"Transcription ID: {transcription_id}")
+        self.logger.info(f"Old Names: {old_names}")
+        self.logger.info(f"New Name: {new_name}")
+        self.logger.info(f"Segment Object IDs: {object_ids}")
+        
         update_result = collection.update_many(
-            {"_id": {"$in": [ObjectId(segment_id) for segment_id in segment_ids]},
-             "speaker": {"$in": old_names},
-             "transcript_id": transcription_id},
+            {
+                "_id": {"$in": object_ids},
+                "speaker": {"$in": old_names},
+                "transcript_id": transcription_id
+            },
             {"$set": {"speaker": new_name}},
         )
 
+        # Log the result
+        self.logger.info(f"Matched: {update_result.matched_count}, Modified: {update_result.modified_count}")
+
         if update_result.modified_count > 0:
             return {"status": "success"}
-        else:
+        elif update_result.matched_count > 0:
             return {"status": "no changes made"}
+        else:
+            return {"status": "error", "message": "No matching segments found"}
+
+
 
     def rename_transcribed_text(self, transcription_id, old_texts, new_text):
         segments_collection = self.mongo_db["segments"]

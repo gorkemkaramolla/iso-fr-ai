@@ -27,6 +27,7 @@ import { MultiSelect, MultiSelectChangeEvent } from 'primereact/multiselect';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
 import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
+import { useRouter } from 'next/navigation';
 interface RecognizedFace {
   _id: {
     $oid: string;
@@ -71,6 +72,7 @@ FilterService.register('custom_similarity', (value, filters) => {
 });
 
 const RecognizedFacesTable: React.FC = () => {
+  const router = useRouter();
   const toast = useRef<Toast>(null);
   const [recognizedFaces, setRecognizedFaces] = useState<RecognizedFace[]>([]);
   const [filters, setFilters] = useState<DataTableFilterMeta>(defaultFilters);
@@ -614,7 +616,11 @@ const RecognizedFacesTable: React.FC = () => {
   const personBodyTemplate = (rowData: RecognizedFace) => {
     return (
       <div className='inline-flex text-center'>
-        <div className='flex gap-2 items-center justify-center text-center'>
+        <div
+          className='flex gap-2 items-center justify-center text-center cursor-pointer'
+          onClick={() => router.push(`/personel/${rowData.label}`)}
+          title={`Personel ${rowData.label} Sayfasına Git`}
+        >
           <img
             src={process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + rowData.label}
             alt=''

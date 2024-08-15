@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import useSystemInfo from '@/hooks/useSystemInfo';
 import { Thermometer, Activity, FileText, Box } from 'lucide-react';
@@ -11,16 +11,34 @@ import ContainerInformation from './container-information';
 
 const Dashboard = () => {
   const { systemInfo, cpuUsageData, gpuUsageData } = useSystemInfo();
-  const [activeComponent, setActiveComponent] = useState('temperature');
+
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
+
+  // Set the active component after the component has mounted
+  useEffect(() => {
+    const storedComponent =
+      localStorage.getItem('activeComponent') || 'temperature';
+    setActiveComponent(storedComponent);
+  }, []);
+
+  // Update localStorage whenever the activeComponent changes
+  useEffect(() => {
+    if (activeComponent) {
+      localStorage.setItem('activeComponent', activeComponent);
+    }
+  }, [activeComponent]);
 
   const menuItems = [
+    { id: 'log', label: 'Logs', icon: FileText },
     { id: 'temperature', label: 'Temperature', icon: Thermometer },
     { id: 'usage', label: 'Usage', icon: Activity },
-    { id: 'log', label: 'Logs', icon: FileText },
     { id: 'container', label: 'Containers', icon: Box },
   ];
 
   const renderActiveComponent = () => {
+    if (!activeComponent) {
+      return null; // Return null or a loading indicator while the active component is being determined
+    }
     switch (activeComponent) {
       case 'temperature':
         return (
@@ -50,7 +68,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className='min-h-screen  bg-gray-100'>
+    <div className='min-h-screen bg-gray-100'>
       <header className='bg-white shadow-md'>
         <nav className='container mx-auto px-4'>
           <ul className='flex justify-center items-center h-16'>
@@ -73,7 +91,7 @@ const Dashboard = () => {
         </nav>
       </header>
 
-      <main className='container mx-auto px-4 py-8'>
+      <main className='container mx-auto px-4 py-8 w-full'>
         <motion.div
           key={activeComponent}
           initial={{ opacity: 0, y: 20 }}

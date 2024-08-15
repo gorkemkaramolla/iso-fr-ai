@@ -1,13 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, Users } from 'lucide-react';
 import AddPersonel from './add-personel';
 import ShowPersonel from './personel-list';
 
 const Dashboard = () => {
-  const [activeComponent, setActiveComponent] = useState('form');
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
+
+  // Use useEffect to set the active component after the component has mounted
+  useEffect(() => {
+    const storedComponent =
+      localStorage.getItem('activeDashboardComponent') || 'form';
+    setActiveComponent(storedComponent);
+  }, []);
+
+  useEffect(() => {
+    if (activeComponent) {
+      localStorage.setItem('activeDashboardComponent', activeComponent);
+    }
+  }, [activeComponent]);
 
   const menuItems = [
     { id: 'form', label: 'Kullanıcı Ekle', icon: UserPlus },
@@ -15,6 +28,9 @@ const Dashboard = () => {
   ];
 
   const renderActiveComponent = () => {
+    if (!activeComponent) {
+      return null; // Return null or a loading indicator while the active component is being determined
+    }
     switch (activeComponent) {
       case 'form':
         return <AddPersonel />;

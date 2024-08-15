@@ -12,13 +12,24 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeComponent, setActiveComponent] = useState<
-    'addUser' | 'userList' | string
-  >('addUser');
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
 
+  // Fetch users when the component mounts
   useEffect(() => {
     fetchUsers();
+
+    // Set the active component after the component has mounted
+    const storedComponent =
+      localStorage.getItem('activeAdminComponent') || 'addUser';
+    setActiveComponent(storedComponent);
   }, []);
+
+  // Save the active component to localStorage when it changes
+  useEffect(() => {
+    if (activeComponent) {
+      localStorage.setItem('activeAdminComponent', activeComponent);
+    }
+  }, [activeComponent]);
 
   const fetchUsers = async () => {
     try {
@@ -32,8 +43,8 @@ export default function AdminPage() {
   };
 
   const openModal = (user: User) => {
-    setCurrentUser(user);
-    setIsModalOpen(true);
+    setCurrentUser(user); // Set the current user to be edited
+    setIsModalOpen(true); // Open the modal
   };
 
   const closeModal = () => {
@@ -47,6 +58,7 @@ export default function AdminPage() {
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
       await api.put(`/users/${currentUser.id}`, currentUser, {});
+
       fetchUsers(); // Refresh the user list after update
       closeModal();
     } catch (error) {
@@ -60,6 +72,9 @@ export default function AdminPage() {
   ];
 
   const renderActiveComponent = () => {
+    if (!activeComponent) {
+      return null; // Return null or a loading indicator while the active component is being determined
+    }
     switch (activeComponent) {
       case 'addUser':
         return (
@@ -130,7 +145,10 @@ export default function AdminPage() {
                   name='username'
                   value={currentUser.username}
                   onChange={(e) =>
-                    setCurrentUser({ ...currentUser, username: e.target.value })
+                    setCurrentUser({
+                      ...currentUser,
+                      username: e.target.value,
+                    })
                   }
                   className='mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
                 />
@@ -144,7 +162,10 @@ export default function AdminPage() {
                   name='password'
                   value={currentUser.password ?? ''}
                   onChange={(e) =>
-                    setCurrentUser({ ...currentUser, password: e.target.value })
+                    setCurrentUser({
+                      ...currentUser,
+                      password: e.target.value,
+                    })
                   }
                   className='mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
                 />

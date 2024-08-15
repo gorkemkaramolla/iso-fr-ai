@@ -1,4 +1,6 @@
+// components/SegmentMenu.tsx
 'use client';
+
 import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Copy, Edit2, Trash2 } from 'lucide-react';
@@ -23,7 +25,7 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof document !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       const handleOutsideClick = (event: MouseEvent) => {
         if (
           menuRef.current &&
@@ -33,9 +35,9 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
         }
       };
 
-      document.addEventListener('mousedown', handleOutsideClick); // Safe use of document
+      document.addEventListener('mousedown', handleOutsideClick);
       return () =>
-        document.removeEventListener('mousedown', handleOutsideClick); // Safe use of document
+        document.removeEventListener('mousedown', handleOutsideClick);
     }
   }, [isOpen, onClose]);
 
@@ -55,26 +57,25 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
         className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100'
         onClick={onEdit}
       >
-        <Edit2 size={16} /> Konuşmacı adını değiştir
+        <Edit2 size={16} /> Edit Speaker Name
       </button>
       <button
         className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600'
         onClick={() => {
           if (
-            window.confirm(
-              'Bu konuşma segmentini silmek istediğinize emin misiniz?'
-            )
+            typeof window !== 'undefined' &&
+            window.confirm('Are you sure you want to delete this segment?')
           )
             onDelete();
         }}
       >
-        <Trash2 size={16} /> Konuşma segmentini sil
+        <Trash2 size={16} /> Delete Segment
       </button>
       <button
         className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100'
         onClick={onCopy}
       >
-        <Copy size={16} /> Kopyala
+        <Copy size={16} /> Copy
       </button>
     </motion.div>
   );

@@ -1,55 +1,67 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { UserPlus, Users } from 'lucide-react';
 import AddPersonel from './add-personel';
 import ShowPersonel from './personel-list';
 
-export default function Page() {
-  const [view, setView] = useState<'form' | 'personnel'>('form');
+const Dashboard = () => {
+  const [activeComponent, setActiveComponent] = useState('form');
+
+  const menuItems = [
+    { id: 'form', label: 'Kullanıcı Ekle', icon: UserPlus },
+    { id: 'personnel', label: 'Kullanıcı Listesi', icon: Users },
+  ];
+
+  const renderActiveComponent = () => {
+    switch (activeComponent) {
+      case 'form':
+        return <AddPersonel />;
+      case 'personnel':
+        return <ShowPersonel />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className='container mx-auto px-4 '>
-      <nav className='flex justify-center'>
-        <ul className='flex space-x-8 border-b border-gray-300'>
-          <li
-            className={`cursor-pointer py-2 px-4 ${
-              view === 'form'
-                ? 'text-blue-500 border-b-4 border-blue-500' // Increase the border thickness for active state
-                : 'text-gray-500 border-b-4 border-transparent hover:text-gray-700' // Transparent border for inactive state
-            }`}
-            onClick={() => setView('form')}
-          >
-            Kullanıcı Ekle
-          </li>
-          <li
-            className={`cursor-pointer py-2 px-4 ${
-              view === 'personnel'
-                ? 'text-blue-500 border-b-4  border-blue-500' // Increase the border thickness for active state
-                : 'text-gray-500 border-b-4 border-transparent hover:text-gray-700' // Transparent border for inactive state
-            }`}
-            onClick={() => setView('personnel')}
-          >
-            Kullanıcı Listesi
-          </li>
-        </ul>
-      </nav>
+    <div className=''>
+      <header className=''>
+        <nav className=''>
+          <ul className='flex justify-center items-center h-16'>
+            {menuItems.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => setActiveComponent(item.id)}
+                  className={`flex items-center px-4 py-2 rounded-md transition-colors duration-200 ${
+                    activeComponent === item.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <item.icon size={20} className='mr-2' />
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </header>
 
-      <div className='gap-6'>
-        <AnimatePresence>
-          {view === 'form' && (
-            <motion.div className='w-full'>
-              <AddPersonel />
-            </motion.div>
-          )}
-
-          {view === 'personnel' && (
-            <motion.div className='w-full'>
-              <ShowPersonel />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      <main className='container mx-auto px-4 py-8'>
+        <motion.div
+          key={activeComponent}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          {renderActiveComponent()}
+        </motion.div>
+      </main>
     </div>
   );
-}
+};
+
+export default Dashboard;

@@ -1,18 +1,27 @@
 import createApi from '@/utils/axios_instance';
-import Profile from './profile'; // Import your Profile component
+import dynamic from 'next/dynamic';
+import { notFound } from 'next/navigation';
+import { Personel } from '@/types';
 
-// Function to generate static parameters for the dynamic routes
-export async function generateStaticParams() {
+// Dynamically import the Profile component, disabling server-side rendering
+const ClientProfile = dynamic(() => import('./profile'), {
+  ssr: false,
+});
+
+// Function to fetch data for a specific profile
+async function fetchProfileData(profile_id: string) {
   const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
-  const response = await api.get('/personel'); // Fetch all profiles
-  const profiles = response.data;
-
-  return profiles.map((profile: { _id: string }) => ({
-    profile_id: profile._id,
-  }));
+  try {
+    const response = await api.get(`/personel/${profile_id}`, {
+      next: { tags: ['profile'] },
+    });
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
 }
 
-// The page component that fetches data and passes it to the Profile component
+// The page component that fetches data and passes it to the ClientProfile component
 export default async function ProfilePage({
   params,
 }: {
@@ -20,14 +29,21 @@ export default async function ProfilePage({
 }) {
   const profileData = await fetchProfileData(params.profile_id);
 
-  return <Profile profileData={profileData} />;
+  if (!profileData) {
+    notFound(); // This will trigger a 404 page if the profile is not found
+  }
+
+  return <ClientProfile profileData={profileData} />;
 }
 
-// Function to fetch data for a specific profile
-async function fetchProfileData(profile_id: string) {
+export async function generateStaticParams() {
   const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
-  const response = await api.get(`/personel/${profile_id}`, {
-    withCredentials: true,
+  const response = await api.get('/personel', {
+    next: { tags: ['profiles'] },
   });
-  return response.data;
+  const profiles = await response.json();
+
+  return profiles.map((profile: Personel) => ({
+    profile_id: profile._id,
+  }));
 }

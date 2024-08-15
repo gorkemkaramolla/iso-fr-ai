@@ -92,11 +92,10 @@ export default function Profile({ profileData }: Props) {
     const fetchPersonel = async () => {
       try {
         const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
-        const response = await api.get(`/personel/${profileData._id}`, {
-          withCredentials: true,
-        });
-        setPersonel(response.data);
-        setEditedPersonel(response.data);
+        const response = await api.get(`/personel/${profileData._id}`, {});
+        const data = await response.json();
+        setPersonel(data);
+        setEditedPersonel(data);
         setError(null);
       } catch (error) {
         console.error('Error fetching personel:', error);

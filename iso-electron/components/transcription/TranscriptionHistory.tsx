@@ -27,10 +27,9 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     setLoading(true);
     try {
       const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
-      const storedResponses = await api.get<Transcript[]>('/transcriptions/', {
-        withCredentials: true,
-      });
-      const sortedData = storedResponses.data.sort(
+      const storedResponses = await api.get('/transcriptions/', {});
+      const data: Transcript[] = await storedResponses.json();
+      const sortedData = data.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -85,7 +84,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
             ) : (
               currentItems.map((response) => (
                 <li key={response.transcription_id}>
-                  <Link href={`/transcription/${response.transcription_id}`}>
+                  <Link href={`/transcription?id=${response.transcription_id}`}>
                     <div
                       className={`p-2 rounded transition-colors ${
                         response.transcription_id === activePageId

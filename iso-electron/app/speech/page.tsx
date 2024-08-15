@@ -16,8 +16,9 @@ const Speech: React.FC<Props> = () => {
     try {
       const api = createApi(`${process.env.NEXT_PUBLIC_DIARIZE_URL}`);
       const response = await api.get('/check-process/');
-      setIsProcessing(response.data.processing); // Update this line to access the 'processing' field
-      console.log(response.data);
+      const data = await response.json();
+      setIsProcessing(data.processing); // Update this line to access the 'processing' field
+      console.log(data);
     } catch (error) {
       console.error('Error checking process status:', error);
       setIsProcessing(false); // Ensure it resets if there's an error

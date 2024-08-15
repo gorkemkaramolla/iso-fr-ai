@@ -9,11 +9,14 @@ import React, {
 } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlignStartHorizontal, AlignStartVertical, User } from 'lucide-react';
-import SegmentMenu from './segment-menu';
+// import SegmentMenu from './segment-menu';
+const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
+
 import Card from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from 'primereact/button';
 import { Segment } from '@/types';
+import dynamic from 'next/dynamic';
 
 interface TranscriptSegment {
   segment_id: string;

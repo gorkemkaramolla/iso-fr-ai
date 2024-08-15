@@ -78,9 +78,9 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
           segment_ids: [segmentId],
         }
       );
-
+      const data = await response.json();
       // Optionally, you can add a success message or update the state here
-      console.log('Successfully renamed transcribed text:', response.data);
+      console.log('Successfully renamed transcribed text:', data);
     } catch (error) {
       console.error('Failed to rename transcribed text:', error);
 
@@ -111,7 +111,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
         name: new_name,
       }
     );
-    console.log(response.data);
+    const data = await response.json();
   };
   const speakerColors = useMemo(() => {
     const colors: Record<string, string> = {};

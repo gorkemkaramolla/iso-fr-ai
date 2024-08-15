@@ -24,6 +24,18 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN mkdir -p /app/services/large-v3 && \
+    wget -O model.bin  /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/model.bin?download=true" && \
+    wget -O .gitattributes /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/.gitattributes?download=true" && \
+    wget -O README.md /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/README.md?download=true" && \
+    wget -O config.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/config.json?download=true" && \
+    wget -O preprocessor_config.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/preprocessor_config.json?download=true" && \
+    wget -O tokenizer.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/tokenizer.json?download=true" && \
+    wget -O vocabulary.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/vocabulary.json?download=true" && \
+    chmod -R 777 /app/services/large-v3 && \
+    echo "Listing contents of the model directory:" && \
+    ls -la /app/services/large-v3
+
 # Create and activate the virtual environment
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3.12 -m venv $VIRTUAL_ENV

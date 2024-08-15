@@ -27,17 +27,30 @@ FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libgomp1 \
-    ffmpeg \
+    ffmpeg wget\
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
 
+RUN mkdir -p /app/services/large-v3 && \
+    wget -O model.bin  /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/model.bin?download=true" && \
+    wget -O .gitattributes /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/.gitattributes?download=true" && \
+    wget -O README.md /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/README.md?download=true" && \
+    wget -O config.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/config.json?download=true" && \
+    wget -O preprocessor_config.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/preprocessor_config.json?download=true" && \
+    wget -O tokenizer.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/tokenizer.json?download=true" && \
+    wget -O vocabulary.json /app/services/large-v3 "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/vocabulary.json?download=true" && \
+    chmod -R 777 /app/services/large-v3 && \
+    echo "Listing contents of the model directory:" && \
+    ls -la /app/services/large-v3
 # Copy the current directory contents into the container at /app
 COPY . /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt
+
+
 
 # Make port 5003 available to the world outside this container
 EXPOSE 5003

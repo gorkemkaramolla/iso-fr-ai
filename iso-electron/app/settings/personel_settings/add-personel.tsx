@@ -117,7 +117,7 @@ export default function AddPersonel() {
 
       if (response.ok) {
         showSuccess(data.message || 'Personel başarıyla eklendi.');
-        router.push(`/profiles/${data.data._id}`);
+        router.push(`/profiles?id=${data.data._id}`);
       } else {
         showError(data.message || 'Bir hata oluştu.');
       }

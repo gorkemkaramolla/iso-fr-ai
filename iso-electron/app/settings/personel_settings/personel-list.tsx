@@ -62,7 +62,7 @@ export default function ShowPersonel() {
 
   const handleRowClick = (e: DataTableRowEvent) => {
     const rowData = e.data as Personel;
-    router.push(`/profiles/${rowData._id}`);
+    router.push(`/profiles/?id=${rowData._id}`);
   };
 
   const filteredPersonel = useMemo(() => {

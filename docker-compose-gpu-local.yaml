@@ -114,6 +114,7 @@ services:
     volumes:
       - ./iso-diarize:/app # Bind mount for development
       - ./config.xml:/app/config.xml
+      - large_v3_data:/app/services/large-v3  # Add this volume for large-v3 data
       - ./config.py:/app/config.py
     networks:
       - isoai-network
@@ -158,6 +159,7 @@ volumes:
   solr_data:
   face_recognition_data:
   personel_images:
+  large_v3_data:
 
 networks:
   isoai-network:

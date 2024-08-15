@@ -11,6 +11,7 @@ import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
 import 'primereact/resources/primereact.min.css'; //core css
 import 'primeicons/primeicons.css'; //icons
 import { Camera } from '@/types';
+import { truncateString } from '@/library/camera/utils';
 
 // Define the types for the camera data and the component state
 
@@ -177,7 +178,12 @@ const CameraManager: React.FC = () => {
             className='border rounded-xl [&_div]:rounded-xl'
           >
             <Column field='label' header='Kamera Adı' className='text-left' />
-            <Column field='url' header='URL' className='p-0 m-0 text-left' />
+            <Column
+              field='url'
+              header='URL'
+              className='p-0 m-0 text-left'
+              body={(rowData) => truncateString(rowData.url, 50)}
+            />
             <Column
               header='İşlemler'
               body={(rowData) => (

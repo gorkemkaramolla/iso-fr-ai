@@ -21,9 +21,13 @@ import { InputNumber, InputNumberChangeEvent } from 'primereact/inputnumber';
 import CalendarComponent from '@/components/camera/Calendar';
 import { Nullable } from 'primereact/ts-helpers';
 import { getRecogFaces } from '@/services/camera/service';
-import { Button } from 'primereact/button';
 import { Menu } from 'primereact/menu';
 import { Ripple } from 'primereact/ripple';
+import { MultiSelect, MultiSelectChangeEvent } from 'primereact/multiselect';
+import { Toast } from 'primereact/toast';
+import { Button } from 'primereact/button';
+import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
+import { useRouter } from 'next/navigation';
 interface RecognizedFace {
   _id: {
     $oid: string;
@@ -68,52 +72,52 @@ FilterService.register('custom_similarity', (value, filters) => {
 });
 
 const RecognizedFacesTable: React.FC = () => {
+  const router = useRouter();
+  const toast = useRef<Toast>(null);
   const [recognizedFaces, setRecognizedFaces] = useState<RecognizedFace[]>([]);
   const [filters, setFilters] = useState<DataTableFilterMeta>(defaultFilters);
   const [globalFilterValue, setGlobalFilterValue] = useState<string>('');
   const [selectedFaces, setSelectedFaces] = useState<RecognizedFace[] | null>(
     null
   );
-  const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(new Date()); // State for selected date
+  const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(
+    new Date(localStorage.getItem('selectedDate') || '')
+  ); // State for selected date
   const dt = useRef<DataTable<RecognizedFace[]>>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  // const [loading, setLoading] = useState<boolean>(true);
   const exportItemsMenu = useRef<Menu>(null);
+  const [persons, setPersons] = useState<string[]>([]);
 
   useEffect(() => {
+    if (selectedDate) {
+      localStorage.setItem('selectedDate', selectedDate?.toISOString());
+    }
     // console.log('selec tedDate:', selectedDate);
     const fetchRecogFaces = async () => {
       try {
         // Fetch recognized face data from the backend using fetch
-        const faces = await getRecogFaces(selectedDate?.toISOString());
+        const faces = (await getRecogFaces(
+          selectedDate?.toISOString()
+        )) as RecognizedFace[];
         setRecognizedFaces(faces);
-        setLoading(false);
+        const uniqueLabels = Array.from(
+          new Set(
+            faces.map((face) => {
+              return face.label;
+            })
+          )
+        );
+        setPersons(uniqueLabels);
+        // setLoading(false);
       } catch (error) {
         console.error('Error fetching recognized face data:', error);
       }
     };
     fetchRecogFaces();
-
-    // const fetchData = async () => {
-    //   try {
-    //     const response = await fetch(
-    //       process.env.NEXT_PUBLIC_FLASK_URL + '/recog'
-    //     );
-    //     if (!response.ok) {
-    //       throw new Error(`HTTP error! status: ${response.status}`);
-    //     }
-    //     const data = await response.json();
-    //     setRecognizedFaces(data);
-    //     setLoading(false);
-    //   } catch (error) {
-    //     console.error('Error fetching recognized face data:', error);
-    //   }
-    // };
-
-    // fetchData();
-  }, [selectedDate]);
+  }, [selectedDate, setRecognizedFaces]);
 
   const formatTimestamp = (value: number) => {
-    return new Date(value).toLocaleString();
+    return new Date(value).toLocaleString('tr-TR');
   };
 
   const formatGender = (value: number) => {
@@ -130,87 +134,162 @@ const RecognizedFacesTable: React.FC = () => {
     setGlobalFilterValue(value);
   };
 
-  const initFilters = () => {
-    setFilters(defaultFilters);
-    setGlobalFilterValue('');
-  };
   const exportCSV = (selectionOnly: boolean) => {
     dt.current?.exportCSV({ selectionOnly });
-};
-const cols: ColumnMeta[] = [
-  { field: 'timestamp', header: 'Timestamp' },
-  { field: 'label', header: 'Label' },
-  { field: 'similarity', header: 'Similarity' },
-  { field: 'emotion', header: 'Emotion' },
-  { field: 'gender', header: 'Gender' },
-  { field: 'age', header: 'Age' },
-  { field: 'image_path', header: 'Image' },
+  };
+  const cols: ColumnMeta[] = [
+    { field: 'timestamp', header: 'Timestamp' },
+    { field: 'label', header: 'Label' },
+    { field: 'similarity', header: 'Similarity' },
+    { field: 'emotion', header: 'Emotion' },
+    { field: 'gender', header: 'Gender' },
+    { field: 'age', header: 'Age' },
+    { field: 'image_path', header: 'Image' },
+  ];
+  const exportColumns = cols.map((col) => ({
+    title: col.header,
+    dataKey: col.field,
+  }));
 
-];
-const exportColumns = cols.map((col) => ({ title: col.header, dataKey: col.field }));
-
-const exportPdf = () => {
+  const exportPdf = () => {
     import('jspdf').then((jsPDF) => {
-        import('jspdf-autotable').then(() => {
-            const doc = new jsPDF.default("portrait", "px", "a4") as any;
+      import('jspdf-autotable').then(() => {
+        const doc = new jsPDF.default('portrait', 'px', 'a4') as any;
 
-            doc.autoTable(exportColumns, recognizedFaces);
-            doc.save('products.pdf');
-        });
+        doc.autoTable(exportColumns, recognizedFaces);
+        doc.save('tanınan_yuzler.pdf');
+      });
     });
-};
-const exportExcel = () => {
+  };
+  const exportExcel = () => {
     import('xlsx').then((xlsx) => {
-        const worksheet = xlsx.utils.json_to_sheet(recognizedFaces);
-        const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
-        const excelBuffer = xlsx.write(workbook, {
-            bookType: 'xlsx',
-            type: 'array'
+      const worksheet = xlsx.utils.json_to_sheet(recognizedFaces);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      });
+
+      saveAsExcelFile(excelBuffer, 'tanınan_yuzler');
+    });
+  };
+
+  const saveAsExcelFile = (buffer: any, fileName = 'tanınan_yuzler_excel') => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        const EXCEL_TYPE =
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        const EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE,
         });
 
-        saveAsExcelFile(excelBuffer, 'products');
+        module.default.saveAs(
+          data,
+          fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION
+        );
+      }
     });
-};
+  };
 
-const saveAsExcelFile = (buffer: any, fileName="tanınan_yüzler_excel") => {
-    import('file-saver').then((module) => {
-        if (module && module.default) {
-            let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-            let EXCEL_EXTENSION = '.xlsx';
-            const data = new Blob([buffer], {
-                type: EXCEL_TYPE
-            });
+  const exportItems = [
+    {
+      label: 'CSV',
+      icon: 'pi pi-file',
+      command: () => exportCSV(false),
+    },
+    {
+      label: 'Excel',
+      icon: 'pi pi-file-excel',
+      command: () => exportExcel(),
+    },
+    {
+      label: 'PDF',
+      icon: 'pi pi-file-pdf',
+      command: () => exportPdf(),
+    },
+  ];
 
-            module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
-        }
+  let deleteTimeoutId: NodeJS.Timeout | null = null;
+  const accept = () => {
+    // setItemsToDelete(selectedItems);
+    showUndoToast();
+  };
+
+  const showUndoToast = () => {
+    toast.current?.show({
+      severity: 'info',
+      summary: 'Deletion Initiated',
+      detail: 'Items will be deleted. Click Undo to cancel.',
+      life: 6000,
+      content: (
+        <div className='mb-2 w-full flex-1'>
+          <span className='font-bold'>
+            {selectedFaces?.length} item(s) will be deleted.
+          </span>
+          <div className='flex flex-1 pt-4'>
+            <Button
+              type='button'
+              label='Undo'
+              severity='contrast'
+              className='p-button-sm'
+              onClick={undoDeletion}
+            />
+          </div>
+        </div>
+      ),
     });
-};
 
-const exportItems = [
-  {
-    label: 'CSV',
-    icon: 'pi pi-file',
-    command: () => exportCSV(false)
-  },
-  {
-    label: 'Excel',
-    icon: 'pi pi-file-excel',
-    command: () => exportExcel()
-  },
-  {
-    label: 'PDF',
-    icon: 'pi pi-file-pdf',
-    command: () => exportPdf()
-  }
-];
+    // Set a timeout to actually delete the items if undo is not clicked
+    deleteTimeoutId = setTimeout(() => {
+      if (selectedFaces && selectedFaces?.length > 0) {
+        handleDeleteSelected();
+      }
+    }, 6000);
+  };
+
+  const undoDeletion = () => {
+    setSelectedFaces(null);
+    toast.current?.clear();
+    if (deleteTimeoutId) {
+      clearTimeout(deleteTimeoutId);
+      deleteTimeoutId = null;
+    }
+    toast.current?.show({
+      severity: 'info',
+      summary: 'Deletion Cancelled',
+      detail: 'The items were not deleted.',
+      life: 1500,
+    });
+  };
+
+  const reject = () => {
+    toast.current?.show({
+      severity: 'warn',
+      summary: 'Rejected',
+      detail: 'You have rejected',
+      life: 3000,
+    });
+  };
+
+  const confirmDelete = async (event: any) => {
+    confirmPopup({
+      target: event.currentTarget,
+      message: 'Do you want to delete this record?',
+      icon: 'pi pi-info-circle',
+      defaultFocus: 'reject',
+      acceptClassName: 'p-button-danger',
+      accept,
+      reject,
+    });
+  };
 
   const renderHeader = () => {
     return (
       <div className='flex justify-between w-full items-center px-2'>
         <div className='text-4xl nunito-700 '>Tanınan Yüzler</div>
-   
+
         <div className='flex items-center gap-4'>
-    
           <IconField iconPosition='left'>
             <InputIcon className='pi pi-search' />
             <InputText
@@ -222,32 +301,86 @@ const exportItems = [
           </IconField>
         </div>
         <div className='flex items-center'>
-        {selectedFaces && selectedFaces?.length > 0 && (
-            <button
-              className='p-button p-component p-button-danger'
-              onClick={handleDeleteSelected}
-            >
-              <span className='p-button-label'>Delete Selected</span>
-            </button>
-          )}
-      <div style={{ fontSize: '1.5rem' }} className="pi pi-file-export text-blue-500 p-4 p-ripple" onClick={(event) => exportItemsMenu?.current?.toggle(event)}> 
-      
-      <Ripple
-        pt={{
-            root: { style: { background: 'rgba(156, 39, 176, 0.3)' } }
-        }}
-    />
-      </div>
-      <Menu model={exportItems} popup  ref={exportItemsMenu} />
-    </div>
+          <div
+            style={{ fontSize: '1.5rem' }}
+            className='pi pi-file-export text-blue-500 p-4 p-ripple rounded-lg ml-4'
+            onClick={(event) => exportItemsMenu?.current?.toggle(event)}
+            title='Dışarı Aktar'
+          >
+            <Ripple
+              pt={{
+                root: { style: { background: 'rgba(156, 39, 176, 0.3)' } },
+              }}
+            />
+          </div>
+          <Menu model={exportItems} popup ref={exportItemsMenu} />
+        </div>
       </div>
     );
   };
-  const onRowEditComplete = (e: DataTableRowEditCompleteEvent) => {
+  const renderRowDeleteButton = () => {
+    return (
+      <>
+        {selectedFaces && selectedFaces?.length > 0 && (
+          <Button
+            className='px-8'
+            onClick={confirmDelete}
+            severity='danger'
+            icon='pi pi-trash'
+            title='Seçilenleri Sil'
+            badge={selectedFaces.length.toString()}
+          ></Button>
+        )}
+      </>
+    );
+  };
+  const onRowEditComplete = async (e: DataTableRowEditCompleteEvent) => {
     let _recognizedFaces = [...recognizedFaces];
+    // console.log('e:', e);
     let { newData, index } = e;
     _recognizedFaces[index] = newData as RecognizedFace;
-    setRecognizedFaces(_recognizedFaces);
+
+    const id = newData._id.$oid;
+    const { _id, ...dataToSend } = newData;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_FLASK_URL}/recog/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToSend),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.message === 'Log updated successfully') {
+        setRecognizedFaces(_recognizedFaces);
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Update Successful',
+          detail: 'The document has been updated successfully.',
+          life: 3000,
+        });
+      } else {
+        throw new Error('Update failed');
+      }
+    } catch (error) {
+      console.error('Error updating document:', error);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Update Failed',
+        detail: 'There was an error updating the document. Please try again.',
+        life: 3000,
+      });
+    }
   };
   const textEditor = (options: ColumnEditorOptions) => {
     return (
@@ -283,11 +416,11 @@ const exportItems = [
     return (
       <InputNumber
         inputId='percent'
-        prefix='%'
+        // prefix='%'
         mode='decimal'
         minFractionDigits={1}
         maxFractionDigits={2}
-        max={100}
+        max={1}
         min={0}
         step={0.01}
         value={options.value}
@@ -316,9 +449,10 @@ const exportItems = [
     return (
       <Calendar
         placeholder='gg/aa/yy ss:dd'
+        dateFormat={'dd/mm/yy'}
         value={new Date(options.value)}
         onChange={(e) =>
-          options.editorCallback && options.editorCallback(e.value)
+          options.editorCallback && options.editorCallback(e.value?.getTime())
         }
         showTime
       />
@@ -440,7 +574,7 @@ const exportItems = [
           mode='decimal'
           minFractionDigits={1}
           maxFractionDigits={2}
-          max={100}
+          max={1}
           min={0}
           step={0.01}
           placeholder='from'
@@ -455,7 +589,7 @@ const exportItems = [
           mode='decimal'
           minFractionDigits={1}
           maxFractionDigits={2}
-          max={100}
+          max={1}
           min={0}
           step={0.01}
           placeholder='to'
@@ -478,15 +612,75 @@ const exportItems = [
       />
     );
   };
+
+  const personBodyTemplate = (rowData: RecognizedFace) => {
+    return (
+      <div className='inline-flex text-center'>
+        <div
+          className='flex gap-2 items-center justify-center text-center cursor-pointer'
+          onClick={() => router.push(`/personel/${rowData.label}`)}
+          title={`Personel ${rowData.label} Sayfasına Git`}
+        >
+          <img
+            src={process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + rowData.label}
+            alt=''
+            className='w-[32px] h-[32px] rounded-full shadow-lg'
+            onError={(e) => {
+              e.currentTarget.src = '/inner_circle.png';
+            }}
+          />
+          <span className='font-bold text-lg'>{rowData.label}</span>
+        </div>
+      </div>
+    );
+  };
+  const personItemTemplate = (option: string) => {
+    console.log('option:', option);
+    return (
+      <div className='flex items-center gap-2'>
+        <img
+          alt={option}
+          src={process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + option}
+          width='32'
+          onError={(e) => {
+            e.currentTarget.src = '/inner_circle.png';
+          }}
+        />
+        <span>{option}</span>
+      </div>
+    );
+  };
+  const personRowFilterTemplate = (
+    options: ColumnFilterElementTemplateOptions
+  ) => {
+    return (
+      <MultiSelect
+        value={options.value}
+        options={persons}
+        itemTemplate={personItemTemplate}
+        onChange={(e: MultiSelectChangeEvent) =>
+          options.filterApplyCallback(e.value)
+        }
+        // optionLabel='name'
+        placeholder='Any'
+        className='p-column-filter'
+        maxSelectedLabels={1}
+        style={{ minWidth: '14rem' }}
+      />
+    );
+  };
+
   const header = renderHeader();
 
   return (
-    <div className='container mx-auto my-10 rounded-lg shadow-lg '>
+    <div className='flex items-center justify-center my-10 mx-20 rounded-lg shadow-lg '>
+      <Toast ref={toast} />
+      <ConfirmPopup />
       {
         // @ts-ignore
         <DataTable
-        ref={dt}
-          className='custom-datatable'
+          ref={dt}
+          className='custom-datatable w-full nunito-400'
           value={recognizedFaces}
           size='small'
           paginator
@@ -495,42 +689,14 @@ const exportItems = [
           dataKey='_id.$oid'
           filters={filters}
           filterDisplay='row'
-          loading={loading}
-          // globalFilterFields={['name', 'country.name', 'representative.name', 'status']}
-          // filterDisplay='menu'
+          // loading={loading}
           dragSelection
-          globalFilterFields={[
-            'label',
-            'emotion',
-            'similarity',
-            'gender',
-            'age',
-          ]}
           header={header}
           emptyMessage='No recognized faces found.'
           scrollable
           removableSort
-          rowGroupMode='subheader'
-          groupRowsBy='label'
           sortMode='single'
           sortOrder={1}
-          rowGroupHeaderTemplate={(data) => (
-            <div className='inline-flex text-center'>
-              <div className='flex gap-2 items-center justify-center text-center'>
-                <img
-                  src={
-                    process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + data.label
-                  }
-                  alt=''
-                  className='w-[32px] h-[32px] rounded-full shadow-lg'
-                  onError={(e) => {
-                    e.currentTarget.src = '/inner_circle.png';
-                  }}
-                />
-                <span className='font-bold text-lg'>{data.label}</span>
-              </div>
-            </div>
-          )}
           editMode='row'
           onRowEditComplete={onRowEditComplete}
           selectionMode={'checkbox'}
@@ -561,9 +727,11 @@ const exportItems = [
             style={{ maxWidth: '14rem' }}
             sortable
             filterPlaceholder='Search by name'
+            // filterElement={personRowFilterTemplate}
+            body={personBodyTemplate}
             filter
             showFilterMenu={false}
-            editor={(options) => textEditor(options)}
+            // editor={(options) => textEditor(options)}
           />
           <Column
             field='similarity'
@@ -611,14 +779,6 @@ const exportItems = [
             filterElement={ageRowFilterTemplate}
             editor={(options) => ageEditor(options)}
           />
-          {/* <Column
-            field='age'
-            header='Age'
-            sortable
-            filter
-            filterPlaceholder='Search by age'
-            editor={(options) => ageEditor(options)}
-          /> */}
           <Column
             field='image_path'
             header='Image'
@@ -631,8 +791,12 @@ const exportItems = [
             )}
           />
           <Column
+            field=''
             header='Actions'
             rowEditor
+            filter
+            showFilterMenu={false}
+            filterElement={renderRowDeleteButton}
             headerStyle={{ width: '10%', minWidth: '8rem' }}
             bodyStyle={{ textAlign: 'center' }}
           ></Column>

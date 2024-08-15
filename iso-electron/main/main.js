@@ -12,6 +12,7 @@ if (process.platform === 'win32') {
   iconPath = path.join(__dirname, '../assets/icons/app-icon.png');
 }
 
+// Serve the built files from the 'out' directory
 const appServe = app.isPackaged
   ? serve({
       directory: path.join(__dirname, '../out'),
@@ -29,13 +30,18 @@ const createWindow = () => {
   });
 
   if (app.isPackaged) {
-    appServe(win).then(() => {
-      win.loadURL('app://-');
-    });
+    appServe(win)
+      .then(() => {
+        win.loadURL('app://-'); // Load from the bundled files
+        win.webContents.openDevTools();
+      })
+      .catch((err) => {
+        console.error('Failed to load URL:', err);
+      });
   } else {
-    win.loadURL('http://localhost:3000');
+    win.loadURL('http://localhost:3000'); // Load from the development server
     win.webContents.openDevTools();
-    win.webContents.on('did-fail-load', (e, code, desc) => {
+    win.webContents.on('did-fail-load', () => {
       win.webContents.reloadIgnoringCache();
     });
   }

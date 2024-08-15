@@ -2,58 +2,21 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './node_modules/primereact/**/*.{js,ts,jsx,tsx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}', // Include all files in pages directory
+    './components/**/*.{js,ts,jsx,tsx,mdx}', // Include all files in components directory
+    './app/**/*.{js,ts,jsx,tsx,mdx}', // Include all files in app directory
+    './node_modules/primereact/**/*.{js,ts,jsx,tsx}', // Include PrimeReact components
   ],
   theme: {
     extend: {
       colors: {
-        terminalGreen: '#00FF00', // Define the custom color here
+        terminalGreen: '#00FF00', // Custom color for your theme
       },
-      // backgroundImage: {
-      //   'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-      //   'gradient-conic':
-      //     'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-      // },
     },
   },
   daisyui: {
-    themes: [
-      'light',
-      'dark',
-      'cupcake',
-      'bumblebee',
-      'emerald',
-      'corporate',
-      'synthwave',
-      'retro',
-      'cyberpunk',
-      'valentine',
-      'halloween',
-      'garden',
-      'forest',
-      'aqua',
-      'lofi',
-      'pastel',
-      'fantasy',
-      'wireframe',
-      'black',
-      'luxury',
-      'dracula',
-      'cmyk',
-      'autumn',
-      'business',
-      'acid',
-      'lemonade',
-      'night',
-      'coffee',
-      'winter',
-      'dim',
-      'nord',
-      'sunset',
-    ],
+    themes: ['light', 'dark'], // Set the default themes here
+    darkTheme: 'light', // Set light mode as the default theme
   },
   plugins: [
     require('@tailwindcss/typography'),
@@ -61,4 +24,5 @@ const config: Config = {
     require('tailwindcss-animate'),
   ],
 };
+
 export default config;

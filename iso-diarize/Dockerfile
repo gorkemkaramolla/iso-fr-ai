@@ -32,20 +32,20 @@ RUN apt-get update && apt-get install -y \
 
 # Set the working directory in the container
 WORKDIR /app
+COPY . /app
 
 RUN mkdir -p /app/services/large-v3 && \
-    wget -O /app/services/large-v3/model.bin "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/model.bin?download=true" && \
-    wget -O /app/services/large-v3/.gitattributes "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/.gitattributes?download=true" && \
-    wget -O /app/services/large-v3/README.md "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/README.md?download=true" && \
-    wget -O /app/services/large-v3/config.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/config.json?download=true" && \
-    wget -O /app/services/large-v3/preprocessor_config.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/preprocessor_config.json?download=true" && \
-    wget -O /app/services/large-v3/tokenizer.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/tokenizer.json?download=true" && \
-    wget -O /app/services/large-v3/vocabulary.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/vocabulary.json?download=true" && \
+    wget -q -O /app/services/large-v3/model.bin "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/model.bin?download=true" && \
+    wget -q -O /app/services/large-v3/.gitattributes "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/.gitattributes?download=true" && \
+    wget -q -O /app/services/large-v3/README.md "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/README.md?download=true" && \
+    wget -q -O /app/services/large-v3/config.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/config.json?download=true" && \
+    wget -q -O /app/services/large-v3/preprocessor_config.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/preprocessor_config.json?download=true" && \
+    wget -q -O /app/services/large-v3/tokenizer.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/tokenizer.json?download=true" && \
+    wget -q -O /app/services/large-v3/vocabulary.json "https://huggingface.co/Systran/faster-whisper-large-v3/resolve/main/vocabulary.json?download=true" && \
     chmod -R 777 /app/services/large-v3 && \
     echo "Listing contents of the model directory:" && \
     ls -la /app/services/large-v3
 # Copy the current directory contents into the container at /app
-COPY . /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt

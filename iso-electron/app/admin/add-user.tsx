@@ -19,7 +19,7 @@ const userSchema = z.object({
 
 type User = z.infer<typeof userSchema>;
 type Props = {
-  setActiveView: React.Dispatch<React.SetStateAction<'addUser' | 'userList'>>;
+  setActiveView: (view: string) => void;
   fetchUsers: () => void;
 };
 export default function AddUser({ setActiveView, fetchUsers }: Props) {
@@ -44,6 +44,7 @@ export default function AddUser({ setActiveView, fetchUsers }: Props) {
     e.preventDefault();
 
     try {
+      // Validate the user input
       userSchema.parse(newUser);
       setErrors({});
     } catch (e) {
@@ -62,17 +63,28 @@ export default function AddUser({ setActiveView, fetchUsers }: Props) {
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      await api.post('/add_user', newUser, { withCredentials: true });
+      await api.post('/add_user', newUser, {});
+
+      // Display the success message
       setMessage('User added successfully!');
-      setNewUser({
-        id: '',
-        username: '',
-        email: '',
-        password: '',
-        role: 'user',
-      });
-      fetchUsers();
-      setActiveView('userList');
+
+      // Delay the view change to show the success message first
+      setTimeout(() => {
+        // Reset the form
+        setNewUser({
+          id: '',
+          username: '',
+          email: '',
+          password: '',
+          role: 'user',
+        });
+
+        // Fetch the updated user list
+        fetchUsers();
+
+        // Change view after showing the message
+        setActiveView('userList');
+      }, 1500); // Adjust the delay as needed (1500ms or 1.5 seconds)
     } catch (error) {
       setMessage('Error adding user: ' + (error as Error).message);
     }

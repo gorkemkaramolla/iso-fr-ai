@@ -22,7 +22,7 @@ export default function UserList({
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      await api.delete(`/users/${userId}`, { withCredentials: true });
+      await api.delete(`/users/${userId}`, {});
       fetchUsers();
     } catch (error) {
       alert('Error deleting user: ' + (error as Error).message);

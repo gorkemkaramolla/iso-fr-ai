@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import AddUser from './add-user';
 import UserList from './list-user';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { UserPlus, Users } from 'lucide-react';
 import createApi from '@/utils/axios_instance';
 import { User } from '@/types';
 
@@ -11,9 +12,9 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeView, setActiveView] = useState<'addUser' | 'userList'>(
-    'addUser'
-  );
+  const [activeComponent, setActiveComponent] = useState<
+    'addUser' | 'userList' | string
+  >('addUser');
 
   useEffect(() => {
     fetchUsers();
@@ -22,8 +23,9 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      const response = await api.get<User[]>('/users');
-      setUsers(response.data);
+      const response = await api.get('/users');
+      const data: User[] = await response.json();
+      setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -44,9 +46,7 @@ export default function AdminPage() {
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      await api.put(`/users/${currentUser.id}`, currentUser, {
-        withCredentials: true,
-      });
+      await api.put(`/users/${currentUser.id}`, currentUser, {});
       fetchUsers(); // Refresh the user list after update
       closeModal();
     } catch (error) {
@@ -54,62 +54,65 @@ export default function AdminPage() {
     }
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ type: 'tween', ease: 'anticipate', duration: 0.5 }}
-      className='min-h-screen'
-    >
-      <div className='max-w-7xl mx-auto'>
-        <motion.h1
-          initial={{ opacity: 0, y: -50, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.8, ease: 'easeOut' }}
-          className='text-4xl font-bold text-black text-center mb-16 tracking-wide'
-        >
-          Admin Kontrol Paneli
-        </motion.h1>
+  const menuItems = [
+    { id: 'addUser', label: 'Kullanıcı Ekle', icon: UserPlus },
+    { id: 'userList', label: 'Kullanıcı Listesi', icon: Users },
+  ];
 
-        <nav className='flex justify-center mb-8'>
-          <ul className='flex space-x-8 border-b border-gray-300'>
-            <li
-              className={`cursor-pointer py-2 px-4 ${
-                activeView === 'addUser'
-                  ? 'text-blue-500 border-b-4 border-blue-500'
-                  : 'text-gray-500 border-b-4 border-transparent hover:text-gray-700'
-              }`}
-              onClick={() => setActiveView('addUser')}
-            >
-              Kullanıcı Ekle
-            </li>
-            <li
-              className={`cursor-pointer py-2 px-4 ${
-                activeView === 'userList'
-                  ? 'text-blue-500 border-b-4 border-blue-500'
-                  : 'text-gray-500 border-b-4 border-transparent hover:text-gray-700'
-              }`}
-              onClick={() => setActiveView('userList')}
-            >
-              Kullanıcı Listesi
-            </li>
+  const renderActiveComponent = () => {
+    switch (activeComponent) {
+      case 'addUser':
+        return (
+          <AddUser setActiveView={setActiveComponent} fetchUsers={fetchUsers} />
+        );
+      case 'userList':
+        return (
+          <UserList
+            users={users}
+            fetchUsers={fetchUsers}
+            openModal={openModal}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className=''>
+      <header className=''>
+        <nav className=''>
+          <ul className='flex justify-center items-center h-16'>
+            {menuItems.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => setActiveComponent(item.id)}
+                  className={`flex items-center px-4 py-2 rounded-md transition-colors duration-200 ${
+                    activeComponent === item.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <item.icon size={20} className='mr-2' />
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
           </ul>
         </nav>
+      </header>
 
-        <AnimatePresence>
-          {activeView === 'addUser' && (
-            <AddUser setActiveView={setActiveView} fetchUsers={fetchUsers} />
-          )}
-          {activeView === 'userList' && (
-            <UserList
-              users={users}
-              fetchUsers={fetchUsers}
-              openModal={openModal}
-            />
-          )}
-        </AnimatePresence>
-      </div>
+      <main className='container mx-auto px-4 py-8'>
+        <motion.div
+          key={activeComponent}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          {renderActiveComponent()}
+        </motion.div>
+      </main>
 
       {isModalOpen && currentUser && (
         <div className='modal modal-open'>
@@ -183,6 +186,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

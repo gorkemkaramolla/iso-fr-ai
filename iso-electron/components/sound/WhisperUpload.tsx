@@ -72,35 +72,49 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
     setLoading(true);
     setProgress(0);
     setError('');
+
     const formData = new FormData();
     formData.append('file', file, file.name);
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
-      const res = await api.post<ApiResponse>('/process-audio/', formData, {
+      const response = await api.post('/process-audio/', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
           'X-Client-ID':
             typeof window !== 'undefined'
               ? localStorage.getItem('client_id') || '123456'
               : '123456',
         },
       });
-      setResponse(res.data);
-      setLoading(false);
+
+      // Check if response is okay
+      if (!response.ok) {
+        throw new Error(`Failed to upload file: ${response.statusText}`);
+      }
+
+      const data: ApiResponse = await response.json();
+      setResponse(data);
       setProgress(100);
 
+      // Store the response in localStorage
       if (typeof window !== 'undefined') {
-        let responses = JSON.parse(localStorage.getItem('responses') || '[]');
-        responses.push(res.data);
-        localStorage.setItem('responses', JSON.stringify(responses));
+        const storedResponses = JSON.parse(
+          localStorage.getItem('responses') || '[]'
+        );
+        storedResponses.push(data);
+        localStorage.setItem('responses', JSON.stringify(storedResponses));
       }
     } catch (error: any) {
       console.error('Error uploading file:', error);
-      setError(
-        'Failed to upload file: ' +
-          (error.response?.data?.message || error.message)
-      );
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'An unknown error occurred during file upload.';
+
+      setError(`Failed to upload file: ${errorMessage}`);
+      setProgress(0);
+    } finally {
       setLoading(false);
     }
   };
@@ -156,7 +170,7 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
                       <p className='mb-2 text-sm text-indigo-600'>
                         <span className='font-semibold'>
                           Karşıya yükleme için tıklayın
-                        </span>{' '}
+                        </span>
                         veya sürükleyip bırakın
                       </p>
                       <p className='text-xs text-indigo-500'>

@@ -57,12 +57,11 @@ export default function LoginForm() {
     try {
       // Post data to the server if validation is successful
       const api = createApi(`${process.env.NEXT_PUBLIC_AUTH_URL}`);
-      const response = await api.post(`/login`, formValues, {
-        withCredentials: true,
-      });
-
+      const response = await api.post(`/login`, formValues, {});
+      const data = await response.json();
+      console.log(response);
       if (response.status === 200) {
-        setAccessToken(response.data.access_token);
+        setAccessToken(data.access_token);
         toastRef.current?.show({
           severity: 'success',
           summary: 'Success',
@@ -70,7 +69,7 @@ export default function LoginForm() {
           life: 3000,
         });
         if (typeof window !== 'undefined' && localStorage !== null) {
-          localStorage.setItem('access_token', response.data.access_token);
+          localStorage.setItem('access_token', data.access_token);
         }
 
         router.push('/'); // Redirect to home page after login

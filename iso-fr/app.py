@@ -30,6 +30,7 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_time
 # Initialize JWT Manager
 jwt = JWTManager(app)
 
+app.register_blueprint(camera_bp)
 
 # Ensure necessary directories exist
 os.makedirs(xml_config.TEMP_DIRECTORY, exist_ok=True)

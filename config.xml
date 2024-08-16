@@ -17,6 +17,7 @@
         <auth_service port="5001" host="0.0.0.0" debug="true"/>
         <face_recognition_service port="5002" host="0.0.0.0" debug="true">
             <logging_collection>logs</logging_collection>
+            <camera_collection>cameras</camera_collection>
             <temp_directory>temp</temp_directory>
             <device>cpu</device>
             <video_folder>./records</video_folder> <!-- New addition -->

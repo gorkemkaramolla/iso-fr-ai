@@ -1,4 +1,11 @@
 from config import XMLConfig
+from flask import Flask
+from flask_cors import CORS
+import os
+from routes import  camera_bp
+import flask.json.provider as provider
+from flask_jwt_extended import JWTManager
+from socketio_instance import socketio
 
 # Initialize the configuration for the 'face_recognition_service'
 xml_config = XMLConfig(service_name='face_recognition_service')
@@ -23,20 +30,13 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_time
 # Initialize JWT Manager
 jwt = JWTManager(app)
 
-# Register blueprints
-app.register_blueprint(system_check)
-app.register_blueprint(solr_search_bp)
-app.register_blueprint(personel_bp)
 
 # Ensure necessary directories exist
 os.makedirs(xml_config.TEMP_DIRECTORY, exist_ok=True)
 os.makedirs(xml_config.LOGGING_COLLECTION, exist_ok=True)
 
 # Initialize socketio with the app
-socketio.init_app(app, cors_allowed_origins=xml_config.CORS_ORIGINS, async_mode="gevent")
-
-# Initialize SystemMonitoring after socketio is properly initialized
-monitoring_service = SystemMonitoring()
+socketio.init_app(app, cors_allowed_origins=xml_config.CORS_ORIGINS)
 
 # Run the application
 if __name__ == "__main__":

@@ -50,11 +50,11 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_time
 # Setup MongoDB using configuration
 client = MongoClient(mongo_config.MONGO_DB_URI)
 db = client[mongo_config.MONGO_DB_NAME]
-logs_collection = db[xml_config.get('LOGS_COLLECTION', 'logs')]
-camera_collection = db[xml_config.get('CAMERA_COLLECTION', 'cameras')]
+logs_collection = db[xml_config.LOGGING_COLLECTION if xml_config.LOGGING_COLLECTION else 'logs']
+camera_collection = db[xml_config.CAMERA_COLLECTION if xml_config.CAMERA_COLLECTION else 'cameras']
 
 # Create instances
-stream_instance = Stream(device=xml_config.get('DEVICE', 'cpu'))
+stream_instance = Stream(device= xml_config.DEVICE if xml_config.DEVICE else 'cpu')
 logger = configure_logging()
 
 # Setup Blueprint
@@ -63,7 +63,7 @@ camera_bp = Blueprint("camera_bp", __name__)
 ######################### CAMERA ROUTES ###############################################
 
 # Video Records
-VIDEO_FOLDER = xml_config.get('VIDEO_FOLDER', './records')
+VIDEO_FOLDER = xml_config.VIDEO_FOLDER if xml_config.VIDEO_FOLDER else './records'
 
 @camera_bp.route('/videos/<filename>')
 def get_video(filename):

@@ -29,6 +29,7 @@ class XMLConfig:
         self.FLASK_DEBUG = False
         self.DEVICE = 'cpu'
         self.LOGGING_COLLECTION = None
+        self.CAMERA_COLLECTION = None
         self.TEMP_DIRECTORY = None
         self.SOLR_URL = None
         self.MONGO_DB_URI = None
@@ -58,6 +59,8 @@ class XMLConfig:
                     self.VIDEO_FOLDER = self._safe_find_text(service_config, 'video_folder')
                     self.BASE_RECOG_DIR = self._safe_find_text(service_config, 'base_recog_dir')
                     self.FACE_IMAGES_PATH = self._safe_find_text(service_config, 'face_images_path')
+                    self.LOGGING_COLLECTION = self._safe_find_text(service_config, 'logging_collection')
+                    self.CAMERA_COLLECTION = self._safe_find_text(service_config, 'camera_collection')
                     self._parse_stream_quality_mapping(service_config)
 
             else:

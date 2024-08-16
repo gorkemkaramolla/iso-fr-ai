@@ -258,7 +258,7 @@ import { VerticalDotsIcon } from '@/components/ui/VerticalDotsIcon';
 import { ChevronDownIcon } from '../../../components/ui/ChevronDownIcon';
 import { SearchIcon } from '../../../components/ui/SearchIcon';
 import { columns } from './data';
-import { capitalize } from '../../../components/ui/utils';
+import { capitalize } from '@/utils/capitalize';
 import { Personel } from '@/types';
 import { useRouter } from 'next/navigation';
 import { Toast } from 'primereact/toast';

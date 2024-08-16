@@ -22,7 +22,7 @@ import { VerticalDotsIcon } from '@/components/ui/VerticalDotsIcon';
 import { ChevronDownIcon } from '@/components/ui/ChevronDownIcon';
 import { SearchIcon } from '@/components/ui/SearchIcon';
 import { columns } from './user-columns';
-import { capitalize } from '@/components/ui/utils';
+import { capitalize } from '@/utils/capitalize';
 import { User } from '@/types';
 import { Toast } from 'primereact/toast';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';

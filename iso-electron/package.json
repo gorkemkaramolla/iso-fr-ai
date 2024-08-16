@@ -9,7 +9,7 @@
     "dev": "concurrently -n \"NEXT,ELECTRON\" -c \"yellow,blue\" --kill-others \"next dev \" \"electron .\"",
     "build": "next build  && electron-builder",
     "build2": "next build",
-    "start": "next start",
+    "start": "next start --hostname 192.168.100.9 --port 3000",
     "test": "next dev --experimental-https --hostname 10.15.95.233",
     "lint": "next lint",
     "isoai": "next dev"

@@ -1,28 +1,30 @@
-// components/AddUser.tsx
-'use client';
-
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { z } from 'zod';
 import { ZodError } from 'zod';
 import { FaUser, FaEnvelope, FaLock, FaUserCog, FaPlus } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import createApi from '@/utils/axios_instance';
-import CardComponent from '@/components/ui/card';
+import { Dialog } from 'primereact/dialog';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
+import { Dropdown } from 'primereact/dropdown';
 
 const userSchema = z.object({
   id: z.string().optional(),
-  username: z.string().min(3, 'Kullanıcı adı en az 3 karakter olmalıdır'),
-  email: z.string().email('Geçersiz e-posta adresi'),
-  password: z.string().min(6, 'Şifre en az 6 karakter olmalıdır'),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['user', 'admin']),
 });
 
 type User = z.infer<typeof userSchema>;
+
 type Props = {
-  setActiveView: (view: string) => void;
-  fetchUsers: () => void;
+  isModalOpen: boolean;
+  setIsModalOpen: (open: boolean) => void;
 };
-export default function AddUser({ setActiveView, fetchUsers }: Props) {
+
+export default function AddUserDialog({ isModalOpen, setIsModalOpen }: Props) {
   const [newUser, setNewUser] = useState<User>({
     id: '',
     username: '',
@@ -63,7 +65,7 @@ export default function AddUser({ setActiveView, fetchUsers }: Props) {
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      await api.post('/add_user', newUser, {});
+      await api.post('/users', newUser, {});
 
       // Display the success message
       setMessage('User added successfully!');
@@ -79,116 +81,117 @@ export default function AddUser({ setActiveView, fetchUsers }: Props) {
           role: 'user',
         });
 
-        // Fetch the updated user list
-        fetchUsers();
-
-        // Change view after showing the message
-        setActiveView('userList');
+        // Close modal after showing the message
+        setIsModalOpen(false);
       }, 1500); // Adjust the delay as needed (1500ms or 1.5 seconds)
     } catch (error) {
       setMessage('Error adding user: ' + (error as Error).message);
     }
   };
 
+  const footerContent = (
+    <div>
+      <Button
+        label='Cancel'
+        icon='pi pi-times'
+        onClick={() => setIsModalOpen(false)}
+        className='p-button-text'
+      />
+      <button type='submit' className='p-button p-button-primary'>
+        <span className='p-button-icon pi pi-check'></span>
+        <span className='p-button-label'>Add User</span>
+      </button>
+    </div>
+  );
+
   return (
-    <motion.div
-      key='addUser'
-      initial={{ opacity: 0, x: -50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 50 }}
-      className=''
+    <Dialog
+      header='Add New User'
+      visible={isModalOpen}
+      style={{ width: '50vw' }}
+      footer={footerContent}
+      onHide={() => setIsModalOpen(false)}
     >
-      <CardComponent>
-        <h2 className='text-2xl font-bold text-gray-900 mb-6'>
-          Yeni Kullanıcı Ekle
-        </h2>
-        <form onSubmit={handleAddNewUser} className='space-y-4'>
-          {['username', 'email', 'password', 'role'].map((field, index) => (
-            <motion.div
-              key={field}
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              initial='hidden'
-              animate='visible'
-              transition={{ delay: 0.1 * index, duration: 0.5 }}
+      <form onSubmit={handleAddNewUser} className='p-fluid space-y-4'>
+        {['username', 'email', 'password', 'role'].map((field, index) => (
+          <motion.div
+            key={field}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0 },
+            }}
+            initial='hidden'
+            animate='visible'
+            transition={{ delay: 0.1 * index, duration: 0.5 }}
+          >
+            <label
+              htmlFor={field}
+              className='block text-sm font-medium text-gray-700 mb-1'
             >
-              <label
-                htmlFor={field}
-                className='block text-sm font-medium text-gray-700 mb-1'
-              >
-                {field.charAt(0).toUpperCase() + field.slice(1)}
-              </label>
-              <div className='mt-1 relative rounded-md shadow-sm'>
-                {field !== 'role' ? (
-                  <>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-                      {field === 'username' && (
-                        <FaUser className='text-gray-400' />
-                      )}
-                      {field === 'email' && (
-                        <FaEnvelope className='text-gray-400' />
-                      )}
-                      {field === 'password' && (
-                        <FaLock className='text-gray-400' />
-                      )}
-                    </div>
-                    <input
-                      type={field === 'password' ? 'password' : 'text'}
-                      name={field}
-                      id={field}
-                      value={newUser[field as keyof User]}
-                      onChange={handleInputChange}
-                      className={`block w-full pl-10 pr-3 py-2 border ${
-                        errors[field as keyof User]
-                          ? 'border-red-300'
-                          : 'border-gray-300'
-                      } rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                      placeholder={`${field} giriniz`}
-                    />
-                  </>
-                ) : (
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-                      <FaUserCog className='text-gray-400' />
-                    </div>
-                    <select
-                      name={field}
-                      id={field}
-                      value={newUser.role}
-                      onChange={handleInputChange}
-                      className='block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
-                    >
-                      <option value='user'>User</option>
-                      <option value='admin'>Admin</option>
-                    </select>
+              {field.charAt(0).toUpperCase() + field.slice(1)}
+            </label>
+            <div className='mt-1 relative rounded-md shadow-sm'>
+              {field !== 'role' ? (
+                <>
+                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                    {field === 'username' && (
+                      <FaUser className='text-gray-400' />
+                    )}
+                    {field === 'email' && (
+                      <FaEnvelope className='text-gray-400' />
+                    )}
+                    {field === 'password' && (
+                      <FaLock className='text-gray-400' />
+                    )}
                   </div>
-                )}
-              </div>
-              <AnimatePresence>
-                {errors[field as keyof User] && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className='mt-2 text-sm text-red-600'
-                  >
-                    {errors[field as keyof User]}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-          <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-            <button
-              type='submit'
-              className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-            >
-              <FaPlus className='mr-2' /> Add User
-            </button>
+                  <InputText
+                    type={field === 'password' ? 'password' : 'text'}
+                    name={field}
+                    id={field}
+                    value={newUser[field as keyof User]}
+                    onChange={handleInputChange}
+                    className={`block w-full pl-10 pr-3 py-2 border ${
+                      errors[field as keyof User]
+                        ? 'border-red-300'
+                        : 'border-gray-300'
+                    } rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                    placeholder={`Enter ${field}`}
+                  />
+                </>
+              ) : (
+                <div className='relative'>
+                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                    <FaUserCog className='text-gray-400' />
+                  </div>
+                  <Dropdown
+                    value={newUser.role}
+                    options={[
+                      { label: 'User', value: 'user' },
+                      { label: 'Admin', value: 'admin' },
+                    ]}
+                    onChange={(e) => handleInputChange(e as any)}
+                    placeholder='Select a Role'
+                    name='role'
+                    id='role'
+                    className='block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
+                  />
+                </div>
+              )}
+            </div>
+            <AnimatePresence>
+              {errors[field as keyof User] && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className='mt-2 text-sm text-red-600'
+                >
+                  {errors[field as keyof User]}
+                </motion.p>
+              )}
+            </AnimatePresence>
           </motion.div>
-        </form>
+        ))}
         <AnimatePresence>
           {message && (
             <motion.div
@@ -206,7 +209,7 @@ export default function AddUser({ setActiveView, fetchUsers }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
-      </CardComponent>
-    </motion.div>
+      </form>
+    </Dialog>
   );
 }

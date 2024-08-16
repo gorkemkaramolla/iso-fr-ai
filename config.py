@@ -33,6 +33,10 @@ class XMLConfig:
         self.SOLR_URL = None
         self.MONGO_DB_URI = None
         self.MONGO_DB_NAME = None
+        self.VIDEO_FOLDER = None
+        self.BASE_RECOG_DIR = None
+        self.FACE_IMAGES_PATH = None
+        self.STREAM_QUALITY_MAPPING = {}
 
         # Extract service-specific configuration based on the provided service name
         if service_name:
@@ -48,6 +52,14 @@ class XMLConfig:
                 self.LOGGING_COLLECTION = self._safe_find_text(service_config, 'logging_collection')
                 self.TEMP_DIRECTORY = self._safe_find_text(service_config, 'temp_directory')
                 self.SOLR_URL = self._safe_find_text(service_config, 'solr_url')
+
+                # Specific to face_recognition_service
+                if service_name == 'face_recognition_service':
+                    self.VIDEO_FOLDER = self._safe_find_text(service_config, 'video_folder')
+                    self.BASE_RECOG_DIR = self._safe_find_text(service_config, 'base_recog_dir')
+                    self.FACE_IMAGES_PATH = self._safe_find_text(service_config, 'face_images_path')
+                    self._parse_stream_quality_mapping(service_config)
+
             else:
                 raise ValueError(f"Service '{service_name}' not found in configuration.")
         
@@ -63,6 +75,18 @@ class XMLConfig:
         found_element = element.find(tag)
         return found_element.text if found_element is not None else None
 
+    def _parse_stream_quality_mapping(self, service_config):
+        """Helper method to parse the stream quality mapping."""
+        quality_mapping = service_config.find('stream_quality_mapping')
+        if quality_mapping is not None:
+            for quality in quality_mapping:
+                resolution = quality.get('resolution')
+                compression = int(quality.get('compression'))
+                self.STREAM_QUALITY_MAPPING[quality.tag] = {
+                    'resolution': resolution,
+                    'compression': compression
+                }
+
     def get_jwt_expire_timedelta(self):
         return timedelta(seconds=self.JWT_EXPIRE_SECONDS)
 
@@ -72,3 +96,4 @@ class XMLConfig:
 # Example usage:
 # xml_config = XMLConfig(service_name='auth_service')
 # xml_config = XMLConfig(service_name='mongo')
+# xml_config = XMLConfig(service_name='face_recognition_service')

@@ -15,8 +15,24 @@
     <!-- Service Configuration -->
     <services>
         <auth_service port="5001" host="0.0.0.0" debug="true"/>
-        <face_recognition_service port="5002" host="0.0.0.0" debug="true"/>
-        <speaker_diarization_service port="5003" host="0.0.0.0" debug="true" device="cuda">
+        <face_recognition_service port="5002" host="0.0.0.0" debug="true">
+            <logging_collection>logs</logging_collection>
+            <temp_directory>temp</temp_directory>
+            <device>cpu</device>
+            <video_folder>./records</video_folder> <!-- New addition -->
+            <base_recog_dir>recog</base_recog_dir> <!-- New addition -->
+            <face_images_path>./face-images</face_images_path> <!-- New addition -->
+            <stream_quality_mapping> <!-- Stream Quality Mapping Configuration -->
+                <quality resolution="1920x1080" compression="20"/>
+                <balanced resolution="1280x720" compression="50"/>
+                <bandwidth resolution="1280x720" compression="75"/>
+                <mobile resolution="800x450" compression="75"/>
+            </stream_quality_mapping>
+        </face_recognition_service>
+
+
+        
+        <speaker_diarization_service port="5003" host="0.0.0.0" debug="true" device="cpu">
             <logging_collection>logs</logging_collection>
             <temp_directory>temp</temp_directory>
         </speaker_diarization_service>

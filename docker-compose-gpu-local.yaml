@@ -156,14 +156,14 @@ services:
 
   nextjs_service:
     build:
-      context: ./iso-nextjs
+      context: ./iso-electron
       dockerfile: Dockerfile
     ports:
       - '3000:3000'
     env_file:
       - .env
     volumes:
-      - ./iso-nextjs:/app # Bind mount for development
+      - ./iso-electron:/app # Bind mount for development
     networks:
       - isoai-network
     logging:

@@ -7,7 +7,7 @@ export default function TemparatureGraphs({
   host_gpu_temp,
 }: Props) {
   return (
-    <div className='w-full md:w-6/12 bg-white shadow-lg rounded-lg p-4'>
+    <div className='w-full  bg-white shadow-lg rounded-lg p-4'>
       <h2 className='text-xl font-semibold mb-4'>
         İşlemci & Ekran kartı Sıcaklıkları
       </h2>

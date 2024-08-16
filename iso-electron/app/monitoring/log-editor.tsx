@@ -151,7 +151,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
             </button>
           </div>
         </div>
-        <div className='flex-grow h-96'>
+        <div className='flex-grow h-[75vh] px-4 py-2'>
           <Editor
             height='100%'
             defaultLanguage='json'

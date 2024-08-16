@@ -6,7 +6,7 @@ type Props = {
 };
 export default function ContainerInformations({ containerInfos }: Props) {
   return (
-    <div className='bg-white shadow-lg rounded-lg p-4'>
+    <div className='bg-white shadow-lg rounded-lg  p-4'>
       <h2 className='text-xl font-semibold mb-4 flex items-center'>
         <Box className='mr-2' /> Container Bilgileri
       </h2>

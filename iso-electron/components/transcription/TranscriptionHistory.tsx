@@ -1,9 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import createApi from '@/utils/axios_instance';
 import { formatDate } from '@/utils/formatDate';
 import ChatSideMenuSkeleton from '@/components/ui/transcription-history-skeleton';
+import CalendarComponent from '@/components/ui/calendar-component'; // Adjust the import path accordingly
+import { Nullable } from 'primereact/ts-helpers';
 
 type Transcript = {
   transcription_id: string;
@@ -21,7 +23,9 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   const [responses, setResponses] = useState<Transcript[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [loading, setLoading] = useState(true);
-  const itemsPerPage = 8;
+  const [itemsPerPage, setItemsPerPage] = useState<number>(8);
+  const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const getTranscriptions = async () => {
     setLoading(true);
@@ -34,6 +38,12 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setResponses(sortedData);
+
+      // Set the latest available date as the default selected date
+      if (sortedData.length > 0) {
+        setSelectedDate(new Date(sortedData[0].created_at));
+      }
+
       if (sortedData.length < 8) {
         setCurrentPage(1);
       }
@@ -45,38 +55,65 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const lastPage = localStorage.getItem('currentTranscriptionPage');
-      if (lastPage) {
-        setCurrentPage(Number(lastPage) || 1);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
     getTranscriptions();
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('currentTranscriptionPage', currentPage.toString());
-    }
-  }, [currentPage]);
+    const calculateItemsPerPage = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const newItemsPerPage = Math.floor(containerWidth / 100) * 2;
+        setItemsPerPage(Math.max(1, newItemsPerPage));
+      }
+    };
+
+    calculateItemsPerPage();
+    window.addEventListener('resize', calculateItemsPerPage);
+
+    return () => {
+      window.removeEventListener('resize', calculateItemsPerPage);
+    };
+  }, []);
+
+  // Extract unique available dates from responses
+  const availableDates = Array.from(
+    new Set(responses.map((response) => new Date(response.created_at)))
+  ).sort((a, b) => a.getTime() - b.getTime());
+
+  const filteredResponses = selectedDate
+    ? responses.filter(
+        (response) =>
+          new Date(response.created_at).toDateString() ===
+          selectedDate.toDateString()
+      )
+    : responses;
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = responses.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = filteredResponses.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
-  const totalPages = Math.ceil(responses.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
 
   return (
-    <div className='h-full sticky top-0 border-gray-200 overflow-y-auto'>
+    <div
+      className='h-full sticky top-0 border-gray-200 overflow-y-auto'
+      ref={containerRef}
+    >
       {loading ? (
         <ChatSideMenuSkeleton />
       ) : (
         <div className='py-4 px-4'>
           <h2 className='text-lg font-semibold mb-4 text-gray-700'>Geçmiş</h2>
-          <ul className='space-y-2'>
+          <CalendarComponent
+            localStorageSaveName='transcriptionFilter'
+            availableDates={availableDates}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+          />
+          <ul className='space-y-2 mt-4'>
             {currentItems.length === 0 ? (
               <p className='text-center text-sm text-gray-500'>
                 Henüz kayıt yok.
@@ -88,7 +125,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                     <div
                       className={`p-2 rounded transition-colors ${
                         response.transcription_id === activePageId
-                          ? 'bg-indigo-500 text-gray-100'
+                          ? 'bg-primary text-gray-100'
                           : 'hover:bg-indigo-100'
                       }`}
                     >

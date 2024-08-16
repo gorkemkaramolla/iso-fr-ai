@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Transcript } from '@/types';
 import createApi from '@/utils/axios_instance';
+import TranscriptionSkeleton from '@/components/ui/transcript-skeleton';
 
 // Import the ClientTranscription dynamically with no SSR
 const ClientTranscription = dynamic(() => import('./transcription-comp'), {
@@ -46,7 +47,7 @@ function TranscriptionContent() {
   }, [id]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <TranscriptionSkeleton />;
   }
 
   if (error) {

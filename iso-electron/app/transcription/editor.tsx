@@ -9,14 +9,15 @@ import React, {
 } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlignStartHorizontal, AlignStartVertical, User } from 'lucide-react';
-// import SegmentMenu from './segment-menu';
-const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
-
+import dynamic from 'next/dynamic';
 import Card from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from 'primereact/button';
+import { Dialog } from 'primereact/dialog';
+import { InputText } from 'primereact/inputtext';
 import { Segment } from '@/types';
-import dynamic from 'next/dynamic';
+
+const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
 
 interface TranscriptSegment {
   segment_id: string;
@@ -75,7 +76,11 @@ const TextEditor: React.FC<TextEditorProps> = ({
     segmentId: null,
   });
 
-  const [viewMode, setViewMode] = useState<'inline' | 'list'>('inline');
+  const [viewMode, setViewMode] = useState<'inline' | 'list'>(
+    (typeof window !== 'undefined' &&
+      (localStorage.getItem('viewMode') as 'inline' | 'list')) ||
+      'inline'
+  );
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
   const [isTranscriptionNameEditing, setIsTranscriptionNameEditing] =
     useState(false);
@@ -86,6 +91,11 @@ const TextEditor: React.FC<TextEditorProps> = ({
     transcription?.segments || []
   );
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [dialogData, setDialogData] = useState<{
+    oldName: string;
+    newName: string;
+  }>({ oldName: '', newName: '' });
 
   const segmentRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -94,6 +104,10 @@ const TextEditor: React.FC<TextEditorProps> = ({
     setSegments(transcription?.segments || []);
     updateUniqueSpeakers(transcription?.segments || []);
   }, [transcription]);
+
+  useEffect(() => {
+    localStorage.setItem('viewMode', viewMode);
+  }, [viewMode]);
 
   const updateUniqueSpeakers = (segments: TranscriptSegment[]) => {
     const speakers = Array.from(
@@ -111,18 +125,15 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   const handleTranscriptionNameChange = () => {
     setIsTranscriptionNameEditing(true);
-
     if (typeof document !== 'undefined' && editingRef.current) {
       setTimeout(() => {
         const el = editingRef.current;
         if (el) {
           el.focus();
-
-          const range = document.createRange(); // Safe use of document
+          const range = document.createRange();
           range.selectNodeContents(el);
           range.collapse(false);
-
-          const selection = window.getSelection(); // Safe use of window
+          const selection = window.getSelection();
           if (selection) {
             selection.removeAllRanges();
             selection.addRange(range);
@@ -133,15 +144,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
   };
 
   const handleSpeakerClick = (speaker: string) => {
-    const newName = prompt(`${speaker} adlı konuşmacıyı değiştir:`);
-    if (newName && newName.trim() !== '') {
-      const confirmChange = window.confirm(
-        `"${speaker}" adlı konuşmacının tüm segmentlerini "${newName}" olarak değiştirmeyi onaylayın`
-      );
-      if (confirmChange) {
-        renameAllSegments(speaker, newName);
-      }
-    }
+    setDialogData({ oldName: speaker, newName: '' });
+    setShowDialog(true);
+  };
+
+  const confirmChangeSpeakerName = () => {
+    renameAllSegments(dialogData.oldName, dialogData.newName);
+    setShowDialog(false);
   };
 
   const renameAllSegments = (oldName: string, newName: string) => {
@@ -162,16 +171,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
         (segment) =>
           currentTime >= segment.start_time && currentTime <= segment.end_time
       );
-
       if (activeSegment && segmentRefs.current[activeSegment.segment_id]) {
         const element = segmentRefs.current[activeSegment.segment_id];
         const container = transcriptionRef.current;
-
         if (element && container) {
           const elementRect = element.getBoundingClientRect();
           const containerRect = container.getBoundingClientRect();
           const offset = containerRect.height / 2 - elementRect.height / 2;
-
           if (
             elementRect.top < containerRect.top ||
             elementRect.bottom > containerRect.bottom
@@ -219,24 +225,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
         (s) => s.segment_id === menuState.segmentId
       );
       if (segment) {
-        const oldName = segment.speaker; // Get the old speaker name
-        const newSpeakerName = prompt('Edit Speaker Name:', oldName);
-        if (newSpeakerName && newSpeakerName.trim() !== '') {
-          handleSpeakerNameChange(segment.segment_id, oldName, newSpeakerName);
-
-          // Update the local state immediately
-          setSegments((prevSegments) =>
-            prevSegments.map((s) =>
-              s.segment_id === segment.segment_id
-                ? { ...s, speaker: newSpeakerName }
-                : s
-            )
-          );
-        }
+        const oldName = segment.speaker;
+        setDialogData({ oldName, newName: '' });
+        setShowDialog(true);
       }
     }
     closeMenu();
-  }, [menuState.segmentId, segments, handleSpeakerNameChange, closeMenu]);
+  }, [menuState.segmentId, segments, closeMenu]);
 
   const handleCopySegment = useCallback(() => {
     const segment = segments.find((s) => s.segment_id === menuState.segmentId);
@@ -283,8 +278,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
           className='p-button-text  p-button-plain'
         />
       </Link>
-      <div className='flex items-center justify-between mb-4'>
-        <div className='flex items-center space-x-4 w-10/12  px-4'>
+      <div className='flex-col-reverse flex md:flex-row items-start md:items-center md:justify-between mb-4'>
+        <div className='flex md:items-center  space-x-4 w-10/12  px-4'>
           {isTranscriptionNameEditing ? (
             <textarea
               ref={editingRef}
@@ -304,7 +299,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
           )}
         </div>
 
-        <div className='flex space-x-2'>
+        <div className='flex md:flex-row self-end flex-row-reverse space-x-2'>
           <div className='dropdown dropdown-end'>
             <label tabIndex={0} className='btn btn-primary btn-sm'>
               Konuşmacılar
@@ -341,7 +336,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
       <div
         ref={transcriptionRef}
-        className=' rounded-box p-4 overflow-y-auto h-[600px]'
+        className='rounded-box p-4 overflow-y-auto h-[600px]'
       >
         <AnimatePresence>
           {segments.map((segment, index) => {
@@ -398,6 +393,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
           })}
         </AnimatePresence>
       </div>
+
       <SegmentMenu
         isOpen={menuState.isOpen}
         position={menuState.position}
@@ -406,6 +402,47 @@ const TextEditor: React.FC<TextEditorProps> = ({
         onEdit={handleEditSegment}
         onCopy={handleCopySegment}
       />
+
+      {/* PrimeReact Dialog for speaker name change */}
+      <Dialog
+        visible={showDialog}
+        style={{ width: '50vw' }}
+        header='İsim değişikliği onayı'
+        modal
+        footer={
+          <div>
+            <Button
+              label='Cancel'
+              icon='pi pi-times'
+              onClick={() => setShowDialog(false)}
+              className='p-button-text'
+            />
+            <Button
+              label='Confirm'
+              icon='pi pi-check'
+              onClick={confirmChangeSpeakerName}
+              autoFocus
+            />
+          </div>
+        }
+        onHide={() => setShowDialog(false)}
+      >
+        <div>
+          <p>
+            Seçilen
+            <strong>{' ' + dialogData.oldName}</strong> adlı kullanıcıya ait tüm
+            konuşma alt segmentlerini değiştirmek üzeresiniz
+          </p>
+          <InputText
+            value={dialogData.newName}
+            placeholder='Yeni isim'
+            onChange={(e) =>
+              setDialogData({ ...dialogData, newName: e.target.value })
+            }
+            className='w-full mt-2'
+          />
+        </div>
+      </Dialog>
     </Card>
   );
 };

@@ -80,9 +80,13 @@ const RecognizedFacesTable: React.FC = () => {
   const [selectedFaces, setSelectedFaces] = useState<RecognizedFace[] | null>(
     null
   );
-  const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(
-    new Date(localStorage.getItem('selectedDate') || '')
-  ); // State for selected date
+  const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(() => {
+    if (typeof window !== 'undefined') {
+      const storedDate = localStorage.getItem('selectedDate');
+      return storedDate ? new Date(storedDate) : null;
+    }
+    return null;
+  });
   const dt = useRef<DataTable<RecognizedFace[]>>(null);
   // const [loading, setLoading] = useState<boolean>(true);
   const exportItemsMenu = useRef<Menu>(null);
@@ -231,7 +235,7 @@ const RecognizedFacesTable: React.FC = () => {
             <Button
               type='button'
               label='Undo'
-              severity='contrast'
+              severity='info'
               className='p-button-sm'
               onClick={undoDeletion}
             />

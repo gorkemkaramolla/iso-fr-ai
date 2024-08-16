@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Toast } from 'primereact/toast';
 import {
@@ -38,7 +39,6 @@ export default function FileUploader({
     for (let i = 0; i < files.length; i++) {
       files[i].objectURL = URL.createObjectURL(files[i]);
       _totalSize += files[i].size || 0;
-      // Immediately call the parent prop function on file selection
       onFileUpload(files[i]);
     }
 
@@ -74,12 +74,12 @@ export default function FileUploader({
       >
         {chooseButton}
         {cancelButton}
-        <div className='flex align-items-center gap-3 ml-auto'>
-          <span>{formattedValue} / 1 MB</span>
+        <div className='flex align-items-center gap-2 ml-auto'>
+          <span style={{ fontSize: '0.8em' }}>{formattedValue} / 1 MB</span>
           <ProgressBar
             value={value}
             showValue={false}
-            style={{ width: '10rem', height: '12px' }}
+            style={{ width: '8rem', height: '8px' }}
           ></ProgressBar>
         </div>
       </div>
@@ -89,16 +89,19 @@ export default function FileUploader({
   const itemTemplate = (inFile: object, props: ItemTemplateOptions) => {
     const file = inFile as ExtendedFile;
     return (
-      <div className='!flex items-center !justify-center'>
-        <div className='flex align-items-center ' style={{ width: '40%' }}>
+      <div className='flex '>
+        <div
+          className='flex align-items-center justify-end '
+          style={{ width: '30%' }}
+        >
           <Image
             alt={file.name}
             role='presentation'
             src={file.objectURL}
-            height={100}
-            width={100}
+            height={60}
+            width={60}
           />
-          <span className='flex flex-column text-left ml-3'>
+          <span className='flex flex-column text-left ml-2'>
             {file.name}
             <small>{new Date().toLocaleDateString()}</small>
           </span>
@@ -106,12 +109,13 @@ export default function FileUploader({
         <Tag
           value={props.formatSize}
           severity='warning'
-          className='px-3 py-2'
+          className='px-2 py-1 text-xs'
         />
         <Button
           type='button'
           icon='pi pi-times'
           className='p-button-outlined p-button-rounded p-button-danger ml-auto'
+          style={{ width: '2rem', height: '2rem' }}
           onClick={() => onTemplateRemove(file, props.onRemove)}
         />
       </div>
@@ -120,17 +124,17 @@ export default function FileUploader({
 
   const emptyTemplate = () => {
     return (
-      <div className='flex flex-col  items-center'>
+      <div className='flex flex-col items-center'>
         <span
-          style={{ fontSize: '1.2em', color: 'var(--text-color-secondary)' }}
-          className='my-5'
+          style={{ fontSize: '1em', color: 'var(--text-color-secondary)' }}
+          className='my-3'
         >
           Drag and Drop Image Here
         </span>
         <i
-          className='pi pi-image mt-3 p-8'
+          className='pi pi-image mt-3 p-4'
           style={{
-            fontSize: '7.8em',
+            fontSize: '4em',
             borderRadius: '50%',
             backgroundColor: 'var(--surface-b)',
             color: 'var(--surface-d)',
@@ -158,7 +162,7 @@ export default function FileUploader({
   }
 
   return (
-    <div className=''>
+    <div>
       <Toast ref={toast}></Toast>
       <Tooltip target='.custom-choose-btn' content='Choose' position='bottom' />
       <Tooltip target='.custom-cancel-btn' content='Clear' position='bottom' />

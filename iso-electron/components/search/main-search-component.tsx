@@ -418,7 +418,7 @@ const SearchComponent: React.FC = () => {
           </h2>
           <div className='bg-white shadow-md rounded-lg overflow-hidden divide-y divide-gray-200'>
             {searchResults.map((result) => (
-              <Link key={result._id} href={`/profiles/${result._id}`}>
+              <Link key={result._id} href={`/profiles?id=${result._id}`}>
                 <div className='p-6 hover:bg-gray-50 transition duration-150 ease-in-out'>
                   <div className='flex items-center mb-4'>
                     <User className='text-blue-500 mr-2 w-5 h-5' />

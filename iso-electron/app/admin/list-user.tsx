@@ -1,15 +1,13 @@
-// components/UserList.tsx
-'use client';
-
 import React from 'react';
 import { FaTrash, FaEdit } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-import createApi from '@/utils/axios_instance';
 import { User } from '@/types';
+import createApi from '@/utils/axios_instance';
+
 interface UserListProps {
   users: User[];
   fetchUsers: () => void;
-  openModal: (user: User) => void;
+  openModal: (user: User) => void; // This prop opens the modal with the user's data
 }
 
 export default function UserList({

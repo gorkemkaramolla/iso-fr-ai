@@ -3,7 +3,7 @@ FROM node:latest
 
 # Set working directory
 WORKDIR /app
-
+ENV HOST=0.0.0.0
 # Copy package.json and package-lock.json
 COPY package*.json ./
 

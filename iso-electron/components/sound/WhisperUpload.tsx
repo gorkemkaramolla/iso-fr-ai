@@ -154,7 +154,11 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
                     </button>
                   </div>
                   <div className='mt-4'>
-                    <WaveAudio audio_name={URL.createObjectURL(file)} />
+                    <WaveAudio
+                      viewMode={0}
+                      audio_name={URL.createObjectURL(file)}
+                      isVisible={true}
+                    />
                   </div>
                 </div>
               ) : (

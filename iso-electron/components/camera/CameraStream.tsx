@@ -73,50 +73,51 @@ const CameraStream: React.FC<CameraStreamProps> = ({
             : videoDevices[localCameraId || 0].deviceId;
           setDeviceId(selectedDeviceId);
 
-          let resolution;
-          let compression;
-          switch (selectedQuality) {
-            case 'Quality':
-              resolution = { width: 1920, height: 1080 };
-              compression = 0.99;
-              break;
-            case 'Balanced':
-              resolution = { width: 1280, height: 720 };
-              compression = 0.5;
-              break;
-            case 'Bandwidth':
-              resolution = { width: 1280, height: 720 };
-              compression = 0.25;
-              break;
-            case 'Mobile':
-              resolution = { width: 800, height: 450 };
-              compression = 0.25;
-              break;
-            default:
-              resolution = { width: 1280, height: 720 };
-              compression = 0.5;
-          }
+          // let resolution;
+          // let compression;
+          // switch (selectedQuality) {
+          //   case 'Quality':
+          //     resolution = { width: 1920, height: 1080 };
+          //     compression = 0.9;
+          //     break;
+          //   case 'Balanced':
+          //     resolution = { width: 1280, height: 720 };
+          //     compression = 0.5;
+          //     break;
+          //   case 'Bandwidth':
+          //     resolution = { width: 1280, height: 720 };
+          //     compression = 0.25;
+          //     break;
+          //   case 'Mobile':
+          //     resolution = { width: 800, height: 450 };
+          //     compression = 0.25;
+          //     break;
+          //   default:
+          //     resolution = { width: 1280, height: 720 };
+          //     compression = 0.5;
+          // }
 
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
               deviceId: selectedDeviceId
                 ? { exact: selectedDeviceId }
                 : undefined,
-              width: resolution.width,
-              height: resolution.height,
+              // width: resolution.width,
+              // height: resolution.height,
             },
           });
 
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
           }
-          sendVideoFrames(compression);
+          sendVideoFrames();
+          // sendVideoFrames(compression);
         } catch (error) {
           console.error('Error accessing camera:', error);
         }
       };
 
-      const sendVideoFrames = (compression: number) => {
+      const sendVideoFrames = (compression?: number) => {
         const canvas = canvasRef.current;
         const context = canvas?.getContext('2d');
         const video = videoRef.current;

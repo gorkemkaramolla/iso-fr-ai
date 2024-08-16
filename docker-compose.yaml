@@ -204,7 +204,7 @@ services:
       - .env
     volumes:
       - ./iso-fr:/app # Bind mount for development
-      # - face_recognition_data:/app/data
+      - face_recognition_data:/app/data
       - ./config.xml:/app/config.xml
       - ./config.py:/app/config.py
       # - ./iso-fr/services/models/buffalo_l:/app/services/models/buffalo_l
@@ -276,7 +276,7 @@ services:
 volumes:
   mongo_data:
   solr_data:
-  # face_recognition_data:
+  face_recognition_data:
   large_v3_data:
   personel_images:
 

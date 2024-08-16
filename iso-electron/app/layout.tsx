@@ -1,17 +1,15 @@
-'use client';
 import type { Metadata } from 'next';
 import './globals.css';
-import { PrimeReactProvider } from 'primereact/api';
 import Provider from '@/components/providers';
 import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
 import 'primereact/resources/primereact.min.css'; //core css
 import 'primeicons/primeicons.css'; //icons
 import Link from 'next/link';
 
-// export const metadata: Metadata = {
-//   title: 'ISOAI',
-//   description: 'ISOAI Electron App',
-// };
+export const metadata: Metadata = {
+  title: 'ISO-AI',
+  description: 'ISOAI Electron App',
+};
 
 export default function RootLayout({
   children,

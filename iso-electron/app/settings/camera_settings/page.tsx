@@ -154,7 +154,7 @@ const CameraManager: React.FC = () => {
       });
   };
   return (
-    <>
+    <div className=' container mx-auto'>
       {loading && (
         <div className='flex justify-center items-center h-screen'>
           <LogoSpinner />
@@ -293,7 +293,7 @@ const CameraManager: React.FC = () => {
         </>
       )}
       <ConfirmDialog />
-    </>
+    </div>
   );
 };
 

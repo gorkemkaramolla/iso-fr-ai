@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useState } from 'react';
 import NavigationBar from './ui/NavigationBar';
 import { CookiesProvider, useCookies } from 'react-cookie';
@@ -8,6 +9,7 @@ import { handleLogout } from '@/utils/logout';
 import { Button } from 'primereact/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { NextUIProvider } from '@nextui-org/react';
 
 interface ProviderProps {
   children: React.ReactNode;
@@ -77,23 +79,25 @@ const Provider: React.FC<ProviderProps> = ({ children }) => {
 
   return (
     <CookiesProvider>
-      <PrimeReactProvider
-        value={{
-          ripple: true,
-        }}
-      >
-        {isHydrated && accessToken && <NavigationBar />}
+      <NextUIProvider>
+        <PrimeReactProvider
+          value={{
+            ripple: true,
+          }}
+        >
+          {isHydrated && accessToken && <NavigationBar />}
 
-        {pathname !== '/login' && pathname !== '/' && isElectron() && (
-          <Link href={trimUrl(pathname!)} passHref>
-            <Button
-              icon={<ArrowLeft />}
-              className='m-2 p-button-text absolute top-15 p-button-plain'
-            />
-          </Link>
-        )}
-        {children}
-      </PrimeReactProvider>
+          {pathname !== '/login' && pathname !== '/' && isElectron() && (
+            <Link href={trimUrl(pathname!)} passHref>
+              <Button
+                icon={<ArrowLeft />}
+                className='m-2 p-button-text absolute top-15 p-button-plain'
+              />
+            </Link>
+          )}
+          {children}
+        </PrimeReactProvider>
+      </NextUIProvider>
     </CookiesProvider>
   );
 };

@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+const { nextui } = require('@nextui-org/react');
 
 const config: Config = {
   content: [
@@ -6,6 +7,7 @@ const config: Config = {
     './components/**/*.{js,ts,jsx,tsx,mdx}', // Include all files in components directory
     './app/**/*.{js,ts,jsx,tsx,mdx}', // Include all files in app directory
     './node_modules/primereact/**/*.{js,ts,jsx,tsx}', // Include PrimeReact components
+    './node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -22,6 +24,7 @@ const config: Config = {
     require('@tailwindcss/typography'),
     require('daisyui'),
     require('tailwindcss-animate'),
+    nextui(),
   ],
 };
 

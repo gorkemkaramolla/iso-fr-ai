@@ -38,15 +38,8 @@ interface UsageChartProps {
 const UsageChart: React.FC<UsageChartProps> = ({ cpuData, gpuData }) => {
   // Function to create gradient fill
   const createGradient = (
-    ctx: {
-      createLinearGradient: (
-        arg0: number,
-        arg1: any,
-        arg2: number,
-        arg3: any
-      ) => any;
-    },
-    chartArea: { bottom: any; top: any },
+    ctx: CanvasRenderingContext2D,
+    chartArea: { bottom: number; top: number },
     colorStart: string,
     colorEnd: string
   ) => {
@@ -115,6 +108,7 @@ const UsageChart: React.FC<UsageChartProps> = ({ cpuData, gpuData }) => {
 
   const options: ChartOptions<'line'> = {
     responsive: true,
+    maintainAspectRatio: false, // Disable maintaining aspect ratio to allow the chart to fill the container
     plugins: {
       legend: {
         display: true,
@@ -157,7 +151,7 @@ const UsageChart: React.FC<UsageChartProps> = ({ cpuData, gpuData }) => {
   };
 
   return (
-    <div className='relative w-full h-full'>
+    <div className='w-full' style={{ height: '320px' }}>
       <Line data={chartData} options={options} />
     </div>
   );

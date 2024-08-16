@@ -194,31 +194,33 @@ services:
       - solr
       - fluentbit
 
-  # face_recognition_service:
-  #   build:
-  #     context: ./iso-fr
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - '5002:5002'
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - ./iso-fr:/app # Bind mount for development
-  #     - face_recognition_data:/app/data
-  #     - ./config.xml:/app/config.xml
-  #     - ./config.py:/app/config.py
-  #     - ./iso-fr/services/models/buffalo_l:/app/services/models/buffalo_l
-  #   networks:
-  #     - isoai-network
-  #   logging:
-  #     driver: 'fluentd'
-  #     options:
-  #       fluentd-address: localhost:24224
-  #       tag: face_recognition_service
-  #   depends_on:
-  #     - mongo
-  #     - solr
-  #     - fluentbit
+  face_recognition_service:
+    build:
+      context: ./iso-fr
+      dockerfile: Dockerfile
+    ports:
+      - '5002:5002'
+    env_file:
+      - .env
+    volumes:
+      - ./iso-fr:/app # Bind mount for development
+      # - face_recognition_data:/app/data
+      - ./config.xml:/app/config.xml
+      - ./config.py:/app/config.py
+      # - ./iso-fr/services/models/buffalo_l:/app/services/models/buffalo_l
+      - ~/.insightface/models/buffalo_l:/app/services/models/buffalo_l
+    networks:
+      - isoai-network
+    logging:
+      driver: 'fluentd'
+      options:
+        fluentd-address: localhost:24224
+        tag: face_recognition_service
+    depends_on:
+      - utils_service
+      - mongo
+      - solr
+      - fluentbit
 
   speaker_diarization_service:
     build:
@@ -232,7 +234,7 @@ services:
       - ./iso-diarize:/app # Bind mount for development
       - ./config.xml:/app/config.xml
       - ./config.py:/app/config.py
-      - large_v3_data:/app/services/large-v3  # Add this volume for large-v3 data
+      - large_v3_data:/app/services/large-v3 # Add this volume for large-v3 data
     networks:
       - isoai-network
     logging:
@@ -244,7 +246,6 @@ services:
       - mongo
       - solr
       - fluentbit
-
 
   utils_service:
     build:

@@ -15,7 +15,7 @@ from services.camera_processor.attribute import Attribute
 from services.camera_processor.emotion import EmotionDetector
 from socketio_instance import notify_new_face
 import subprocess
-
+# import requests
 class Stream:
     def __init__(self, device: str = "cuda") -> None:
         self.device = torch.device(device)
@@ -65,6 +65,28 @@ class Stream:
         self.video_writer = None
     
     def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, np.ndarray]:
+        
+        import json
+        from urllib.request import urlopen
+        from urllib.error import URLError, HTTPError
+        
+        def fetch_personnel_records():
+            url = "http://utils_service:5004/personel"
+            try:
+                with urlopen(url) as response:
+                    if response.status != 200:
+                        raise HTTPError(url, response.status, response.reason, response.headers, None)
+                    data = response.read().decode('utf-8')
+                    personnel_records = json.loads(data)
+                    print("Personnel Records:")
+                    for record in personnel_records:
+                        print("---------Personnel Record---------")
+                        print(record)
+            except (URLError, HTTPError) as e:
+                print(f"An error occurred: {e}")
+        
+        # Call the function
+        fetch_personnel_records()
         database: Dict[str, np.ndarray] = {}
         for filename in os.listdir(image_folder):
             if filename.endswith((".jpg", ".jpeg", ".png")):

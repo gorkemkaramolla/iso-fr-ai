@@ -346,6 +346,7 @@ export default function AddPersonel() {
           <div className='mt-6 flex justify-end'>
             <Button
               onClick={handleSubmit}
+              // onClick={() => alert(process.env.NEXT_PUBLIC_UTILS_URL)}
               label='Yeni Personel Ekle'
               icon='pi pi-user-plus'
               className='p-button-md bg-indigo-600 border-indigo-600 hover:bg-indigo-700'

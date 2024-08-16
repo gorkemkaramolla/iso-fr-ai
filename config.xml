@@ -19,7 +19,7 @@
             <logging_collection>logs</logging_collection>
             <camera_collection>cameras</camera_collection>
             <temp_directory>temp</temp_directory>
-            <device>cpu</device>
+            <device>cuda</device>
             <video_folder>./records</video_folder> <!-- New addition -->
             <base_recog_dir>recog</base_recog_dir> <!-- New addition -->
             <face_images_path>./face-images</face_images_path> <!-- New addition -->

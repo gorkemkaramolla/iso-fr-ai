@@ -253,20 +253,20 @@ import {
   SortDescriptor,
   User,
 } from '@nextui-org/react';
-import { PlusIcon } from './PlusIcon';
-import { VerticalDotsIcon } from './VerticalDotsIcon';
-import { ChevronDownIcon } from './ChevronDownIcon';
-import { SearchIcon } from './SearchIcon';
-import { columns } from './data'; // Assuming this remains the same
-import { capitalize } from './utils';
-import { Personel } from '@/types'; // Import your Personel type
+import { PlusIcon } from '../../../components/ui/PlusIcon';
+import { VerticalDotsIcon } from '@/components/ui/VerticalDotsIcon';
+import { ChevronDownIcon } from '../../../components/ui/ChevronDownIcon';
+import { SearchIcon } from '../../../components/ui/SearchIcon';
+import { columns } from './data';
+import { capitalize } from '../../../components/ui/utils';
+import { Personel } from '@/types';
 import { useRouter } from 'next/navigation';
 import { Toast } from 'primereact/toast';
-import { Dialog } from 'primereact/dialog';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { ExternalLink, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import AddUser from '@/app/admin/add-user';
 import AddPersonelDialog from './add-user';
+import createApi from '@/utils/axios_instance';
 
 const INITIAL_VISIBLE_COLUMNS = [
   'name',
@@ -333,44 +333,57 @@ export default function App() {
     }
   };
 
+  const confirmDelete = () => {
+    confirmDialog({
+      message: `Seçilen ${Array.from(
+        selectedKeys
+      )} id'li personeli silmek istediğinizden emin misiniz?`,
+      header: 'Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: deletePersonel,
+      reject: () => {
+        toastRef.current?.show({
+          severity: 'info',
+          summary: 'Cancelled',
+          detail: 'Silme işlemi iptal edildi.',
+        });
+      },
+    });
+  };
+
   const deletePersonel = async () => {
     const selectedIds = Array.from(selectedKeys);
+    const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/delete`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ids: selectedIds }),
-        }
-      );
+      const deletePromises = selectedIds.map(async (id) => {
+        const response = await api.delete(`/personel/${id}`);
+        return response.status === 200; // Check if the response was successful
+      });
 
-      if (response.ok) {
-        setPersonel((prevPersonel) =>
-          prevPersonel.filter((person) => !selectedIds.includes(person._id))
-        );
+      const results = await Promise.all(deletePromises);
+
+      const allSuccessful = results.every((result) => result === true);
+
+      if (allSuccessful) {
         toastRef.current?.show({
           severity: 'success',
           summary: 'Success',
-          detail: 'Selected personnel deleted successfully.',
+          detail: 'Seçilen tüm kullanıcılar başarıyla silindi.',
         });
-        setSelectedKeys(new Set([])); // Clear selection after deletion
+        fetchPersonel(); // Refresh the personnel list after successful deletion
       } else {
-        const errorData = await response.json();
         toastRef.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: `Failed to delete personnel: ${errorData.message}`,
+          severity: 'warn',
+          summary: 'Partial Success',
+          detail: 'Seçilen personelin bazıları silinemedi.',
         });
       }
     } catch (error) {
       toastRef.current?.show({
         severity: 'error',
         summary: 'Error',
-        detail: 'An error occurred while deleting personnel.',
+        detail: 'Bir hata oluştu. Lütfen tekrar deneyin.',
       });
     }
   };
@@ -411,18 +424,10 @@ export default function App() {
                     className='flex justify-between w-full'
                     href={`/profiles?id=${person._id}`}
                   >
-                    <span>Profilini Görüntüle</span>
+                    <span>Profili Görüntüle</span>
                     <ExternalLink />
                   </Link>
                 </DropdownItem>
-                {/* <DropdownItem
-                  onPress={() => {
-                    setSelectedKeys((prev) => new Set(prev).add(person._id));
-                    deletePersonel();
-                  }}
-                >
-                  <span>Kullanıcıyı Sil</span> <Trash2 />
-                </DropdownItem> */}
               </DropdownMenu>
             </Dropdown>
           </div>
@@ -469,7 +474,7 @@ export default function App() {
       <Input
         isClearable
         className='w-full sm:max-w-[44%]'
-        placeholder='Search by name, lastname, or title...'
+        placeholder='İsim, Soyisim, E-posta, Telefon...'
         startContent={<SearchIcon />}
         value={filterValue}
         onClear={() => setFilterValue('')}
@@ -482,7 +487,7 @@ export default function App() {
               endContent={<ChevronDownIcon className='text-small' />}
               variant='flat'
             >
-              Columns
+              Sütünları Göster
             </Button>
           </DropdownTrigger>
           <DropdownMenu
@@ -507,11 +512,12 @@ export default function App() {
           color='primary'
           endContent={<PlusIcon />}
         >
-          Add New
+          Yeni Personel Ekle
         </Button>
         {selectedKeys !== 'all' && selectedKeys?.size > 0 && (
-          <Button color='danger' onPress={deletePersonel}>
-            Delete Selected <Trash2 className='w-5' />
+          <Button color='danger' onPress={confirmDelete}>
+            Seçilenleri Sil
+            <Trash2 className='w-5' />
           </Button>
         )}
       </div>
@@ -562,6 +568,9 @@ export default function App() {
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
+
+      <Toast ref={toastRef} />
+      <ConfirmDialog />
 
       <Table
         aria-label='Example table with custom cells, pagination and sorting'

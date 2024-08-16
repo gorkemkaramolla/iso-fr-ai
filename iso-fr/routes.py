@@ -138,12 +138,7 @@ def stream(stream_id):
     parsed_url = urlparse(camera)
     query_params = parse_qs(parsed_url.query)
 
-    quality_mapping = xml_config.get('STREAM_QUALITY_MAPPING', {
-        "Quality": {"resolution": "1920x1080", "compression": "20"},
-        "Balanced": {"resolution": "1280x720", "compression": "50"},
-        "Bandwidth": {"resolution": "1280x720", "compression": "75"},
-        "Mobile": {"resolution": "800x450", "compression": "75"},
-    })
+    quality_mapping = xml_config.STREAM_QUALITY_MAPPING
 
     if quality in quality_mapping:
         query_params["resolution"] = [quality_mapping[quality]["resolution"]]
@@ -275,11 +270,11 @@ def update_recog_name(id):
         return jsonify({"error": f"No logs found for ID: {id}"}), 404
 
     # Determine the correct source and destination folder paths
-    base_dir = xml_config.get('BASE_RECOG_DIR', 'recog')
+    base_dir = xml_config.BASE_RECOG_DIR
     unknown_faces_path = os.path.join(base_dir, 'unknown_faces', id)
     known_faces_old_path = os.path.join(base_dir, 'known_faces', id)
     known_faces_new_path = os.path.join(base_dir, 'known_faces', new_name)
-    face_images_path = xml_config.get('FACE_IMAGES_PATH', './face-images')
+    face_images_path = xml_config.FACE_IMAGES_PATH
 
     # Determine the source path (either unknown_faces or known_faces)
     src_path = unknown_faces_path if os.path.exists(unknown_faces_path) else known_faces_old_path
@@ -362,7 +357,7 @@ def get_image(image_path):
 @camera_bp.route("/faces/<image_name>", methods=["GET"])
 def get_face_image(image_name):
     # Define the directory to search in and the possible extensions
-    search_dir = xml_config.get('FACE_IMAGES_PATH', './face-images')
+    search_dir = xml_config.FACE_IMAGES_PATH
     extensions = ['jpg', 'jpeg', 'png']
     
     # Search for files matching the image name with any of the extensions
@@ -385,7 +380,7 @@ jwt = JWTManager(app)
 socketio.init_app(app, cors_allowed_origins=xml_config.CORS_ORIGINS)
 
 if __name__ == "__main__":
-    socketio.run(app, host=xml_config.get('HOST', '0.0.0.0'), port=int(xml_config.get('PORT', 5000)))
+    socketio.run(app, host=xml_config.HOST, port=int(xml_config.PORT))
 
 
 

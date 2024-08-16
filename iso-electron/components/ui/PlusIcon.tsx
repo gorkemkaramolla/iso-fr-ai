@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconSvgProps } from './types';
+import { IconSvgProps } from '../../app/settings/personel_settings/types';
 
 export const PlusIcon = ({
   size = 24,

@@ -199,7 +199,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
           </Panel>
           <PanelResizeHandle
             style={{ zIndex: 100 }}
-            className='cursor-col-resize w-[2px] max-h-[90vh] bg-gray-300 relative md:flex hidden'
+            className='cursor-col-resize w-[2px] max-h-[90vh] bg-gray-200 relative md:flex hidden'
           >
             <div
               style={{ zIndex: 100 }}

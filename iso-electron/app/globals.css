@@ -26,6 +26,17 @@
 @layer base {
   body {
     @apply bg-slate-50;
+    h1 {
+      @apply text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap;
+    }
+
+    h2 {
+      @apply text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap;
+    }
+
+    h3 {
+      @apply text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap;
+    }
   }
 }
 :root {
@@ -237,4 +248,23 @@ th {
 
 .border-pastel-pink {
   border-color: #ffa3a3; /* A more vibrant pastel pink */
+}
+.glass-effect {
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 1rem;
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.5rem 3rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.glass-effect:hover {
+  backdrop-filter: blur(15px);
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
 }

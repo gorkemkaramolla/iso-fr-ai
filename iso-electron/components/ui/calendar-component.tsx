@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { Nullable } from 'primereact/ts-helpers';
+import { Button } from 'primereact/button';
 
 interface CalendarComponentProps {
   availableDates: Date[];
@@ -18,14 +19,16 @@ export default function CalendarComponent({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedDate = localStorage.getItem(localStorageSaveName);
-      if (savedDate) {
+      if (savedDate === 'null') {
+        setSelectedDate(null);
+      } else if (savedDate) {
         const parsedDate = new Date(savedDate);
         if (isDateAvailable(parsedDate)) {
           setSelectedDate(parsedDate);
         }
       }
     }
-  }, [localStorageSaveName]);
+  }, [localStorageSaveName, setSelectedDate]);
 
   const isDateAvailable = (date: Date) =>
     availableDates.some(
@@ -36,22 +39,39 @@ export default function CalendarComponent({
     const date = e.value;
     setSelectedDate(date);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(localStorageSaveName, date.toISOString());
+      localStorage.setItem(
+        localStorageSaveName,
+        date ? date.toISOString() : 'null'
+      );
+    }
+  };
+
+  const handleShowAll = () => {
+    setSelectedDate(null);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(localStorageSaveName, 'null');
     }
   };
 
   return (
-    <div className='flex justify-content-center'>
+    <div className='flex items-center justify-content-center p-0'>
+      <Button
+        className='text-sm bg-primary  rounded-r-none'
+        onClick={handleShowAll}
+        disabled={!selectedDate}
+        icon={'pi pi-calendar-times'}
+      />
       <Calendar
-        className='' // Make the calendar look like a small button
+        variant='filled'
+        className='  [&_.p-datepicker-trigger]:bg-primary  p-0 m-0 rounded-none!'
         value={selectedDate}
         onChange={handleDateChange}
-        minDate={availableDates[0]} // Set the earliest available date
-        maxDate={availableDates[availableDates.length - 1]} // Set the latest available date
+        minDate={availableDates[0]}
+        maxDate={availableDates[availableDates.length - 1]}
         readOnlyInput
         showIcon
         dateFormat='dd/mm/yy'
-        disabledDates={availableDates.filter((date) => !isDateAvailable(date))} // Disable unavailable dates
+        disabledDates={availableDates.filter((date) => !isDateAvailable(date))}
       />
     </div>
   );

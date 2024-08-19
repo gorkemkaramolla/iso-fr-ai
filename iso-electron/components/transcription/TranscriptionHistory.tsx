@@ -99,7 +99,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
 
   return (
     <div
-      className='h-full sticky top-0 border-gray-200 overflow-y-auto'
+      className='h-full sticky top-0 border-gray-200  overflow-y-auto'
       ref={containerRef}
     >
       {loading ? (

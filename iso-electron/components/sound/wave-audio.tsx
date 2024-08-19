@@ -247,9 +247,12 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
         exit={{ y: 100 }} // Move out of view when exiting
         transition={{ duration: 0.5, ease: 'easeInOut' }}
         onAnimationComplete={() => !isVisible && onHidden?.()} // Callback when animation completes
-        className='flex flex-col w-full md:w-3/4 lg:w-1/2 mx-auto space-y-2'
+        className='flex flex-col w-full md:w-3/4 lg:w-1/2 py-4 mx-auto space-y-2
+        
+        
+        '
       >
-        <div className='flex items-center relative space-x-4 bg-indigo-50 px-12 py-2 rounded-xl'>
+        <div className='flex items-center relative space-x-4 px-12 py-2 rounded-xl glass-effect'>
           <button
             onClick={handleHidePlayer}
             className='absolute left-5 bg-primary text-white p-1 cursor-pointer text-xl rounded-full'

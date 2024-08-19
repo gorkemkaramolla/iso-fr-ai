@@ -2,7 +2,12 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from '@nextui-org/react';
 import { Copy, Edit2, Trash2 } from 'lucide-react';
 
 interface SegmentMenuProps {
@@ -10,8 +15,10 @@ interface SegmentMenuProps {
   position: { x: number; y: number };
   onClose: () => void;
   onDelete: () => void;
-  onEdit: () => void;
+  onEdit: () => void; // Assuming onEdit now no longer requires parameters
   onCopy: () => void;
+  segmentId: string; // Add this line
+  oldName: string;
 }
 
 const SegmentMenu: React.FC<SegmentMenuProps> = ({
@@ -25,59 +32,70 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      const handleOutsideClick = (event: MouseEvent) => {
-        if (
-          menuRef.current &&
-          !menuRef.current.contains(event.target as Node)
-        ) {
-          onClose();
-        }
-      };
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
 
+    if (isOpen) {
       document.addEventListener('mousedown', handleOutsideClick);
-      return () =>
-        document.removeEventListener('mousedown', handleOutsideClick);
     }
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <motion.div
+    <div
       ref={menuRef}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.1 }}
-      className='absolute bg-white rounded-lg py-2 z-50'
-      style={{ top: position.y, left: position.x }}
+      style={{
+        position: 'absolute',
+        top: position.y - 30,
+        left: position.x,
+        zIndex: 50,
+      }}
     >
-      <button
-        className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100'
-        onClick={onEdit}
-      >
-        <Edit2 size={16} /> Edit Speaker Name
-      </button>
-      <button
-        className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600'
-        onClick={() => {
-          if (
-            typeof window !== 'undefined' &&
-            window.confirm('Are you sure you want to delete this segment?')
-          )
-            onDelete();
-        }}
-      >
-        <Trash2 size={16} /> Delete Segment
-      </button>
-      <button
-        className='flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-gray-100'
-        onClick={onCopy}
-      >
-        <Copy size={16} /> Copy
-      </button>
-    </motion.div>
+      <Dropdown isOpen={true} onClose={onClose}>
+        <DropdownTrigger>
+          <div style={{ width: 0, height: 0 }}></div>
+        </DropdownTrigger>
+        <DropdownMenu aria-label='Segment actions'>
+          <DropdownItem
+            key='edit'
+            startContent={<Edit2 size={16} />}
+            onPress={onEdit}
+          >
+            Edit Speaker Name
+          </DropdownItem>
+          <DropdownItem
+            key='delete'
+            className='text-danger'
+            color='danger'
+            startContent={<Trash2 size={16} />}
+            onPress={() => {
+              if (
+                window.confirm('Are you sure you want to delete this segment?')
+              ) {
+                onDelete();
+              }
+            }}
+          >
+            Delete Segment
+          </DropdownItem>
+          <DropdownItem
+            key='copy'
+            startContent={<Copy size={16} />}
+            onPress={onCopy}
+          >
+            Copy
+          </DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+    </div>
   );
 };
 

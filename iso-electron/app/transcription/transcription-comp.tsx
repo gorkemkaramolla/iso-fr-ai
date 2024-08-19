@@ -24,6 +24,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   const [highlightedSegment, setHighlightedSegment] = useState<string | null>(
     null
   );
+  const [rightScreen, setRightScreen] = useState('history');
 
   const [isEditing, setIsEditing] = useState(false);
   const toast = useRef<Toast>(null);
@@ -197,23 +198,36 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
               />
             </div>
           </Panel>
-          <PanelResizeHandle
-            style={{ zIndex: 100 }}
-            className='cursor-col-resize w-[2px] max-h-[90vh] bg-gray-200 relative md:flex hidden'
-          >
-            <div
-              style={{ zIndex: 100 }}
-              className='absolute top-1/2 bg-primary text-white py-2 px-[3px] rounded-xl left-1/2 transform -translate-x-1/2 -translate-y-1/2'
-            >
+          <PanelResizeHandle className='cursor-col-resize w-[2px] max-h-[90vh] bg-gray-200 relative md:flex hidden'>
+            <div className='absolute top-1/2 bg-primary text-white py-2 px-[3px] rounded-xl left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
               <FaGripVertical style={{ zIndex: 100 }} className='text-[12px]' />
             </div>
           </PanelResizeHandle>
           <Panel defaultSize={25} minSize={0.5} className='z-0 md:block hidden'>
-            <div>
-              <TranscriptionHistory
-                activePageId={transcription?.transcription_id}
-              />
+            <div className='flex w-full justify-between'>
+              {/* <button
+                onClick={() => {
+                  setRightScreen('history');
+                }}
+              >
+                history
+              </button>
+              <button
+                onClick={() => {
+                  setRightScreen('other');
+                }}
+              >
+                other
+              </button> */}
             </div>
+
+            {rightScreen === 'history' && (
+              <div>
+                <TranscriptionHistory
+                  activePageId={transcription?.transcription_id}
+                />
+              </div>
+            )}
           </Panel>
         </PanelGroup>
       </div>

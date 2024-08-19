@@ -124,6 +124,26 @@ class PersonelService:
         except Exception as e:
             self.logger.error(f"Error fetching image path: {e}")
             return None
+    def get_all_personel_image_paths(self):
+        try:
+            personel_images = []
+            all_personel = self.db["Personel"].find({"file_path": {"$exists": True}})  # Fetch all documents with a file_path
+            
+            for personel in all_personel:
+                if 'file_path' in personel:
+                    image_path = personel['file_path']
+                    personel_name = f'{personel["name"]} {personel["lastname"]}'
+                    personel_images.append({"name": personel_name, "image_path": image_path})
+                    self.logger.info(f"Image path found in database: {image_path}")
+                else:
+                    self.logger.warning(f"No file_path found for personel with _id: {personel.get('_id')}")
+            
+            return personel_images if personel_images else None
+
+        except Exception as e:
+            self.logger.error(f"Error fetching image paths: {e}")
+            return None
+
 
     def delete_personel(self, personel_id):
         try:

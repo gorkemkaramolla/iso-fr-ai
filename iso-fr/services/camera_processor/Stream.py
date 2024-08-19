@@ -106,7 +106,43 @@ class Stream:
                     database[name] = embedding
         print(f"--------------Database created with {len(database)} entries.--------------")
         return database
-  
+
+    # def gorkem_create_face_database(self, model, face_detector, endpoint_url="http://utils_service:5004/personel/image"):
+    #     database = {}
+        
+    #     try:
+    #         # Fetch the image paths and labels from the endpoint
+    #         response = requests.get(endpoint_url)
+    #         if response.status_code == 200:
+    #             image_data = response.json()  # Assuming the endpoint returns JSON data
+                
+    #             for item in image_data:
+    #                 name = item["name"]
+    #                 image_path = item["image_path"]
+
+    #                 # Fetch the image from the given path (assuming the image is accessible locally or via another request)
+    #                 image = cv2.imread(image_path)
+    #                 if image is None:
+    #                     logging.error(f"Failed to load image from path: {image_path}")
+    #                     continue
+
+    #                 # Detect face and get keypoints
+    #                 bboxes, kpss = face_detector.autodetect(image, max_num=1)
+    #                 if bboxes.shape[0] > 0:
+    #                     kps = kpss[0]
+    #                     embedding = model.get(image, kps)
+    #                     database[name] = embedding
+    #                 else:
+    #                     logging.warning(f"No face detected for image: {image_path}")
+    #         else:
+    #             logging.error(f"Failed to fetch image data from endpoint: {endpoint_url}")
+        
+    #     except Exception as e:
+    #         logging.error(f"Error creating face database: {e}")
+        
+    #     return database
+
+
     def update_database(self, old_name: str, new_name: str) -> None:
         """
         Update the database key from old_name to new_name.

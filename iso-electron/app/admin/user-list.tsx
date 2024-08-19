@@ -15,7 +15,6 @@ import {
   Pagination,
   Selection,
   SortDescriptor,
-  User as NextUserComponent,
 } from '@nextui-org/react';
 import { PlusIcon } from '@/components/ui/PlusIcon';
 import { VerticalDotsIcon } from '@/components/ui/VerticalDotsIcon';
@@ -26,8 +25,9 @@ import { capitalize } from '@/utils/capitalize';
 import { User } from '@/types';
 import { Toast } from 'primereact/toast';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import { ExternalLink, Trash2 } from 'lucide-react';
+import { ExternalLink, Trash2, Edit } from 'lucide-react';
 import AddUserDialog from './add-user';
+import EditUserDialog from './edit-user-dialog';
 import createApi from '@/utils/axios_instance';
 
 const INITIAL_VISIBLE_COLUMNS = ['username', 'email', 'role', 'actions'];
@@ -48,10 +48,13 @@ export default function ShowUsers() {
   const [page, setPage] = useState(1);
   const toastRef = useRef<Toast>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    !isModalOpen && fetchUsers();
+  }, [isModalOpen]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -73,15 +76,15 @@ export default function ShowUsers() {
 
   const confirmDelete = () => {
     confirmDialog({
-      message: `Are you sure you want to delete the selected user(s)?`,
-      header: 'Confirmation',
+      message: `Seçilen kullanıcıları silmek istediğinize emin misiniz?`,
+      header: 'Silme İşlemini Onayla',
       icon: 'pi pi-exclamation-triangle',
       accept: deleteUser,
       reject: () => {
         toastRef.current?.show({
           severity: 'info',
-          summary: 'Cancelled',
-          detail: 'Delete operation was cancelled.',
+          summary: 'İptal Edildi',
+          detail: 'Silme işlemi iptal edildi.',
         });
       },
     });
@@ -124,23 +127,17 @@ export default function ShowUsers() {
     }
   };
 
+  const handleEditUser = (user: User) => {
+    setUserToEdit(user);
+    setIsEditModalOpen(true);
+  };
+
   const renderCell = (user: User, columnKey: React.Key): React.ReactNode => {
     const cellValue = user[columnKey as keyof User];
 
     switch (columnKey) {
       case 'username':
-        return (
-          <NextUserComponent
-            avatarProps={{
-              radius: 'full',
-              size: 'sm',
-              src: `${process.env.NEXT_PUBLIC_AUTH_URL}/users/image/?id=${user.id}`,
-            }}
-            classNames={{ description: 'text-default-500' }}
-            description={user.email}
-            name={user.username}
-          />
-        );
+        return <div>{user.username}</div>;
 
       case 'actions':
         return (
@@ -152,14 +149,11 @@ export default function ShowUsers() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem>
-                  <a
-                    className='flex justify-between w-full'
-                    href={`/profiles?id=${user.id}`}
-                  >
-                    <span>View Profile</span>
-                    <ExternalLink />
-                  </a>
+                <DropdownItem onClick={() => handleEditUser(user)}>
+                  <Edit /> Edit
+                </DropdownItem>
+                <DropdownItem onClick={() => confirmDelete()}>
+                  <Trash2 /> Delete
                 </DropdownItem>
               </DropdownMenu>
             </Dropdown>
@@ -207,7 +201,7 @@ export default function ShowUsers() {
       <Input
         isClearable
         className='w-full sm:max-w-[44%]'
-        placeholder='Username, Email...'
+        placeholder='Kullanıcı Adı veya E-posta...'
         startContent={<SearchIcon />}
         value={filterValue}
         onClear={() => setFilterValue('')}
@@ -220,7 +214,7 @@ export default function ShowUsers() {
               endContent={<ChevronDownIcon className='text-small' />}
               variant='flat'
             >
-              Show Columns
+              Sütunları Göster
             </Button>
           </DropdownTrigger>
           <DropdownMenu
@@ -245,11 +239,11 @@ export default function ShowUsers() {
           color='primary'
           endContent={<PlusIcon />}
         >
-          Add New User
+          Yeni Kullanıcı Ekle
         </Button>
         {selectedKeys !== 'all' && selectedKeys?.size > 0 && (
           <Button color='danger' onPress={confirmDelete}>
-            Delete Selected
+            Seçilenleri Sil
             <Trash2 className='w-5' />
           </Button>
         )}
@@ -260,9 +254,9 @@ export default function ShowUsers() {
   const bottomContent = (
     <div className='py-2 px-2 flex justify-between items-center'>
       <span className='w-[30%] text-small text-default-400'>
-        {selectedKeys === 'all'
-          ? 'All items selected'
-          : `${selectedKeys.size} of ${filteredItems.length} selected`}
+        {selectedKeys === 'all' || selectedKeys.size === filteredItems.length
+          ? 'Tümü seçildi'
+          : `${selectedKeys.size} seçildi  ${filteredItems.length} kayıttan `}
       </span>
       <Pagination
         className='[&_li]:flex [&_li]:items-center [&_li]:justify-center'
@@ -281,7 +275,7 @@ export default function ShowUsers() {
           variant='flat'
           onPress={() => setPage((prev) => Math.max(prev - 1, 1))}
         >
-          Previous
+          Geri
         </Button>
         <Button
           isDisabled={page === pages}
@@ -289,7 +283,7 @@ export default function ShowUsers() {
           variant='flat'
           onPress={() => setPage((prev) => Math.min(prev + 1, pages))}
         >
-          Next
+          İleri
         </Button>
       </div>
     </div>
@@ -301,7 +295,12 @@ export default function ShowUsers() {
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
-
+      <EditUserDialog
+        isModalOpen={isEditModalOpen}
+        setIsModalOpen={setIsEditModalOpen}
+        userToEdit={userToEdit}
+        fetchUsers={fetchUsers}
+      />
       <Toast ref={toastRef} />
       <ConfirmDialog />
 
@@ -338,7 +337,9 @@ export default function ShowUsers() {
           {(item) => (
             <TableRow key={item.id}>
               {(columnKey) => (
-                <TableCell>{renderCell(item, columnKey)}</TableCell>
+                <TableCell key={columnKey}>
+                  {renderCell(item, columnKey)}
+                </TableCell>
               )}
             </TableRow>
           )}

@@ -1,13 +1,14 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { z } from 'zod';
 import { ZodError } from 'zod';
-import { FaUser, FaEnvelope, FaLock, FaUserCog, FaPlus } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaUserCog } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import createApi from '@/utils/axios_instance';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
+import { capitalize } from 'lodash';
 
 const userSchema = z.object({
   id: z.string().optional(),
@@ -65,10 +66,10 @@ export default function AddUserDialog({ isModalOpen, setIsModalOpen }: Props) {
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_AUTH_URL);
-      await api.post('/users', newUser, {});
+      await api.post('/add_user', newUser);
 
       // Display the success message
-      setMessage('User added successfully!');
+      setMessage('Kullanıcı başarıyla eklendi!');
 
       // Delay the view change to show the success message first
       setTimeout(() => {
@@ -83,7 +84,7 @@ export default function AddUserDialog({ isModalOpen, setIsModalOpen }: Props) {
 
         // Close modal after showing the message
         setIsModalOpen(false);
-      }, 1500); // Adjust the delay as needed (1500ms or 1.5 seconds)
+      }, 1500);
     } catch (error) {
       setMessage('Error adding user: ' + (error as Error).message);
     }
@@ -97,22 +98,31 @@ export default function AddUserDialog({ isModalOpen, setIsModalOpen }: Props) {
         onClick={() => setIsModalOpen(false)}
         className='p-button-text'
       />
-      <button type='submit' className='p-button p-button-primary'>
-        <span className='p-button-icon pi pi-check'></span>
-        <span className='p-button-label'>Add User</span>
-      </button>
+      {/* Ensure the button type is submit */}
+      <Button
+        type='submit'
+        label='Add User'
+        icon='pi pi-check'
+        className='p-button p-button-primary'
+        form='addUserForm' // Ensure the form is targeted
+      />
     </div>
   );
 
   return (
     <Dialog
-      header='Add New User'
+      header='Yeni Kullanıcı Ekle'
       visible={isModalOpen}
       style={{ width: '50vw' }}
       footer={footerContent}
       onHide={() => setIsModalOpen(false)}
     >
-      <form onSubmit={handleAddNewUser} className='p-fluid space-y-4'>
+      {/* Ensure the form has an id matching the button's form attribute */}
+      <form
+        id='addUserForm'
+        onSubmit={handleAddNewUser}
+        className='p-fluid space-y-4'
+      >
         {['username', 'email', 'password', 'role'].map((field, index) => (
           <motion.div
             key={field}
@@ -155,7 +165,7 @@ export default function AddUserDialog({ isModalOpen, setIsModalOpen }: Props) {
                         ? 'border-red-300'
                         : 'border-gray-300'
                     } rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-                    placeholder={`Enter ${field}`}
+                    placeholder={`${capitalize(field)} Giriniz`}
                   />
                 </>
               ) : (
@@ -173,7 +183,7 @@ export default function AddUserDialog({ isModalOpen, setIsModalOpen }: Props) {
                     placeholder='Select a Role'
                     name='role'
                     id='role'
-                    className='block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
+                    className=''
                   />
                 </div>
               )}

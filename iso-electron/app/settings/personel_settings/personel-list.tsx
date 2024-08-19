@@ -301,10 +301,10 @@ export default function App() {
   const router = useRouter();
   const toastRef = useRef<Toast>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   useEffect(() => {
     fetchPersonel();
-  }, []);
+    !isModalOpen && fetchPersonel();
+  }, [isModalOpen]);
 
   const fetchPersonel = async () => {
     setLoading(true);
@@ -548,7 +548,7 @@ export default function App() {
           variant='flat'
           onPress={() => setPage((prev) => Math.max(prev - 1, 1))}
         >
-          Previous
+          Geri
         </Button>
         <Button
           isDisabled={page === pages}
@@ -556,7 +556,7 @@ export default function App() {
           variant='flat'
           onPress={() => setPage((prev) => Math.min(prev + 1, pages))}
         >
-          Next
+          İleri
         </Button>
       </div>
     </div>

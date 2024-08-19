@@ -1,10 +1,10 @@
 import React from 'react';
 
 const columns = [
-  { name: 'USERNAME', uid: 'username', sortable: true },
-  { name: 'EMAIL', uid: 'email', sortable: true },
-  { name: 'ROLE', uid: 'role', sortable: true },
-  { name: 'ACTIONS', uid: 'actions' },
+  { name: 'Kullanıcı Adı', uid: 'username', sortable: true },
+  { name: 'E-posta', uid: 'email', sortable: true },
+  { name: 'Rol', uid: 'role', sortable: true },
+  { name: 'Eylemler', uid: 'actions' },
 ];
 
 export { columns };

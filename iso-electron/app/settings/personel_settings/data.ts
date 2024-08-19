@@ -1,16 +1,16 @@
 import React from 'react';
 const columns = [
-  { name: 'NAME', uid: 'name', sortable: true },
+  { name: 'Bilgiler', uid: 'name', sortable: true },
 
-  { name: 'ID', uid: '_id', sortable: true },
-  { name: 'TITLE', uid: 'role', sortable: true },
-  { name: 'EMAIL', uid: 'email' },
-  { name: 'GSM', uid: 'gsm', sortable: true },
+  { name: 'Id', uid: '_id', sortable: true },
+  { name: 'Unvan', uid: 'title', sortable: true },
+  { name: 'E-posta', uid: 'email' },
+  { name: 'Gsm', uid: 'gsm', sortable: true },
 
-  { name: 'BIRTHDATE', uid: 'birth_date' },
-  { name: 'ISO_PHONE', uid: 'iso_phone' },
-  { name: 'ISO_PHONE2', uid: 'iso_phone2' },
-  { name: 'ACTIONS', uid: 'actions' },
+  { name: 'Doğum Tarihi', uid: 'birth_date' },
+  { name: 'İso_telefon', uid: 'iso_phone' },
+  { name: 'İso_telefon2', uid: 'iso_phone2' },
+  { name: 'Eylemler', uid: 'actions' },
 ];
 
 export { columns };

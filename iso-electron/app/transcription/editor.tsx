@@ -92,10 +92,16 @@ const TextEditor: React.FC<TextEditorProps> = ({
   );
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
   const [showDialog, setShowDialog] = useState(false);
+  const [showSingleRenameDialog, setShowSingleRenameDialog] = useState(false);
   const [dialogData, setDialogData] = useState<{
     oldName: string;
     newName: string;
   }>({ oldName: '', newName: '' });
+  const [singleRenameData, setSingleRenameData] = useState<{
+    segmentId: string;
+    oldName: string;
+    newName: string;
+  }>({ segmentId: '', oldName: '', newName: '' });
 
   const segmentRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -149,11 +155,20 @@ const TextEditor: React.FC<TextEditorProps> = ({
   };
 
   const confirmChangeSpeakerName = () => {
-    renameAllSegments(dialogData.oldName, dialogData.newName);
+    handleChangeAllSpeakerNames(dialogData.oldName, dialogData.newName);
     setShowDialog(false);
   };
 
-  const renameAllSegments = (oldName: string, newName: string) => {
+  const confirmSingleRename = () => {
+    changeSpeakerName(
+      singleRenameData.segmentId,
+      singleRenameData.oldName,
+      singleRenameData.newName
+    );
+    setShowSingleRenameDialog(false);
+  };
+
+  const handleChangeAllSpeakerNames = (oldName: string, newName: string) => {
     const updatedSegments = segments.map((segment) => {
       if (segment.speaker === oldName) {
         handleSpeakerNameChange(segment.segment_id, oldName, newName);
@@ -219,15 +234,35 @@ const TextEditor: React.FC<TextEditorProps> = ({
     closeMenu();
   }, [menuState.segmentId, handleDeleteSelected, closeMenu]);
 
+  const changeSpeakerName = (
+    segmentId: string,
+    oldName: string,
+    newName: string
+  ) => {
+    const updatedSegments = segments.map((segment) => {
+      if (segment.segment_id === segmentId && segment.speaker === oldName) {
+        handleSpeakerNameChange(segment.segment_id, oldName, newName);
+        return { ...segment, speaker: newName };
+      }
+      return segment;
+    });
+
+    setSegments(updatedSegments);
+    updateUniqueSpeakers(updatedSegments);
+  };
+
   const handleEditSegment = useCallback(() => {
     if (menuState.segmentId) {
       const segment = segments.find(
         (s) => s.segment_id === menuState.segmentId
       );
       if (segment) {
-        const oldName = segment.speaker;
-        setDialogData({ oldName, newName: '' });
-        setShowDialog(true);
+        setSingleRenameData({
+          segmentId: segment.segment_id,
+          oldName: segment.speaker,
+          newName: '',
+        });
+        setShowSingleRenameDialog(true);
       }
     }
     closeMenu();
@@ -399,11 +434,16 @@ const TextEditor: React.FC<TextEditorProps> = ({
         position={menuState.position}
         onClose={closeMenu}
         onDelete={handleDeleteSegment}
-        onEdit={handleEditSegment}
+        onEdit={handleEditSegment} // Pass the handleEditSegment function here
         onCopy={handleCopySegment}
+        segmentId={menuState.segmentId ?? ''} // Pass the correct segmentId
+        oldName={
+          segments.find((s) => s.segment_id === menuState.segmentId)?.speaker ??
+          ''
+        } // Pass the oldName
       />
 
-      {/* PrimeReact Dialog for speaker name change */}
+      {/* PrimeReact Dialog for speaker name change (all segments) */}
       <Dialog
         visible={showDialog}
         style={{ width: '50vw' }}
@@ -438,6 +478,49 @@ const TextEditor: React.FC<TextEditorProps> = ({
             placeholder='Yeni isim'
             onChange={(e) =>
               setDialogData({ ...dialogData, newName: e.target.value })
+            }
+            className='w-full mt-2'
+          />
+        </div>
+      </Dialog>
+
+      {/* Dialog for single speaker rename */}
+      <Dialog
+        visible={showSingleRenameDialog}
+        style={{ width: '50vw' }}
+        header='Konuşmacı ismi değiştirme'
+        modal
+        footer={
+          <div>
+            <Button
+              label='Cancel'
+              icon='pi pi-times'
+              onClick={() => setShowSingleRenameDialog(false)}
+              className='p-button-text'
+            />
+            <Button
+              label='Confirm'
+              icon='pi pi-check'
+              onClick={confirmSingleRename}
+              autoFocus
+            />
+          </div>
+        }
+        onHide={() => setShowSingleRenameDialog(false)}
+      >
+        <div>
+          <p>
+            <strong>{' ' + singleRenameData.oldName}</strong> adlı konuşmacının
+            ismini değiştirmek üzeresiniz
+          </p>
+          <InputText
+            value={singleRenameData.newName}
+            placeholder='Yeni isim'
+            onChange={(e) =>
+              setSingleRenameData({
+                ...singleRenameData,
+                newName: e.target.value,
+              })
             }
             className='w-full mt-2'
           />

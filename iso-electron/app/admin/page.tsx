@@ -16,17 +16,8 @@ const Dashboard = () => {
 
   return (
     <div className=''>
-      <header className=''>
-        <nav className=''>
-          <ul className='flex justify-center items-center h-16'>
-            <li>
-              <button className='flex items-center px-4 py-2 rounded-md transition-colors duration-200 bg-indigo-600 text-white'>
-                <Users size={20} className='mr-2' />
-                <span>Kullanıcı Listesi</span>
-              </button>
-            </li>
-          </ul>
-        </nav>
+      <header className='container mx-auto px-5 pt-8 pb-4'>
+        <h1 className=''>Yönetim Paneli</h1>
       </header>
 
       <main className='container mx-auto px-4 py-8'>

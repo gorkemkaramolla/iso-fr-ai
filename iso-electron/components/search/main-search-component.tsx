@@ -29,7 +29,8 @@ import Link from 'next/link';
 import { ROUTES } from '@/config/routes';
 import { Personel } from '@/types';
 import { InputText } from 'primereact/inputtext';
-
+import { Input, Kbd } from '@nextui-org/react';
+import { SearchIcon } from './SearchIcon';
 const getLatestSearches = (): string[] => {
   if (typeof window !== 'undefined') {
     return JSON.parse(localStorage.getItem('latestSearches') || '[]');
@@ -309,10 +310,10 @@ const SearchComponent: React.FC = () => {
   return (
     <div className='relative'>
       <div className='relative'>
-        <Search className='absolute left-3 top-3.5 text-gray-400 w-4 h-4' />
-        <InputText
+        {/* <Search className='absolute left-2 top-3.5 text-gray-400 w-4 h-4' /> */}
+        <Input
           type='text'
-          size={'sm'}
+          // size={'xs'}
           value={query}
           onChange={handleSearchChange}
           onFocus={() => {
@@ -329,17 +330,26 @@ const SearchComponent: React.FC = () => {
           onKeyDown={handleKeyDown}
           onKeyUp={handleSearchKeyUp}
           placeholder='Search'
-          className='p-inputtext-sm w-full px-4 py-3 pl-10 pr-10 text-gray-700 bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+          className='min-w-[150px]'
+          startContent={
+            <SearchIcon className='text-black/50 mb-0.5 text-slate-400 pointer-events-none flex-shrink-0' />
+          }
           ref={searchRef}
         />
         {!isFocused && (
           <div
             className={`absolute ${
-              query ? 'right-10' : 'right-3'
-            } top-1.5 text-gray-400 select-none`}
+              query ? 'right-6' : 'right-2'
+            } top-2 text-gray-400 select-none`}
           >
-            <kbd
-              className={`kbd bg-slate-100 text-gray-700 nunito-500 ${
+            {isMac ? (
+              <Kbd keys={['command']}>K</Kbd>
+            ) : (
+              <Kbd keys={['ctrl']}>K</Kbd>
+            )}
+            {/* <Kbd keys={isMac ? ['command'] : undefined}>K</Kbd> */}
+            {/* <kbd
+              className={`kbd-sm bg-slate-100 text-gray-700 nunito-500 ${
                 isCmdPressed
                   ? 'scale-90 transition-all duration-100 ease-in'
                   : ''
@@ -349,22 +359,22 @@ const SearchComponent: React.FC = () => {
             </kbd>{' '}
             +{' '}
             <kbd
-              className={`kbd bg-slate-100 text-gray-700 nunito-500 ${
+              className={`kbd-sm bg-slate-100 text-gray-700 nunito-500 ${
                 isDotPressed
                   ? 'scale-90 transition-all duration-100 ease-in'
                   : ''
               }`}
             >
               K
-            </kbd>
+            </kbd> */}
           </div>
         )}
         {query && (
           <button
             onClick={handleClearSearch}
-            className='absolute right-3 top-3.5 text-gray-400 hover:text-gray-600'
+            className='absolute right-1.5 top-3 text-gray-400 hover:text-gray-600'
           >
-            <X className='w-5 h-5' />
+            <X className='w-4 h-4' />
           </button>
         )}
       </div>

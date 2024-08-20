@@ -39,6 +39,8 @@ interface RecognizedFace {
   gender: number;
   age: number;
   image_path: string;
+  personnel_id?: string;
+  camera?: string;
 }
 interface ColumnMeta {
   field: string;
@@ -622,11 +624,11 @@ const RecognizedFacesTable: React.FC = () => {
       <div className='inline-flex text-center'>
         <div
           className='flex gap-2 items-center justify-center text-center cursor-pointer'
-          onClick={() => router.push(`/personel/${rowData.label}`)}
+          onClick={() => router.push(`/profiles/?id=${rowData.personnel_id}`)}
           title={`Personel ${rowData.label} Sayfasına Git`}
         >
           <img
-            src={process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + rowData.label}
+            src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${rowData.personnel_id}`}
             alt=''
             className='w-[32px] h-[32px] rounded-full shadow-lg'
             onError={(e) => {

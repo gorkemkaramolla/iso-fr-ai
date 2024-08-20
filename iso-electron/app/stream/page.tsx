@@ -102,7 +102,11 @@ const VideoStream: React.FC = () => {
         selectedCamera: camera,
         streamSrc: isLocalCamera
           ? ''
-          :  `${BASE_URL}/stream/${newId}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(Object.keys(Quality)[0])}&is_recording=${encodeURIComponent(false)}`,
+          : `${BASE_URL}/stream/${newId}?camera=${encodeURIComponent(
+              selectedCamera?.url || ''
+            )}&streamProfile=${encodeURIComponent(
+              Object.keys(Quality)[0]
+            )}&is_recording=${encodeURIComponent(false)}`,
 
         selectedQuality: Object.keys(Quality)[0],
         isPlaying: true,
@@ -222,7 +226,7 @@ const VideoStream: React.FC = () => {
   };
 
   return (
-    <div className='h-full w-full overflow-auto'>
+    <div className='min-h-screen w-full overflow-auto'>
       <Toast ref={toast} />
 
       <div className='container mx-auto mb-20'>
@@ -253,8 +257,11 @@ const VideoStream: React.FC = () => {
             cameraStreamsLength={cameraStreams.length}
           />
         </div>
-        <div className={`grid grid-cols-12  gap-4 relative`}>
-          <div className={`relative col-span-9 `}>
+        <div
+          className={`flex flex-col-reverse xl:flex-row gap-4 flex-wrap-reverse xl:flex-nowrap`}
+          // style={{ flexFlow: 'row wrap' }}
+        >
+          <div className={`relative flex-1 w-full flex-shrink flex-grow`}>
             <div
               className={`grid gap-4 ${
                 isGrid ? 'grid-cols-2 grid-rows-2' : ''
@@ -332,9 +339,12 @@ const VideoStream: React.FC = () => {
                   })}
             </div>
           </div>
-          <div className={`col-span-3 fixed top-40 right-16`}>
+          <aside
+            className={`self-start xl:min-w-[400px] xl:max-w-[440px] top-0 ml-auto`}
+            style={{ position: 'sticky' }}
+          >
             <RecogFaces toast={toast} />
-          </div>
+          </aside>
         </div>
       </div>
     </div>

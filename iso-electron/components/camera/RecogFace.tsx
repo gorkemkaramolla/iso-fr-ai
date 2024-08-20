@@ -8,6 +8,7 @@ import RecogFaceCollapsedItem from './Recog/RecogFaceCollapsedItem';
 import { getRecogFaces, updateRecogName } from '@/services/camera/service';
 import RecogFaceHeaderBar from './Recog/RecogFaceHeaderBar';
 import { GroupedRecogFaces, RecogFace } from '@/types';
+import RecogFacesAvatarGroup from './Recog/AvatarGroup';
 
 const socket = io(process.env.NEXT_PUBLIC_FLASK_URL!);
 interface IRecogFace {
@@ -62,7 +63,9 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
 
   const mergeGroups = (groups: GroupedRecogFaces[]) => {
     const merged = groups.reduce((acc: GroupedRecogFaces[], current) => {
-      const foundIndex = acc.findIndex((g) => g.name === current.name);
+      const foundIndex = acc.findIndex(
+        (g) => g.personnel_id === current.personnel_id
+      );
       if (foundIndex !== -1) {
         acc[foundIndex].faces = [...acc[foundIndex].faces, ...current.faces];
       } else {
@@ -104,6 +107,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
               group.faces.push(face);
             } else {
               acc.unshift({
+                personnel_id: face.personnel_id,
                 name: face.label,
                 faces: [face],
                 isCollapsed: true,
@@ -141,7 +145,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
     socket.on('new_face', (newFace) => {
       setGroupedRecogFaces((prevGroups) => {
         const groupIndex = prevGroups.findIndex(
-          (g) => g.name === newFace.label
+          (g) => g.personnel_id === newFace.personnel_id
         );
         if (groupIndex !== -1) {
           const group = prevGroups[groupIndex];
@@ -152,6 +156,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
         } else {
           return [
             {
+              personnel_id: newFace.personnel_id,
               name: newFace.label,
               faces: [newFace],
               isCollapsed: true,
@@ -186,7 +191,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
   };
 
   const handleImageClick = (id: string) => {
-    router.push(`/personel/${id}`);
+    router.push(`/profiles/?id=${id}`);
   };
 
   if (loading) return <div>Loading...</div>;
@@ -194,50 +199,71 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
 
   return (
     <div className='backdrop-blur-lg p-4 rounded-xl'>
-      <RecogFaceHeaderBar
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-      />
-      <div className='max-h-[60svh] overflow-scroll w-full p-1 pr-3'>
-        {filteredGroups.map((group) => (
-          <div key={group.name} className='mb-2 flex flex-col gap-2 w-full'>
-            <RecogFaceCollapsedItem
-              key={group.name}
-              group={group}
-              editingName={editingName}
-              newName={newName}
-              setNewName={setNewName}
-              setEditingName={setEditingName}
-              handleImageClick={handleImageClick}
-              handleEditName={handleEditName}
-              handleToggle={handleToggle}
-            />
-            {!group.isCollapsed && (
-              <div
-                className='flex flex-wrap gap-2 items-start justify-center p-2 pt-4 border
+      <div className='block xl:hidden'>
+        <RecogFacesAvatarGroup
+          groups={filteredGroups}
+          handleImageClick={handleImageClick}
+        />
+      </div>
+      <div className='hidden xl:block'>
+        <RecogFaceHeaderBar
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
+        <div className='max-h-[60svh] overflow-scroll w-full p-1 pr-3'>
+          {filteredGroups.map((group) => (
+            <div key={group.name} className='mb-2 flex flex-col gap-2 w-full'>
+              <RecogFaceCollapsedItem
+                key={group.name}
+                group={group}
+                editingName={editingName}
+                newName={newName}
+                setNewName={setNewName}
+                setEditingName={setEditingName}
+                handleImageClick={handleImageClick}
+                handleEditName={handleEditName}
+                handleToggle={handleToggle}
+              />
+              {!group.isCollapsed && (
+                <div
+                  className='flex flex-wrap gap-2 items-start justify-center p-2 pt-4 border
               border-gray-200 rounded-xl shadow-md max-w-[21.5rem]'
-              >
-                {group.faces
-                  .sort(
-                    (a, b) =>
-                      new Date(b.timestamp).getTime() -
-                      new Date(a.timestamp).getTime()
-                  )
-                  .map((face, index) => (
-                    <RecogFaceExpandedListItem
-                      key={index}
-                      face={face}
-                      index={index}
-                      setSelectedFace={setSelectedFace}
-                      selectedFace={selectedFace}
-                    />
-                  ))}
-              </div>
-            )}
-          </div>
-        ))}
+                >
+                  {group.faces
+                    .sort(
+                      (a, b) =>
+                        new Date(b.timestamp).getTime() -
+                        new Date(a.timestamp).getTime()
+                    )
+                    .slice(0, 4) // Limit to the first 4 items
+                    .map((face, index) => (
+                      <RecogFaceExpandedListItem
+                        key={index}
+                        face={face}
+                        index={index}
+                        setSelectedFace={setSelectedFace}
+                        selectedFace={selectedFace}
+                      />
+                    ))}
+
+                  {group.faces.length > 4 && (
+                    <div className='text-xs text-balance font-light text-gray-700'>
+                      +{group.faces.length - 4} daha fazla yüz tanımlandı...
+                      {/* <button
+                      className='btn btn-sm btn-primary text-white'
+                      onClick={() => handleToggle(group.name)}
+                    >
+                      {group.isCollapsed ? 'Tümünü Göster' : 'Gizle'}
+                    </button> */}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -70,9 +70,12 @@ interface RecogFace {
   label: string;
   similarity: number;
   timestamp: string;
+  camera: string;
+  personnel_id: string;
 }
 
 interface GroupedRecogFaces {
+  personnel_id: string;
   name: string;
   faces: RecogFace[];
   isCollapsed: boolean;

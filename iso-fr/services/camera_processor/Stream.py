@@ -15,6 +15,18 @@ from services.camera_processor.attribute import Attribute
 from services.camera_processor.emotion import EmotionDetector
 from socketio_instance import notify_new_face
 import subprocess
+import time
+import json
+from urllib.request import urlopen
+from urllib.error import URLError, HTTPError
+import requests
+import os
+
+# Unset proxy environment variables
+os.environ.pop('HTTP_PROXY', None)
+os.environ.pop('HTTPS_PROXY', None)
+os.environ.pop('ALL_PROXY', None)
+# from flask import jsonify
 # import requests
 class Stream:
     def __init__(self, device: str = "cuda") -> None:
@@ -44,69 +56,180 @@ class Stream:
         emotion_model = os.path.join(onnx_models_dir, "emotion_model.onnx")
         self.emotion_detector = EmotionDetector(emotion_model)
 
-        self.database: Dict[str, np.ndarray] = self._create_face_database(
-            self.face_recognizer,
-            self.face_detector,
-            os.path.join(os.getcwd(), "face-images"),
+        # MongoDB
+        client = MongoClient(os.getenv("MONGO_DB_URI"))
+        self.db = client["isoai"]
+        self.recognition_logs_collection = self.db["logs"]
+        
+        self.database: Dict[str, np.ndarray] = {}
+        self.create_face_database(
+            # self.face_recognizer,
+            # self.face_detector,
+            # os.path.join(os.getcwd(), "face-images"),
         )
-
+        
         # Face Recognition Image Directories
         self.known_faces_dir: str = "recog/known_faces"
         os.makedirs(self.known_faces_dir, exist_ok=True)
         self.unknown_faces_dir: str = "recog/unknown_faces"
         os.makedirs(self.unknown_faces_dir, exist_ok=True)
         
-        # MongoDB
-        client = MongoClient(os.getenv("MONGO_DB_URI"))
-        self.db = client["isoai"]
-        self.recognition_logs_collection = self.db["logs"]
 
         self.stop_flag = threading.Event()  # Initialize the stop flag
         self.video_writer = None
+    # import requests
+    # import os
     
-    def _create_face_database(self, face_recognizer: ArcFaceONNX, face_detector: SCRFD, image_folder: str) -> Dict[str, np.ndarray]:
+    # def fetch_personnel_records_and_images(self, save_directory):
+    #     url = "http://utils_service:5004/personel"
+    #     try:
+    #         # Disable proxy for this request
+    #         response = requests.get(url, proxies={"http": None, "https": None})
+    #         response.raise_for_status()  # Raise an HTTPError for bad responses
+    #         personnel_records = response.json()
+            
+    #         print("Personnel Records:")
+    #         for record in personnel_records:
+    #             print("---------Personnel Record---------")
+    #             print(record)
+                
+    #             # Retrieve and save the image
+    #             image_path = record.get('file_path')
+    #             if image_path:
+    #                 try:
+    #                     image_response = requests.get(image_path, proxies={"http": None, "https": None})
+    #                     image_response.raise_for_status()
+                        
+    #                     # Save the image to the specified directory
+    #                     image_filename = os.path.basename(image_path)
+    #                     save_path = os.path.join(save_directory, image_filename)
+    #                     with open(save_path, 'wb') as file:
+    #                         file.write(image_response.content)
+    #                     print(f"Image saved to {save_path}")
+    #                 except requests.exceptions.RequestException as e:
+    #                     print(f"An error occurred while fetching the image: {e}")
+    #             else:
+    #                 print("No image path found for this record.")
+    #     except requests.exceptions.RequestException as e:
+    #         print(f"An error occurred: {e}")
+    
+    # Example usage
+    # def create_face_database(self, image_folder: str) -> Dict[str, np.ndarray]:
+    #     # save_directory = '../save/images'
+    #     # self.fetch_personnel_records_and_images(save_directory)
+    #     # self.fetch_personnel_records()
+    #     database: Dict[str, np.ndarray] = {}
+    #     for filename in os.listdir(image_folder):
+    #         if filename.endswith((".jpg", ".jpeg", ".png")):
+    #             name = os.path.splitext(filename)[0]
+    #             image_path = os.path.join(image_folder, filename)
+    #             image = cv2.imread(image_path)
+    #             image = cv2.copyMakeBorder(
+    #                 image, 
+    #                 640, 640, 640, 640, 
+    #                 cv2.BORDER_CONSTANT, 
+    #                 value=[255, 255, 255]
+    #             )
+    #             bboxes, kpss = self.face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=1)
+    #             if len(bboxes) > 0:
+    #                 kps = kpss[0]
+    #                 embedding = self.face_recognizer.get(image, kps)
+    #                 database[name] = embedding
+    #     print(f"--------------Database created with {len(database)} entries.--------------")
+    #     self.database = database
+    #     return database
+    
+    def create_face_database(self) -> Dict[str, np.ndarray]:
+        url = "http://utils_service:5004/personel"
+        image_url_template = "http://utils_service:5004/personel/image/?id={user_id}"
         
-        import json
-        from urllib.request import urlopen
-        from urllib.error import URLError, HTTPError
+        try:
+            # Disable proxy for this request
+            response = requests.get(url, proxies={"http": None, "https": None})
+            response.raise_for_status()  # Raise an HTTPError for bad responses
+            personnel_records = response.json()
+            
+            print("Personnel Records:")
+            for record in personnel_records:
+                print("---------Personnel Record---------")
+                print(record)
+                
+                # Retrieve the image
+                user_id = record.get('_id')
+                if user_id:
+                    try:
+                        image_url = image_url_template.format(user_id=user_id)
+                        image_response = requests.get(image_url, proxies={"http": None, "https": None})
+                        image_response.raise_for_status()
+                        
+                        # Process the image to get the embedding
+                        image_array = np.frombuffer(image_response.content, np.uint8)
+                        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+                        image = cv2.copyMakeBorder(
+                            image, 
+                            640, 640, 640, 640, 
+                            cv2.BORDER_CONSTANT, 
+                            value=[255, 255, 255]
+                        )
+                        bboxes, kpss = self.face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=1)
+                        if len(bboxes) > 0:
+                            kps = kpss[0]
+                            embedding = self.face_recognizer.get(image, kps)
+                            key = f"{record['_id']}"
+                            # key = f"{record['name']}_{record['lastname']}"
+                            self.database[key] = embedding
+                            print(f"Embedding saved for {key}")
+                    except requests.exceptions.RequestException as e:
+                        print(f"An error occurred while fetching the image: {e}")
+                else:
+                    print("No user ID found for this record.")
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
+    def update_database_with_personnel_id(self, personnel_id: str) -> None:
+        personnel_url = f"http://utils_service:5004/personel/{personnel_id}"
+        image_url_template = f"http://utils_service:5004/personel/image/?id={personnel_id}"
         
-        def fetch_personnel_records():
-            url = "http://utils_service:5004/personel"
-            try:
-                with urlopen(url) as response:
-                    if response.status != 200:
-                        raise HTTPError(url, response.status, response.reason, response.headers, None)
-                    data = response.read().decode('utf-8')
-                    personnel_records = json.loads(data)
-                    print("Personnel Records:")
-                    for record in personnel_records:
-                        print("---------Personnel Record---------")
-                        print(record)
-            except (URLError, HTTPError) as e:
-                print(f"An error occurred: {e}")
-        
-        # Call the function
-        fetch_personnel_records()
-        database: Dict[str, np.ndarray] = {}
-        for filename in os.listdir(image_folder):
-            if filename.endswith((".jpg", ".jpeg", ".png")):
-                name = os.path.splitext(filename)[0]
-                image_path = os.path.join(image_folder, filename)
-                image = cv2.imread(image_path)
-                image = cv2.copyMakeBorder(
-                    image, 
-                    640, 640, 640, 640, 
-                    cv2.BORDER_CONSTANT, 
-                    value=[255, 255, 255]
-                )
-                bboxes, kpss = face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=1)
-                if len(bboxes) > 0:
-                    kps = kpss[0]
-                    embedding = face_recognizer.get(image, kps)
-                    database[name] = embedding
-        print(f"--------------Database created with {len(database)} entries.--------------")
-        return database
-
+        try:
+            # Fetch personnel record
+            response = requests.get(personnel_url, proxies={"http": None, "https": None})
+            response.raise_for_status()  # Raise an HTTPError for bad responses
+            personnel_record = response.json()
+            
+            print("Personnel Record:")
+            print(personnel_record)
+            
+            # Retrieve the image
+            if personnel_record:
+                try:
+                    image_url = image_url_template.format(user_id=personnel_id)
+                    image_response = requests.get(image_url, proxies={"http": None, "https": None})
+                    image_response.raise_for_status()
+                    
+                    # Process the image to get the embedding
+                    image_array = np.frombuffer(image_response.content, np.uint8)
+                    image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+                    image = cv2.copyMakeBorder(
+                        image, 
+                        640, 640, 640, 640, 
+                        cv2.BORDER_CONSTANT, 
+                        value=[255, 255, 255]
+                    )
+                    bboxes, kpss = self.face_detector.detect(image, input_size=(640,640), thresh=0.5, max_num=1)
+                    if len(bboxes) > 0:
+                        kps = kpss[0]
+                        embedding = self.face_recognizer.get(image, kps)
+                        key = personnel_id
+                        self.database[key] = embedding
+                        print(f"Embedding saved for {key}")
+                except requests.exceptions.RequestException as e:
+                    print(f"An error occurred while fetching the image: {e}")
+            else:
+                print("Personnel record not found.")
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
+        # Example usage
+      
+  
     # def gorkem_create_face_database(self, model, face_detector, endpoint_url="http://utils_service:5004/personel/image"):
     #     database = {}
         
@@ -186,7 +309,7 @@ class Stream:
             print(f"No image found for {new_name} with extensions {extensions}")
 
     def _save_and_log_face(
-        self, face_image: np.ndarray | None, label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool
+        self, face_image: np.ndarray | None,  label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool, camera: str = None, personnel_id: str = None
     ) -> str:
         if face_image is None:
             print("Error: The face image is empty and cannot be saved.")
@@ -234,6 +357,8 @@ class Stream:
             "gender": gender,
             "age": age,
             "image_path": file_path,
+            "camera": camera,
+            "personnel_id": personnel_id
         }
         notify_new_face(log_record)
         self.recognition_logs_collection.insert_one(log_record)
@@ -241,7 +366,7 @@ class Stream:
         return file_path
 
     def _get_attributes(
-        self, frame: np.ndarray
+        self, frame: np.ndarray, camera: str = None
     ) -> Tuple[
         List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
     ]:
@@ -262,16 +387,39 @@ class Stream:
             label = "Unknown"
             is_known = False
 
-            for name, db_embedding in self.database.items():
+            for id, db_embedding in self.database.items():
                 dist = np.linalg.norm(db_embedding - embedding)
                 if dist < min_dist:
                     min_dist = dist
-                    best_match = name
+                    best_match = id
 
             sim = self.face_recognizer.compute_sim(embedding, self.database.get(best_match, np.zeros_like(embedding)))
             if sim >= self.similarity_threshold:
-                label = best_match
-                is_known = True
+                try:
+                    # Extract personnel ID from the best match
+                    personnel_id = best_match
+                    
+                    # Send a GET request to fetch personnel details
+                    url = f"http://utils_service:5004/personel/{personnel_id}"
+                    response = requests.get(url, proxies={"http": None, "https": None})
+                    response.raise_for_status()
+                    
+                    # Parse the response to get the personnel's name and last name
+                    person = response.json()
+                    if person and "name" in person and "lastname" in person:
+                        label = f"{person['name']} {person['lastname']}"
+                        is_known = True
+                    else:
+                        label = best_match  # Fallback to best match if name and lastname are not found
+                        is_known = False
+                except requests.exceptions.RequestException as e:
+                    print(f"An error occurred while fetching personnel details: {e}")
+                    label = best_match  # Fallback to best match in case of an error
+                    is_known = False
+            # if sim >= self.similarity_threshold:
+                
+            #     label = best_match
+            #     is_known = True
 
             bbox = bboxes[idx]
             x1, y1, x2, y2 = map(int, bbox[:4])
@@ -291,7 +439,7 @@ class Stream:
             emotion = self.emotion_detector.detect_emotion_from_array(face_image)
             emotions.append(emotion)
 
-            self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known)
+            self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera, personnel_id)
 
         return bboxes, labels, sims, emotions, genders, ages
     
@@ -326,7 +474,7 @@ class Stream:
                     break
 
             for bbox, label, sim, emotion, gender, age in zip(
-                *self._get_attributes(frame)
+                *self._get_attributes(frame, camera)
             ):
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)

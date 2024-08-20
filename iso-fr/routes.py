@@ -23,7 +23,13 @@ import logging
 import pytz
 from dotenv import load_dotenv
 from config import XMLConfig
+import requests
+import os
 
+# Unset proxy environment variables
+os.environ.pop('HTTP_PROXY', None)
+os.environ.pop('HTTPS_PROXY', None)
+os.environ.pop('ALL_PROXY', None)
 # Load environment variables from .env file
 load_dotenv()
 
@@ -198,6 +204,19 @@ def handle_video_frames(data):
     is_recording = data['isRecording']
 
     processed_frames = []
+    # stream_instance.fetch_personnel_records()
+    # url = "http://utils_service:5004/personel"
+    # try:
+    #     # Disable proxy for this request
+    #     response = requests.get(url)
+    #     response.raise_for_status()  # Raise an HTTPError for bad responses
+    #     personnel_records = response.json()
+    #     print("Personnel Records:")
+    #     for record in personnel_records:
+    #         print("---------Personnel Record---------")
+    #         print(record)
+    # except requests.exceptions.RequestException as e:
+    #     print(f"An error occurred: {e}")
 
     for frame_data in frames_data:
         image_data = frame_data.split(',')[1]
@@ -215,6 +234,21 @@ def stop_recording():
         stream_instance.stop_recording(),
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
+
+
+@camera_bp.route("/update_database_with_id", methods=["POST"])
+def update_database_with_id():
+    data = request.json
+    personnel_id = data.get('personnel_id')
+    
+    if not personnel_id:
+        return jsonify({"status": "error", "message": "personnel_id is required"}), 400
+    
+    try:
+        stream_instance.update_database_with_personnel_id(personnel_id)
+        return jsonify({"status": "success", "message": f"Embedding saved for {personnel_id}"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @camera_bp.route("/recog", methods=["GET"])
 def get_all_logs_by_date():

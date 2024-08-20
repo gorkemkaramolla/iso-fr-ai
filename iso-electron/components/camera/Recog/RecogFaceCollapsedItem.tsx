@@ -31,14 +31,15 @@ const RecogFaceCollapsedItem: React.FC<RecogFaceCollapsedItemProps> = ({
     <div className='flex items-center justify-start gap-2 font-bold bg-slate-50 w-full p-2 rounded-xl shadow-md'>
       <>
         <img
-          src={`${process.env.NEXT_PUBLIC_FLASK_URL}/faces/${group.name}`}
+          // src={`${process.env.NEXT_PUBLIC_FLASK_URL}/faces/${group.name}`}
+          src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${group.personnel_id}`}
           alt='avatar'
           className='shadow-md shadow-red-500 object-cover w-10 h-10 rounded-full cursor-pointer'
           onError={(e) => {
             e.currentTarget.onerror = null;
             e.currentTarget.src = './inner_circle.png';
           }}
-          onClick={() => handleImageClick(group.name)}
+          onClick={() => handleImageClick(group.personnel_id)}
           title='Profile Git'
         />
       </>

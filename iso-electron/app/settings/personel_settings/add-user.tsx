@@ -109,6 +109,25 @@ export default function AddPersonelDialog({
           detail: data.message || 'Personel başarıyla eklendi.',
           life: 3000,
         });
+
+        // Send a request to update the database
+        const updateResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_FLASK_URL}/update_database_with_id`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ personnel_id: data.data._id }),
+          }
+        );
+
+        if (updateResponse.ok) {
+          console.log('Database updated successfully');
+        } else {
+          console.error('Failed to update the database');
+        }
+
         router.push(`/profiles?id=${data.data._id}`);
         setIsModalOpen(false);
       } else {

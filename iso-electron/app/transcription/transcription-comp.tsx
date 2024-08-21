@@ -25,6 +25,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
     null
   );
   const [rightScreen, setRightScreen] = useState('history');
+  const [rightPanelSize, setRightPanelSize] = useState(25); // State to track right panel size
 
   const [isEditing, setIsEditing] = useState(false);
   const toast = useRef<Toast>(null);
@@ -32,6 +33,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
   const [showButton, setShowButton] = useState(false); // State to control button visibility
   const [skipAnimation, setSkipAnimation] = useState(true); // Flag to skip animation on initial render
+  const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
 
   // Effect to load player visibility state from localStorage on mount
   useEffect(() => {
@@ -48,12 +50,19 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
     }
   }, []);
 
+  const handleDeleteTranscription = async () => {
+    const response = await api.delete(
+      `transcriptions/${transcription.transcription_id}`
+    );
+    const data = await response.json();
+    console.log(data);
+  };
+
   const handleSpeakerNameChange = async (
     segmentId: string,
     oldName: string,
     newName: string
   ) => {
-    const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
     try {
       await api.post(`/rename_segments/${transcription.transcription_id}`, {
         old_names: [oldName],
@@ -79,8 +88,6 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
     const oldText = segments.find(
       (segment: Segment) => segment.segment_id === segmentId
     )?.transcribed_text;
-
-    const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
 
     try {
       const response = await api.post(
@@ -114,7 +121,6 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   };
 
   const handleEditTranscriptionName = async (new_name: string) => {
-    const api = createApi(`${process.env.NEXT_PUBLIC_DIARIZE_URL}`);
     await api.put(`transcriptions/${transcription.transcription_id}`, {
       name: new_name,
     });
@@ -146,10 +152,17 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
     }
   };
 
+  // Effect to check if the right panel size is below 15%
+  useEffect(() => {
+    if (rightPanelSize < 15) {
+      setRightScreen(null); // Close the right screen
+    }
+  }, [rightPanelSize]);
+
   return (
     <div className='relative'>
       <Toast ref={toast} />
-      <div className='bg-gray fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full z-50'>
+      <div className='fixed bottom-0 left-1/2 transform -translate-x-1/2 md:w-2/4 z-50'>
         <WaveAudio
           viewMode={1}
           handleHidePlayer={handleHidePlayer}
@@ -176,11 +189,12 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
           </motion.div>
         )}
       </div>
-      <div className='flex flex-col relative lg:flex-row min-h-screen'>
+      <div className='flex flex-col relative lg:flex-row '>
         <PanelGroup
           autoSaveId='example'
           className='w-full h-full flex'
           direction='horizontal'
+          onResize={(sizes) => setRightPanelSize(sizes[1])} // Track right panel size
         >
           <Panel defaultSize={75} minSize={60}>
             <div className='p-4 '>
@@ -190,7 +204,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
                 transcription={transcription}
                 editingRef={editingRef}
                 handleEditName={handleEditTranscriptionName}
-                handleDeleteSelected={() => {}}
+                handleDeleteTranscription={handleDeleteTranscription}
                 handleSpeakerNameChange={handleSpeakerNameChange}
                 handleTranscribedTextChange={handleTranscribedTextChange}
                 transcriptionRef={transcriptionRef}
@@ -203,32 +217,25 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
               <FaGripVertical style={{ zIndex: 100 }} className='text-[12px]' />
             </div>
           </PanelResizeHandle>
-          <Panel defaultSize={25} minSize={0.5} className='z-0 md:block hidden'>
-            <div className='flex w-full justify-between'>
-              {/* <button
-                onClick={() => {
-                  setRightScreen('history');
-                }}
-              >
-                history
-              </button>
-              <button
-                onClick={() => {
-                  setRightScreen('other');
-                }}
-              >
-                other
-              </button> */}
-            </div>
-
-            {rightScreen === 'history' && (
-              <div>
-                <TranscriptionHistory
-                  activePageId={transcription?.transcription_id}
-                />
+          {rightScreen && (
+            <Panel
+              defaultSize={25}
+              minSize={0.5}
+              className='z-0 md:block hidden '
+            >
+              <div className='flex w-full justify-between'>
+                {/* Optional buttons to switch screens */}
               </div>
-            )}
-          </Panel>
+
+              {rightScreen === 'history' && (
+                <div>
+                  <TranscriptionHistory
+                    activePageId={transcription?.transcription_id}
+                  />
+                </div>
+              )}
+            </Panel>
+          )}
         </PanelGroup>
       </div>
     </div>

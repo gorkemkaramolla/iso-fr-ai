@@ -16,7 +16,10 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Segment } from '@/types';
-
+import { Ellipsis } from 'lucide-react';
+import { Menu } from 'primereact/menu';
+import NextUIDropDown from '@/components/ui/nextui-dropdown';
+import ExportButtons from './export-buttons';
 const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
 
 interface TranscriptSegment {
@@ -36,6 +39,7 @@ interface TextEditorProps {
   transcription: Transcript | null;
   editingRef: RefObject<HTMLTextAreaElement>;
   handleEditName?: (newName: string) => void;
+  handleDeleteTranscription?: () => void;
   handleDeleteSelected?: (segmentId: string) => void;
   handleSpeakerNameChange?: (
     segmentId: string,
@@ -68,6 +72,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   handleSpeakerNameChange = () => {},
   handleTranscribedTextChange = () => {},
   transcriptionRef,
+  handleDeleteTranscription = () => {},
   currentTime,
 }) => {
   const [menuState, setMenuState] = useState<MenuState>({
@@ -306,13 +311,22 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   return (
     <Card>
-      <Link href='/speech' passHref>
-        <Button
-          icon='pi pi-arrow-left'
-          label='Sentezleyici'
-          className='p-button-text  p-button-plain'
+      <div className='flex justify-between'>
+        <Link href='/speech' passHref>
+          <Button
+            icon='pi pi-arrow-left'
+            label='Sentezleyici'
+            className='p-button-text  p-button-plain'
+          />
+        </Link>
+        <ExportButtons
+          handleDeleteTranscription={handleDeleteTranscription}
+          isTranscriptionNameEditing={isTranscriptionNameEditing}
+          setTranscriptionNameEditing={setIsTranscriptionNameEditing}
+          data={transcription}
+          fileName='output'
         />
-      </Link>
+      </div>
       <div className='flex-col-reverse flex md:flex-row items-start md:items-center md:justify-between mb-4'>
         <div className='flex md:items-center  space-x-4 w-10/12  px-4'>
           {isTranscriptionNameEditing ? (
@@ -325,12 +339,14 @@ const TextEditor: React.FC<TextEditorProps> = ({
               onChange={(e) => setTranscriptionName(e.target.value)}
             />
           ) : (
-            <h1
-              className='text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap'
-              onClick={handleTranscriptionNameChange}
-            >
-              {transcriptionName}
-            </h1>
+            <div>
+              <h1
+                className='text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap'
+                onClick={handleTranscriptionNameChange}
+              >
+                {transcriptionName}
+              </h1>
+            </div>
           )}
         </div>
 

@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-COPY . /app
+# COPY . /app
 
 # Create the directory and download the files
 RUN mkdir -p /app/services/large-v3 && \
@@ -48,6 +48,8 @@ RUN mkdir -p /app/services/large-v3 && \
     chmod -R 777 /app/services/large-v3 && \
     echo "Listing contents of the model directory:" && \
     ls -la /app/services/large-v3
+
+COPY . /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt

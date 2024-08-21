@@ -15,6 +15,10 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toast } from 'primereact/toast';
 import { useRouter } from 'next/navigation';
+import EnlargedImage from './enlarged-image';
+import InfoSection from './info-section';
+import InfoItem from './info-item';
+import RecogPage from '@/components/camera/Recog2/recog-page';
 
 interface Props {
   profileData: Personel;
@@ -35,46 +39,6 @@ interface Personel {
   resume: string;
 }
 
-interface EnlargedImageProps {
-  src: string;
-  alt: string;
-  onClose: () => void;
-}
-
-function EnlargedImage({ src, alt, onClose }: EnlargedImageProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className='fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50'
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.8 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.8 }}
-        className='relative'
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Image
-          src={src}
-          alt={alt}
-          width={600}
-          height={600}
-          className='max-w-full max-h-[90vh] object-contain'
-        />
-        <button
-          onClick={onClose}
-          className='absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2'
-        >
-          Close
-        </button>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 export default function Profile({ profileData }: Props) {
   const [personel, setPersonel] = useState<Personel | null>(profileData);
   const [isEditing, setIsEditing] = useState(false);
@@ -93,7 +57,7 @@ export default function Profile({ profileData }: Props) {
       try {
         const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
         const response = await api.get(`/personel/${profileData._id}`, {});
-        const data = await response.json();
+        const data = await response.json(); // Axios handles JSON parsing
         setPersonel(data);
         setEditedPersonel(data);
         setError(null);
@@ -105,7 +69,6 @@ export default function Profile({ profileData }: Props) {
       }
     };
 
-    // If the profile data changes, refetch it
     if (profileData._id) {
       fetchPersonel();
     }
@@ -120,12 +83,10 @@ export default function Profile({ profileData }: Props) {
       const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
       const formData = new FormData();
 
-      // Append all personel data
       Object.entries(editedPersonel || {}).forEach(([key, value]) => {
         formData.append(key, value as string);
       });
 
-      // Append the new image if it exists
       if (newImage) {
         formData.append('image', newImage);
       }
@@ -190,12 +151,14 @@ export default function Profile({ profileData }: Props) {
   if (!personel) return <div className='text-center py-8'>Yükleniyor...</div>;
 
   return (
-    <div className='container mx-auto flex px-4 sm:px-6 lg:px-8'>
+    <div className='container flex px-4 sm:px-6 lg:px-8 w-full max-w-4xl  bg-white shadow-xl rounded-lg overflow-hidden'>
       <Toast ref={toast} />
-      <div className='w-full max-w-4xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden'>
+      <RecogPage />
+
+      <div className=''>
         <div className='bg-gradient-to-r from-blue-600 to-indigo-700 h-24'></div>
         <div className='relative px-6 -mt-12 pb-8'>
-          <div className='flex flex-col items-center'>
+          <div className='flex flex-col items-center '>
             {isEditing ? (
               <div className='relative'>
                 <Image
@@ -274,7 +237,7 @@ export default function Profile({ profileData }: Props) {
             </motion.div>
           </div>
 
-          <div className='mt-6 grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <div className='flex justify-between '>
             <InfoSection title='İletişim Bilgileri'>
               <InfoItem
                 icon={<Mail />}
@@ -401,76 +364,5 @@ export default function Profile({ profileData }: Props) {
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function InfoSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <h2 className='text-lg font-semibold text-gray-800 mb-2'>{title}</h2>
-      <div className='space-y-2'>{children}</div>
-    </div>
-  );
-}
-
-function InfoItem({
-  icon,
-  label,
-  isEditing,
-  name,
-  value,
-  onChange,
-  href,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  isEditing: boolean;
-  name: string;
-  value: string | undefined;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  href?: string;
-}) {
-  return (
-    <motion.div
-      className='flex items-center text-gray-700'
-      animate={
-        isEditing
-          ? {
-              backgroundColor: ['#ffffff', '#f0f4ff', '#ffffff'],
-              boxShadow: [
-                '0 0 0 rgba(59, 130, 246, 0)',
-                '0 0 6px rgba(59, 130, 246, 0.3)',
-                '0 0 0 rgba(59, 130, 246, 0)',
-              ],
-            }
-          : {}
-      }
-      transition={{ duration: 0.7, ease: 'easeInOut' }}
-    >
-      <div className='mr-2 text-blue-600'>{icon}</div>
-      <div className='flex-grow'>
-        <p className='font-medium'>{label}</p>
-        {isEditing ? (
-          <input
-            name={name}
-            value={value}
-            onChange={onChange}
-            className='text-gray-600 border-b border-gray-300 p-1 w-full bg-transparent focus:outline-none focus:border-blue-500 transition-colors duration-300'
-          />
-        ) : href ? (
-          <a href={href} className='text-blue-500 hover:underline'>
-            {value}
-          </a>
-        ) : (
-          <p className='text-gray-600'>{value}</p>
-        )}
-      </div>
-    </motion.div>
   );
 }

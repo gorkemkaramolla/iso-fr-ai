@@ -108,21 +108,21 @@ export default function ShowUsers() {
         toastRef.current?.show({
           severity: 'success',
           summary: 'Success',
-          detail: 'Selected user(s) successfully deleted.',
+          detail: 'Seçilen kullanıcılar başarıyla silindi.',
         });
         fetchUsers();
       } else {
         toastRef.current?.show({
           severity: 'warn',
           summary: 'Partial Success',
-          detail: 'Some user(s) could not be deleted.',
+          detail: 'Bazı kullanıcılar silinemedi. Lütfen tekrar deneyin.',
         });
       }
     } catch (error) {
       toastRef.current?.show({
         severity: 'error',
         summary: 'Error',
-        detail: 'An error occurred. Please try again.',
+        detail: 'Bir hatayla karşılaşıldı. Lütfen tekrar deneyin.',
       });
     }
   };

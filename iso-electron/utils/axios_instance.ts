@@ -62,7 +62,7 @@ export default function createApi(baseURL = process.env.NEXT_PUBLIC_AUTH_URL) {
     options: RequestInit = {}
   ): Promise<Response> {
     const { headers, ...restOptions } = options;
-    const response = await fetch(`${baseURL}${url}`, {
+    const response = await fetch(`${baseURL}/${url}`, {
       credentials: 'include', // This is equivalent to `withCredentials: true` in axios
       headers: {
         ...defaultHeaders,

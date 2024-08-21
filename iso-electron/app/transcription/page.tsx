@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Transcript } from '@/types';
@@ -18,7 +18,7 @@ function TranscriptionContent() {
   const [transcription, setTranscription] = useState<Transcript | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const router = useRouter();
   const id = searchParams.get('id');
 
   useEffect(() => {
@@ -32,6 +32,7 @@ function TranscriptionContent() {
         setTranscription(data);
       } catch (error) {
         setError('Failed to fetch transcription data');
+        router.push('/speech');
         console.error('Error fetching transcription:', error);
       } finally {
         setIsLoading(false);

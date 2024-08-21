@@ -130,6 +130,7 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
         <h1 className='text-3xl font-bold mb-8'>Konuşma Sentezleyici</h1>
 
         <motion.div
+          className=''
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -258,7 +259,7 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
               transition={{ duration: 0.5 }}
             >
               <div className='px-6 py-4 bg-indigo-600 text-white'>
-                <h2 className='text-xl font-semibold'>Konuşma Sentezi</h2>
+                <h2 className='text-xl  font-semibold'>Konuşma Sentezi</h2>
                 <p className='text-sm opacity-80'>
                   Bu tarihte işlendi:{' '}
                   {new Date(response.created_at).toLocaleString()} | Algılanılan
@@ -268,11 +269,15 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
                   Düzenlemek için tıkla
                 </Link>
               </div>
-              <ul className='divide-y divide-gray-200'>
+              <ul className='divide-y  divide-gray-200'>
+                asd Lorem ipsum, dolor sit amet consectetur adipisicing elit.
+                Commodi labore reiciendis et non, a ullam voluptas ea
+                voluptatum? Iste inventore vel a placeat laboriosam unde aperiam
+                nostrum atque, amet quos!
                 {response.transcription.segments.map((segment, index) => (
                   <li
                     key={index}
-                    className='px-6 py-4 hover:bg-indigo-50 transition duration-150'
+                    className='px-6 py-4  hover:bg-indigo-50 transition duration-150'
                   >
                     <div className='flex items-center space-x-3 text-sm'>
                       <span className='font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded'>

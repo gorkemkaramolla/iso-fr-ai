@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Personel } from '@/types';
 import createApi from '@/utils/axios_instance';
+import RecogPage from '@/components/camera/Recog2/recog-page';
 
 // Import the ClientProfile dynamically with no SSR
 const ClientProfile = dynamic(() => import('./profile'), {
@@ -64,7 +65,14 @@ function ProfileContent() {
 export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ProfileContent />
+      <div className='flex w-full  items-center justify-center'>
+        <div className='w-2/4 '>
+          <ProfileContent />
+        </div>
+        {/* <div className='w-1/4 '>
+          <RecogPage />
+        </div> */}
+      </div>
     </Suspense>
   );
 }

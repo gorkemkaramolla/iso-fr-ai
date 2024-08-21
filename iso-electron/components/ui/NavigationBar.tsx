@@ -122,7 +122,9 @@ export default function App() {
           'data-[active=true]:after:rounded-[2px]',
           'data-[active=true]:after:bg-primary',
         ],
+        wrapper: ['max-w-full', 'border-b', 'border-base-300'],
       }}
+      
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
     >
@@ -145,7 +147,7 @@ export default function App() {
           </Link>
         </NavbarBrand>
       </NavbarContent>
-      <NavbarContent className='hidden sm:flex gap-4' justify='center'>
+      <NavbarContent className='hidden sm:flex gap-10' justify='center'>
         {menuItems.map((item, index) => (
           <NavbarItem key={index} isActive={pathname === item.href}>
             <Link

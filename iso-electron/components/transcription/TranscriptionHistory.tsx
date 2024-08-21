@@ -39,13 +39,9 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
       );
       setResponses(sortedData);
 
-      // Set the latest available date as the default selected date
+      console.log(responses);
       if (sortedData.length > 0) {
         setSelectedDate(new Date(sortedData[0].created_at));
-      }
-
-      if (sortedData.length < 8) {
-        setCurrentPage(1);
       }
     } catch (error) {
       console.error('Transkriptler getirilemedi:', error);
@@ -62,8 +58,12 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     const calculateItemsPerPage = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
-        const newItemsPerPage = Math.floor(containerWidth / 100) * 2;
-        setItemsPerPage(Math.max(1, newItemsPerPage));
+        // Ensure at least 1 item per page
+        const newItemsPerPage = Math.max(
+          1,
+          Math.floor(containerWidth / 100) * 2
+        );
+        setItemsPerPage(newItemsPerPage);
       }
     };
 
@@ -75,11 +75,34 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     };
   }, []);
 
+  // Load active transcription from localStorage and determine the correct page
+  useEffect(() => {
+    const storedActiveId = localStorage.getItem('activeTranscriptionId');
+    if (storedActiveId && responses.length > 0) {
+      const activeIndex = responses.findIndex(
+        (response) => response.transcription_id === storedActiveId
+      );
+
+      if (activeIndex !== -1) {
+        const calculatedPage = Math.ceil((activeIndex + 1) / itemsPerPage);
+        setCurrentPage(calculatedPage);
+      }
+    }
+  }, [responses, itemsPerPage]);
+
+  // Save the currently active transcription to localStorage whenever it changes
+  useEffect(() => {
+    if (activePageId) {
+      localStorage.setItem('activeTranscriptionId', activePageId);
+    }
+  }, [activePageId]);
+
   // Extract unique available dates from responses
   const availableDates = Array.from(
     new Set(responses.map((response) => new Date(response.created_at)))
   ).sort((a, b) => a.getTime() - b.getTime());
 
+  // Filter responses based on the selected date
   const filteredResponses = selectedDate
     ? responses.filter(
         (response) =>
@@ -96,10 +119,11 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   );
 
   const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
+  console.log();
 
   return (
     <div
-      className='h-full sticky top-0 border-gray-200  overflow-y-auto'
+      className='h-full  sticky top-0 border-gray-200  overflow-y-auto'
       ref={containerRef}
     >
       {loading ? (
@@ -129,7 +153,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                           : 'hover:bg-indigo-100'
                       }`}
                     >
-                      <p className='text-sm font-medium truncate'>
+                      <p className='text-sm   font-medium flex-wrap  flex '>
                         {response.name}
                       </p>
                       <p className='text-sm font-medium truncate'>

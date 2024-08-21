@@ -56,7 +56,7 @@ export default function CalendarComponent({
   return (
     <div className='flex items-center justify-content-center p-0'>
       <Button
-        className='text-sm bg-primary  rounded-r-none'
+        className='text-sm bg-primary disabled:bg-primary-900 rounded-r-none'
         onClick={handleShowAll}
         disabled={!selectedDate}
         icon={'pi pi-calendar-times'}

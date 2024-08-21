@@ -7,7 +7,7 @@ interface CameraDropdownProps {
   cameraStreams: CameraStream[];
   cameraUrls: Camera[];
   addCameraStream: (camera: Camera) => void;
-  showAddCamera: boolean;
+
 }
 
 const CameraDropdown: React.FC<CameraDropdownProps> = ({
@@ -16,7 +16,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
   cameraStreams,
   cameraUrls,
   addCameraStream,
-  showAddCamera,
+
 }) => {
   const [videoInputDevices, setVideoInputDevices] = React.useState<
     MediaDeviceInfo[]
@@ -41,9 +41,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
   // const streams = Array.isArray(cameraStreams) ? cameraStreams : [];
   return (
     <div
-      className={`bg-slate-100 p-2 rounded-xl m-4 flex gap-2 items-start ${
-        showAddCamera ? 'hidden' : ''
-      }`}
+      className={`flex gap-2`}
     >
       <select
         value={selectedCamera?.url || ''}
@@ -54,7 +52,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
             url: e.target.value,
           });
         }}
-        className='select select-bordered select-primary w-fit'
+        className='select select-sm w-fit focus:outline-none'
       >
         <option disabled value='' className='select-option'>
           Kamera Seçiniz
@@ -107,7 +105,7 @@ const CameraDropdown: React.FC<CameraDropdownProps> = ({
           onClick={() => {
             selectedCamera && addCameraStream(selectedCamera);
           }}
-          className='btn btn-neutral text-white'
+          className='btn btn-sm btn-neutral text-white'
           disabled={cameraStreams.length >= 4 || selectedCamera === undefined}
           aria-disabled={
             cameraStreams.length >= 4 || selectedCamera === undefined

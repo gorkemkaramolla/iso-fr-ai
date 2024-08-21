@@ -4,6 +4,7 @@ import {
   truncateString,
 } from '@/library/camera/utils';
 import { GroupedRecogFaces } from '@/types';
+import { Avatar, AvatarIcon } from '@nextui-org/react';
 import React from 'react';
 
 interface RecogFaceCollapsedItemProps {
@@ -30,18 +31,32 @@ const RecogFaceCollapsedItem: React.FC<RecogFaceCollapsedItemProps> = ({
   return (
     <div className='flex items-center justify-start gap-2 font-bold bg-slate-50 w-full p-2 rounded-xl shadow-md'>
       <>
-        <img
+      <Avatar
+      key={group.personnel_id}
+      src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${group.personnel_id}`}
+      classNames={{
+        base: 'bg-gradient-to-br from-[#FFB457] to-[#FF705B] shadow-sm shadow-red-500 cursor-pointer w-8 h-8 rounded-full overflow-clip',
+        icon: 'text-black/80',
+        fallback: 'w-4 h-4',
+      }}
+      style={{ fontSize: '1.5rem' }}
+      onClick={() => handleImageClick(group.personnel_id)}
+      title={`${group.name}`}
+      showFallback
+      // fallback={<AvatarIcon />}
+    />
+        {/* <img
           // src={`${process.env.NEXT_PUBLIC_FLASK_URL}/faces/${group.name}`}
           src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${group.personnel_id}`}
           alt='avatar'
-          className='shadow-md shadow-red-500 object-cover w-10 h-10 rounded-full cursor-pointer'
+          className='shadow-sm shadow-red-500 object-cover w-[1.75rem] h-[1.75rem] rounded-full cursor-pointer'
           onError={(e) => {
             e.currentTarget.onerror = null;
             e.currentTarget.src = './inner_circle.png';
           }}
           onClick={() => handleImageClick(group.personnel_id)}
           title='Profile Git'
-        />
+        /> */}
       </>
       {editingName === group.name ? (
         <div className='flex items-center gap-2'>

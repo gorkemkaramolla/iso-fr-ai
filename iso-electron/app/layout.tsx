@@ -4,7 +4,6 @@ import Provider from '@/components/providers';
 import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
 import 'primereact/resources/primereact.min.css'; //core css
 import 'primeicons/primeicons.css'; //icons
-import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'ISO-AI',

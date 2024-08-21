@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import EnlargedImage from './enlarged-image';
 import InfoSection from './info-section';
 import InfoItem from './info-item';
-import RecogPage from '@/components/camera/Recog2/recog-page';
+// import RecogPage from '@/components/camera/Recog2/recog-page';
 
 interface Props {
   profileData: Personel;
@@ -153,7 +153,7 @@ export default function Profile({ profileData }: Props) {
   return (
     <div className='container flex px-4 sm:px-6 lg:px-8 w-full max-w-4xl  bg-white shadow-xl rounded-lg overflow-hidden'>
       <Toast ref={toast} />
-      <RecogPage />
+      {/* <RecogPage /> */}
 
       <div className=''>
         <div className='bg-gradient-to-r from-blue-600 to-indigo-700 h-24'></div>

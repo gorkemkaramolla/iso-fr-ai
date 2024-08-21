@@ -19,7 +19,7 @@ const socket = io(BASE_URL!);
 const VideoStream: React.FC = () => {
   const toast = useRef<Toast>(null);
 
-  const [showAddCamera, setShowAddCamera] = useState(false);
+
   const [cameraUrls, setCameraUrls] = useState<Camera[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<Camera>();
   const [availableIds, setAvailableIds] = useState([1, 2, 3, 4]);
@@ -226,47 +226,23 @@ const VideoStream: React.FC = () => {
   };
 
   return (
-    <div className='min-h-screen w-full overflow-auto'>
+    <div className='min-h-screen w-full overflow-scroll mt-8'>
       <Toast ref={toast} />
 
-      <div className='container mx-auto mb-20'>
-        <div className='flex items-center'>
-          <div className='flex flex-grow items-center justify-center'>
-            <AddCameraButton
-              toast={toast}
-              showAddCamera={showAddCamera}
-              setShowAddCamera={setShowAddCamera}
-              disabled={false}
-            />
-            <CameraDropdown
-              selectedCamera={selectedCamera}
-              setSelectedCamera={setSelectedCamera}
-              cameraStreams={cameraStreams}
-              cameraUrls={cameraUrls}
-              addCameraStream={addCameraStream}
-              showAddCamera={showAddCamera}
-            />
-          </div>
-
-          <StreamUtilButtons
-            isModified={isModified}
-            resetCameraStreams={resetCameraStreams}
-            deleteAllCameraStreams={deleteAllCameraStreams}
-            setIsGrid={setIsGrid}
-            isGrid={isGrid}
-            cameraStreamsLength={cameraStreams.length}
-          />
-        </div>
+      <div className='mx-auto px-10 mb-20'>
+   
         <div
           className={`flex flex-col-reverse xl:flex-row gap-4 flex-wrap-reverse xl:flex-nowrap`}
           // style={{ flexFlow: 'row wrap' }}
         >
           <div className={`relative flex-1 w-full flex-shrink flex-grow`}>
             <div
+            id='app'
               className={`grid gap-4 ${
                 isGrid ? 'grid-cols-2 grid-rows-2' : ''
               }`}
             >
+     
               {cameraStreams.length > 0 &&
                 cameraStreams
                   .sort((a, b) => a.id - b.id)
@@ -340,9 +316,28 @@ const VideoStream: React.FC = () => {
             </div>
           </div>
           <aside
-            className={`self-start xl:min-w-[400px] xl:max-w-[440px] top-0 ml-auto`}
+            className={`xl:min-w-[400px] xl:max-w-[440px] ml-auto`}
             style={{ position: 'sticky' }}
           >
+        <div className='flex items-center justify-between mx-2 mb-2'>
+          <CameraDropdown
+            selectedCamera={selectedCamera}
+            setSelectedCamera={setSelectedCamera}
+            cameraStreams={cameraStreams}
+            cameraUrls={cameraUrls}
+            addCameraStream={addCameraStream}
+          />
+          <StreamUtilButtons
+            isModified={isModified}
+            resetCameraStreams={resetCameraStreams}
+            deleteAllCameraStreams={deleteAllCameraStreams}
+            setIsGrid={setIsGrid}
+            isGrid={isGrid}
+            cameraStreamsLength={cameraStreams.length}
+            toast={toast}
+          />
+        </div>
+        <hr className='w-[90%] mx-auto' />
             <RecogFaces toast={toast} />
           </aside>
         </div>

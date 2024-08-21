@@ -234,8 +234,9 @@ export default function App() {
           onClick={(event) => profileMenu.current?.toggle(event)}
           variant='light'
           isIconOnly
+          className='text-slate-500'
         >
-          <AvatarIcon />
+          <AvatarIcon  />
         </Button>
         <Menu model={profileItems} popup ref={profileMenu} />
         {/* <NavbarItem className='hidden lg:flex'>

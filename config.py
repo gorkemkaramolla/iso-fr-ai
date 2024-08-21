@@ -27,7 +27,7 @@ class XMLConfig:
         self.FLASK_PORT = None
         self.FLASK_HOST = None
         self.FLASK_DEBUG = False
-        self.DEVICE = 'cpu'
+        self.DEVICE = None
         self.LOGGING_COLLECTION = None
         self.CAMERA_COLLECTION = None
         self.TEMP_DIRECTORY = None

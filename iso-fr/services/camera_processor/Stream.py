@@ -374,7 +374,7 @@ class Stream:
         if frame is None or len(frame.shape) < 2:
             return [], [], [], [], [], []
 
-        bboxes, kpss = self.face_detector.detect(frame, input_size=(640,640), max_num=49)
+        bboxes, kpss = self.face_detector.detect(frame, input_size=(640,640), max_num=49, thresh=0.8)
         if len(bboxes) == 0:
             return [], [], [], [], [], []
 
@@ -427,6 +427,7 @@ class Stream:
 
             if not is_known:
                 label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+                personnel_id = None
                 self.database[label] = embedding
 
             labels.append(label)

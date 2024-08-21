@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { XIcon, SearchIcon } from 'lucide-react';
 import Calendar from '../Calendar'; // Assuming you have a Calendar component
 import { Nullable } from 'primereact/ts-helpers';
+import { Input } from '@nextui-org/react';
 
 interface RecogFaceHeaderBarProps {
   selectedDate: Nullable<Date>;
@@ -23,40 +24,35 @@ const RecogFaceHeaderBar: React.FC<RecogFaceHeaderBarProps> = ({
     <>
       <div className='flex items-center justify-between gap-2 mb-2'>
         <h1
-          className='text-3xl font-bold cursor-pointer'
+          className='text-2xl cursor-pointer nunito-700 text-gray-700'
           onClick={() => router.push('/recog')}
         >
           Tanınan Yüzler
         </h1>
-        <div>
+
+        {/* <div>
           <Calendar
+           className='h-10'
             minDate={new Date('Aug 01, 2024')}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
           />
-        </div>
+        </div> */}
       </div>
-      <label className='input input-bordered flex items-center gap-2 mb-2'>
-        <input
+    <div className='mb-2'>
+
+        <Input
+          isClearable
+          onClear={() => setSearchQuery('')}
           type='text'
           className='grow'
           placeholder='İsim Ara...'
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        {searchQuery && (
-          <XIcon
-            onClick={() => setSearchQuery('')}
-            className='text-red-600 cursor-pointer active:scale-75 transition-transform duration-200'
+          
           />
-        )}
-        <div
-          className={`${searchQuery ? 'hidden' : 'tooltip tooltip-left'}`}
-          data-tip='İsime göre arama yapınız.'
-        >
-          <SearchIcon className={`opacity-70 ${searchQuery ? 'hidden' : ''}`} />
-        </div>
-      </label>
+          </div>
+
     </>
   );
 };

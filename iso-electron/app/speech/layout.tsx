@@ -1,4 +1,3 @@
-import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
 import React from 'react';
 
 interface Props {

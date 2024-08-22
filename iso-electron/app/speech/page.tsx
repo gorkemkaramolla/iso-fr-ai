@@ -1,6 +1,6 @@
 'use client';
 import WhisperUpload from '@/components/sound/WhisperUpload';
-import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
+import TranscriptionHistory from '@/components/transcriptions/TranscriptionHistory';
 import React, { useEffect, useState } from 'react';
 import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
 import useStore from '@/library/store';

@@ -404,6 +404,42 @@ def get_face_image(image_name):
     # If no file matches, return an error message
     return jsonify({"error": "Image not found"}), 404
 
+## -------------------------- Personel Face Detection --------------------------
+
+# Route to detect face from uploaded image
+@camera_bp.route("/detect_face", methods=["POST"])
+def detect_face():
+    if 'image' not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+    
+    image_file = request.files['image']
+    image_bytes = image_file.read()
+    
+    image_array = np.frombuffer(image_bytes, np.uint8)
+    image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+    image = cv2.copyMakeBorder(
+        image, 
+        640, 640, 640, 640, 
+        cv2.BORDER_CONSTANT, 
+        value=[255, 255, 255]
+    )
+    
+    # Assuming self.face_detector is already defined and initialized
+    bboxes, kpss = stream_instance.face_detector.detect(image, input_size=(640, 640), thresh=0.5, max_num=1)
+    
+    if bboxes is None or len(bboxes) == 0:
+        return jsonify({"error": "No face detected"}), 400
+    
+    # Convert detection results to a JSON-serializable format
+    detection_results = {
+        "bboxes": bboxes.tolist(),
+        "kpss": kpss.tolist()
+    }
+    
+    return jsonify(detection_results), 200
+
+
+
 # Register Blueprint
 app.register_blueprint(camera_bp)
 

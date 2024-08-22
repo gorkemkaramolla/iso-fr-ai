@@ -227,7 +227,7 @@ const RecognizedFacesTable: React.FC = () => {
       severity: 'info',
       summary: 'Deletion Initiated',
       detail: 'Items will be deleted. Click Undo to cancel.',
-      life: 6000,
+      life: 4000,
       content: (
         <div className='mb-2 w-full flex-1'>
           <span className='font-bold'>
@@ -251,7 +251,7 @@ const RecognizedFacesTable: React.FC = () => {
       if (selectedFaces && selectedFaces?.length > 0) {
         handleDeleteSelected();
       }
-    }, 6000);
+    }, 4000);
   };
 
   const undoDeletion = () => {
@@ -274,7 +274,7 @@ const RecognizedFacesTable: React.FC = () => {
       severity: 'warn',
       summary: 'Rejected',
       detail: 'You have rejected',
-      life: 3000,
+      life: 1500,
     });
   };
 

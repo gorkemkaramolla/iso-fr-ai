@@ -252,7 +252,6 @@ def hello_route():
 
 @audio_bp.route("/transcriptions/", defaults={"id": None}, methods=["GET"])
 @audio_bp.route("/transcriptions/<id>", methods=["GET"])
-# @jwt_required()
 def get_transcription_route(id):
     if id is None:
         response = diarization_processor.get_all_transcriptions()
@@ -275,6 +274,18 @@ def delete_transcription_route(id):
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
     
     
+def sanitize_name(name):
+    """
+    Sanitizes the input name by removing unwanted characters such as
+    new lines, carriage returns, and tabs, and trims leading/trailing whitespace.
+    """
+    if not isinstance(name, str):
+        return None
+    
+    # Remove new lines, carriage returns, and tabs, then strip leading/trailing whitespace
+    sanitized_name = name.strip().replace('\n', '').replace('\r', '').replace('\t', '')
+    return sanitized_name if sanitized_name else None
+
 @audio_bp.route("/transcriptions/<id>", methods=["PUT"])
 @jwt_required()
 def rename_transcription_route(id):
@@ -287,13 +298,23 @@ def rename_transcription_route(id):
     if not new_name:
         return jsonify({"message": "New name is required"}), 400
 
+    # Sanitize the new name using the sanitize_name function
+    sanitized_name = sanitize_name(new_name)
+
+    if not sanitized_name:
+        return jsonify({"message": "New name cannot be empty or just whitespace"}), 400
+
     try:
-        response = diarization_processor.rename_transcription(id, new_name)
+        response = diarization_processor.rename_transcription(id, sanitized_name)
         if "error" in response:
             return jsonify(response), 500
+        elif response.get("status") == "no changes made":
+            return jsonify(response), 204  # 204 No Content indicates the request was successful but there was no change
         return jsonify(response), 200
     except Exception as e:
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+
 
     
 
@@ -305,20 +326,8 @@ def rename_segments_route(transcription_id):
     new_name = data.get("new_name")
     segment_ids = data.get("segment_ids")
 
-    # Debugging: Log the incoming data
-    logger.debug(f"Received data: old_names={old_names}, new_name={new_name}, segment_ids={segment_ids}")
-
-    # Ensure segment_ids is a list
-    if not isinstance(segment_ids, list):
-        segment_ids = [segment_ids]
-    
     try:
-        # Ensure segment_ids is still a list here before passing to the processor
-        if not isinstance(segment_ids, list):
-            raise ValueError("segment_ids must be a list")
-            
         result = diarization_processor.rename_selected_segments(transcription_id, old_names, new_name, segment_ids)
-        logger.debug(f"Renaming segments result: {result}")
     except Exception as e:
         logger.error(f"Error renaming segments: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -338,7 +347,12 @@ def rename_transcribed_text_route(transcription_id):
     else:
         result = diarization_processor.rename_transcribed_text(transcription_id, old_texts, new_text)
     
-    return jsonify(result), 200 if result["status"] == "success" else 500
+    if result["status"] == "success":
+        return jsonify(result), 200
+    elif result["status"] == "no changes made":
+        return '', 204  # Return 204 No Content if no changes were made
+    else:
+        return jsonify(result), 500
 
 
 

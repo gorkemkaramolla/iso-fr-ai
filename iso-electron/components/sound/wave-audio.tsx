@@ -7,12 +7,7 @@ import { FiPlay, FiPause, FiSkipBack, FiSkipForward } from 'react-icons/fi';
 import { FaAngleDown } from 'react-icons/fa';
 import createApi from '@/utils/axios_instance';
 import useStore from '@/library/store';
-
-interface Segment {
-  start_time: number;
-  end_time: number;
-  speaker: string;
-}
+import { Segment } from '@/types';
 
 interface WaveAudioProps {
   audio_name?: string;
@@ -129,8 +124,8 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             segments &&
               segments.forEach((segment: Segment) => {
                 regionsPlugin.addRegion({
-                  start: segment.start_time,
-                  end: segment.end_time,
+                  start: segment.start,
+                  end: segment.end,
                   color: speakerColors
                     ? speakerColors[segment.speaker]
                     : 'rgba(0,0,0,0.1)',
@@ -152,11 +147,34 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             }
           });
 
+          waveform.on('seeking', (currentTime) => {
+            if (!isMounted) return;
+
+            setCurrentTime(currentTime);
+            setStoreCurrentTime(currentTime);
+
+            if (onTimeUpdate) {
+              onTimeUpdate(currentTime); // Pass current time to parent
+            }
+          });
+
+          waveform.on('interaction', (newTime) => {
+            if (!isMounted) return;
+
+            setCurrentTime(newTime);
+            setStoreCurrentTime(newTime);
+
+            if (onTimeUpdate) {
+              onTimeUpdate(newTime); // Pass current time to parent
+            }
+          });
+
           waveform.on('play', () => {
             if (isMounted) setIsPlaying(true);
           });
 
           waveform.on('pause', () => {
+            console.log('paused');
             if (isMounted) setIsPlaying(false);
           });
 
@@ -247,12 +265,12 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
         exit={{ y: 100 }} // Move out of view when exiting
         transition={{ duration: 0.5, ease: 'easeInOut' }}
         onAnimationComplete={() => !isVisible && onHidden?.()} // Callback when animation completes
-        className='flex flex-col w-full   py-4 mx-auto space-y-2
+        className='flex flex-col w-full    mx-auto space-y-2
         
         
         '
       >
-        <div className='flex items-center relative space-x-4 px-12 w-full py-2 rounded-xl glass-effect'>
+        <div className='flex items-center relative space-x-4 px-12 w-full py-4 rounded-xl glass-effect'>
           <button
             onClick={handleHidePlayer}
             className='absolute left-5 bg-primary text-white p-1 cursor-pointer text-xl rounded-full'

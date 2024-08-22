@@ -5,7 +5,6 @@ import * as XLSX from 'xlsx';
 import { RiFileExcel2Line } from 'react-icons/ri';
 import { BsFiletypeCsv, BsFiletypeJson } from 'react-icons/bs';
 import { FaFileWord } from 'react-icons/fa';
-import NextUIDropDown from '@/components/ui/nextui-dropdown'; // Import your updated NextUIDropDown component
 import { Ellipsis, Trash2 } from 'lucide-react';
 
 interface ExportButtonsProps {

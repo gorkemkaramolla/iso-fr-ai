@@ -1,12 +1,18 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, {
+  useState,
+  useRef,
+  useMemo,
+  useEffect,
+  useCallback,
+} from 'react';
 import { motion } from 'framer-motion';
-import TranscriptionHistory from '@/components/transcription/TranscriptionHistory';
+import TranscriptionHistory from '@/components/transcriptions/TranscriptionHistory';
 import { Toast } from 'primereact/toast';
 import WaveAudio from '@/components/sound/wave-audio';
 import useStore from '@/library/store';
 import { FaAngleUp } from 'react-icons/fa';
 import TextEditor from './editor';
-import { Segment, Transcript } from '@/types';
+import { Changes, Segment, Transcript } from '@/types';
 import createApi from '@/utils/axios_instance';
 import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
 import { FaGripVertical } from 'react-icons/fa6';
@@ -16,6 +22,7 @@ interface Props {
 }
 
 const Transcription: React.FC<Props> = ({ transcription }) => {
+  const [changes, setChanges] = useState<Changes[]>([]);
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
   const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
@@ -24,18 +31,30 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   const [highlightedSegment, setHighlightedSegment] = useState<string | null>(
     null
   );
-  const [rightScreen, setRightScreen] = useState('history');
-  const [rightPanelSize, setRightPanelSize] = useState(25); // State to track right panel size
+  const [rightScreen, setRightScreen] = useState<string | null>('history');
+  const [rightPanelSize, setRightPanelSize] = useState<number>(25);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [saveState, setSaveState] = useState<
+    'no changes made' | 'needs saving' | 'saved' | 'save failed'
+  >('no changes made');
   const toast = useRef<Toast>(null);
   const editingRef = useRef<HTMLTextAreaElement>(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
-  const [showButton, setShowButton] = useState(false); // State to control button visibility
-  const [skipAnimation, setSkipAnimation] = useState(true); // Flag to skip animation on initial render
+  const [showButton, setShowButton] = useState(false);
+  const [skipAnimation, setSkipAnimation] = useState(true);
   const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
 
-  // Effect to load player visibility state from localStorage on mount
+  useEffect(() => {
+    // Populate the changes array based on transcription segments
+    const initialChanges = transcription.segments.map((segment) => ({
+      segmentId: segment.id,
+      initialText: segment.text,
+      currentText: segment.text,
+    }));
+    setChanges(initialChanges);
+  }, [transcription]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedPlayerVisibility = localStorage.getItem('isPlayerVisible');
@@ -43,17 +62,80 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
         const visibility = savedPlayerVisibility === 'true';
         setIsPlayerVisible(visibility);
         setShowButton(!visibility);
-        setSkipAnimation(visibility); // Only skip the animation if it should be hidden initially
+        setSkipAnimation(visibility);
       } else {
-        setSkipAnimation(false); // Default behavior if nothing is in localStorage
+        setSkipAnimation(false);
       }
     }
   }, []);
 
+  useEffect(() => {
+    if (saveState === 'saved') {
+      changes.forEach((change) => {
+        handleTranscribedTextChange(
+          transcription.segments,
+          change.segmentId,
+          change.currentText
+        );
+      });
+
+      setTimeout(() => {
+        setSaveState('no changes made');
+      }, 3000);
+    }
+  }, [saveState, changes, transcription.segments]);
+
+  const handleTranscribedTextChange = async (
+    segments: Segment[],
+    segmentId: string,
+    newText: string
+  ) => {
+    const oldText = segments.find(
+      (segment: Segment) => segment.id === segmentId
+    )?.text;
+
+    if (!oldText) {
+      console.error('Old text not found for the segment.');
+      return;
+    }
+
+    setSaveState('needs saving');
+    try {
+      const response = await api.post(
+        `/rename_transcribed_text/${transcription._id}`,
+        {
+          old_texts: [oldText],
+          new_text: newText,
+          segment_ids: [segmentId],
+        }
+      );
+
+      if (response.status === 204) {
+        console.log('No changes were made.');
+        setSaveState('no changes made');
+        return;
+      }
+
+      console.log('Successfully renamed transcribed text');
+      setSaveState('saved');
+    } catch (error) {
+      console.error('Failed to rename transcribed text:', error);
+      handleSaveFailure();
+    }
+  };
+
+  const handleSaveFailure = () => {
+    toast.current?.show({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to save changes',
+      life: 3000,
+    });
+    setSaveState('needs saving');
+  };
+
   const handleDeleteTranscription = async () => {
-    const response = await api.delete(
-      `transcriptions/${transcription.transcription_id}`
-    );
+    const response = await api.delete(`transcriptions/${transcription._id}`);
     const data = await response.json();
     console.log(data);
   };
@@ -63,51 +145,17 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
     oldName: string,
     newName: string
   ) => {
+    setSaveState('needs saving');
     try {
-      await api.post(`/rename_segments/${transcription.transcription_id}`, {
+      await api.post(`/rename_segments/${transcription._id}`, {
         old_names: [oldName],
         new_name: newName,
         segment_ids: [segmentId],
       });
+      setSaveState('saved');
     } catch (error) {
       console.error('Failed to rename speaker:', error);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to rename speaker',
-        life: 3000,
-      });
-    }
-  };
-
-  const handleTranscribedTextChange = async (
-    segments: Segment[],
-    segmentId: string,
-    newText: string
-  ) => {
-    const oldText = segments.find(
-      (segment: Segment) => segment.segment_id === segmentId
-    )?.transcribed_text;
-
-    try {
-      const response = await api.post(
-        `/rename_transcribed_text/${transcription.transcription_id}`,
-        {
-          old_texts: [oldText],
-          new_text: newText,
-          segment_ids: [segmentId],
-        }
-      );
-      const data = await response.json();
-      console.log('Successfully renamed transcribed text:', data);
-    } catch (error) {
-      console.error('Failed to rename transcribed text:', error);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to rename transcribed text',
-        life: 3000,
-      });
+      handleSaveFailure();
     }
   };
 
@@ -121,9 +169,16 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   };
 
   const handleEditTranscriptionName = async (new_name: string) => {
-    await api.put(`transcriptions/${transcription.transcription_id}`, {
-      name: new_name,
-    });
+    setSaveState('needs saving');
+    try {
+      await api.put(`transcriptions/${transcription._id}`, {
+        name: new_name,
+      });
+      setSaveState('saved');
+    } catch (error) {
+      console.error('Failed to rename transcription:', error);
+      handleSaveFailure();
+    }
   };
 
   const speakerColors = useMemo(() => {
@@ -138,7 +193,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
 
   const handleShowPlayer = () => {
     setIsPlayerVisible(true);
-    setShowButton(false); // Hide the button while the player is visible
+    setShowButton(false);
     if (typeof window !== 'undefined') {
       localStorage.setItem('isPlayerVisible', 'true');
     }
@@ -152,30 +207,29 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
     }
   };
 
-  // Effect to check if the right panel size is below 15%
   useEffect(() => {
     if (rightPanelSize < 15) {
-      setRightScreen(null); // Close the right screen
+      setRightScreen(null);
     }
   }, [rightPanelSize]);
 
   return (
     <div className='relative'>
       <Toast ref={toast} />
-      <div className='fixed bottom-0 left-1/2 transform -translate-x-1/2 md:w-2/4 z-50'>
+      <div className='fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full  md:w-2/4 z-50'>
         <WaveAudio
           viewMode={1}
           handleHidePlayer={handleHidePlayer}
           speakerColors={speakerColors}
           segments={transcription?.segments!}
-          transcript_id={transcription?.transcription_id!}
+          transcript_id={transcription?._id!}
           isVisible={isPlayerVisible}
-          onHidden={() => setShowButton(true)} // Show the button when hiding animation completes
-          skipAnimation={skipAnimation} // Pass the flag to skip the animation on initial load
+          onHidden={() => setShowButton(true)}
+          skipAnimation={skipAnimation}
         />
         {!isPlayerVisible && showButton && (
           <motion.div
-            initial={skipAnimation ? false : { y: 100, opacity: 0 }} // Skip animation if flag is set
+            initial={skipAnimation ? false : { y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, ease: 'easeInOut' }}
             className='absolute bottom-0 left-1/2 transform -translate-x-1/2'
@@ -194,11 +248,12 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
           autoSaveId='example'
           className='w-full h-full flex'
           direction='horizontal'
-          onResize={(sizes) => setRightPanelSize(sizes[1])} // Track right panel size
         >
           <Panel defaultSize={75} minSize={60}>
             <div className='p-4 '>
               <TextEditor
+                changes={changes}
+                setChanges={setChanges}
                 speakerColors={speakerColors}
                 currentTime={currentTime}
                 transcription={transcription}
@@ -209,6 +264,8 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
                 handleTranscribedTextChange={handleTranscribedTextChange}
                 transcriptionRef={transcriptionRef}
                 isEditing={isEditing}
+                saveState={saveState}
+                setSaveState={setSaveState}
               />
             </div>
           </Panel>
@@ -223,15 +280,11 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
               minSize={0.5}
               className='z-0 md:block hidden '
             >
-              <div className='flex w-full justify-between'>
-                {/* Optional buttons to switch screens */}
-              </div>
+              <div className='flex w-full justify-between'></div>
 
               {rightScreen === 'history' && (
                 <div>
-                  <TranscriptionHistory
-                    activePageId={transcription?.transcription_id}
-                  />
+                  <TranscriptionHistory activePageId={transcription?._id} />
                 </div>
               )}
             </Panel>

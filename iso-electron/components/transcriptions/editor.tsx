@@ -8,32 +8,32 @@ import React, {
   useRef,
 } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlignStartHorizontal, AlignStartVertical, User } from 'lucide-react';
+import {
+  AlignStartHorizontal,
+  AlignStartVertical,
+  X,
+  Terminal,
+  User,
+  Edit,
+  CheckCircle,
+  Info,
+  AlertCircle,
+  XCircle,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Card from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
-import { Segment } from '@/types';
+import { Changes, Segment, Transcript } from '@/types';
 import { Ellipsis } from 'lucide-react';
 import { Menu } from 'primereact/menu';
-import NextUIDropDown from '@/components/ui/nextui-dropdown';
 import ExportButtons from './export-buttons';
+import { Kbd } from '@nextui-org/react';
+import { debounce } from '@/utils/debounce';
+
 const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
-
-interface TranscriptSegment {
-  segment_id: string;
-  speaker: string;
-  start_time: number;
-  end_time: number;
-  transcribed_text: string;
-}
-
-interface Transcript {
-  name: string;
-  segments: TranscriptSegment[];
-}
 
 interface TextEditorProps {
   transcription: Transcript | null;
@@ -55,6 +55,14 @@ interface TextEditorProps {
   isEditing: boolean;
   currentTime: number;
   speakerColors: Record<string, string>;
+  setChanges: React.Dispatch<React.SetStateAction<Changes[]>>;
+  changes: Changes[];
+  saveState: 'no changes made' | 'needs saving' | 'saved' | 'save failed';
+  setSaveState: React.Dispatch<
+    React.SetStateAction<
+      'no changes made' | 'needs saving' | 'saved' | 'save failed'
+    >
+  >;
 }
 
 interface MenuState {
@@ -65,8 +73,10 @@ interface MenuState {
 
 const TextEditor: React.FC<TextEditorProps> = ({
   transcription,
+  setChanges,
   speakerColors,
   editingRef,
+  changes,
   handleEditName = () => {},
   handleDeleteSelected = () => {},
   handleSpeakerNameChange = () => {},
@@ -74,6 +84,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
   transcriptionRef,
   handleDeleteTranscription = () => {},
   currentTime,
+  saveState,
+  setSaveState,
 }) => {
   const [menuState, setMenuState] = useState<MenuState>({
     isOpen: false,
@@ -86,13 +98,16 @@ const TextEditor: React.FC<TextEditorProps> = ({
       (localStorage.getItem('viewMode') as 'inline' | 'list')) ||
       'inline'
   );
+
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
   const [isTranscriptionNameEditing, setIsTranscriptionNameEditing] =
     useState(false);
   const [transcriptionName, setTranscriptionName] = useState(
     transcription?.name || ''
   );
-  const [segments, setSegments] = useState<TranscriptSegment[]>(
+  const spanRef = useRef<HTMLSpanElement>(null);
+
+  const [segments, setSegments] = useState<Segment[]>(
     transcription?.segments || []
   );
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
@@ -108,7 +123,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
     newName: string;
   }>({ segmentId: '', oldName: '', newName: '' });
 
-  const segmentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const segmentRefs = useRef<Record<string, HTMLSpanElement | null>>({});
 
   useEffect(() => {
     setTranscriptionName(transcription?.name || '');
@@ -117,22 +132,38 @@ const TextEditor: React.FC<TextEditorProps> = ({
   }, [transcription]);
 
   useEffect(() => {
+    setChanges(
+      segments.map((segment) => ({
+        segmentId: segment.id,
+        initialText: segment.text,
+        currentText: segment.text,
+      }))
+    );
+  }, [segments]);
+
+  useEffect(() => {
     localStorage.setItem('viewMode', viewMode);
   }, [viewMode]);
 
-  const updateUniqueSpeakers = (segments: TranscriptSegment[]) => {
+  const updateUniqueSpeakers = (segments: Segment[]) => {
     const speakers = Array.from(
       new Set(segments.map((segment) => segment.speaker))
     );
     setUniqueSpeakers(speakers);
   };
 
-  const handleNameChange = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-    const newName = e.currentTarget.value || '';
-    setTranscriptionName(newName);
-    handleEditName(newName);
-    setIsTranscriptionNameEditing(false);
-  };
+  const handleNameChange = useCallback(
+    debounce(() => {
+      const newName = editingRef.current?.value || transcriptionName;
+      setTranscriptionName(newName);
+      if (handleEditName) {
+        handleEditName(newName);
+      }
+      setIsTranscriptionNameEditing(false);
+      setSaveState('needs saving');
+    }, 300),
+    [transcriptionName, handleEditName, setSaveState]
+  );
 
   const handleTranscriptionNameChange = () => {
     setIsTranscriptionNameEditing(true);
@@ -153,6 +184,69 @@ const TextEditor: React.FC<TextEditorProps> = ({
       }, 0);
     }
   };
+
+  const handleFocusSegment = useCallback((segmentId: string) => {
+    const segmentText = segmentRefs.current[segmentId]?.innerText || '';
+    setChanges((prevChanges: Changes[]) => [
+      ...prevChanges,
+      { segmentId, initialText: segmentText, currentText: segmentText },
+    ]);
+  }, []);
+
+  const handleInputSegment = useCallback(
+    (segmentId: string) => {
+      const currentText = segmentRefs.current[segmentId]?.innerText || '';
+      setChanges((prevChanges: Changes[]) =>
+        prevChanges.map((change) =>
+          change.segmentId === segmentId ? { ...change, currentText } : change
+        )
+      );
+      const initialText =
+        changes.find((change: Changes) => change.segmentId === segmentId)
+          ?.initialText || '';
+
+      if (currentText !== initialText) {
+        setSaveState('needs saving');
+      }
+    },
+    [changes, setSaveState]
+  );
+
+  const saveChanges = useCallback(() => {
+    if (saveState === 'needs saving') {
+      // Here you should invoke your save API or logic
+      setSaveState('saved');
+      setTimeout(() => setSaveState('no changes made'), 1000);
+    }
+  }, [saveState, setSaveState]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isMac = navigator.platform.includes('Mac');
+      const saveShortcut = isMac
+        ? event.metaKey && event.key === 's'
+        : event.ctrlKey && event.key === 's';
+
+      if (saveShortcut) {
+        event.preventDefault();
+        saveChanges();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [saveChanges]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      saveChanges();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [saveChanges]);
 
   const handleSpeakerClick = (speaker: string) => {
     setDialogData({ oldName: speaker, newName: '' });
@@ -176,23 +270,31 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const handleChangeAllSpeakerNames = (oldName: string, newName: string) => {
     const updatedSegments = segments.map((segment) => {
       if (segment.speaker === oldName) {
-        handleSpeakerNameChange(segment.segment_id, oldName, newName);
+        handleSpeakerNameChange(segment.id.toString(), oldName, newName);
         return { ...segment, speaker: newName };
       }
       return segment;
     });
     setSegments(updatedSegments);
     updateUniqueSpeakers(updatedSegments);
+    setSaveState('needs saving');
   };
+
+  useEffect(() => {
+    const currentRef = editingRef.current;
+    if (currentRef) {
+      currentRef.focus();
+      currentRef.select();
+    }
+  }, [editingRef, isTranscriptionNameEditing]);
 
   useEffect(() => {
     if (typeof document !== 'undefined' && segments.length > 0) {
       const activeSegment = segments.find(
-        (segment) =>
-          currentTime >= segment.start_time && currentTime <= segment.end_time
+        (segment) => currentTime >= segment.start && currentTime <= segment.end
       );
-      if (activeSegment && segmentRefs.current[activeSegment.segment_id]) {
-        const element = segmentRefs.current[activeSegment.segment_id];
+      if (activeSegment && segmentRefs.current[activeSegment.id]) {
+        const element = segmentRefs.current[activeSegment.id];
         const container = transcriptionRef.current;
         if (element && container) {
           const elementRect = element.getBoundingClientRect();
@@ -245,8 +347,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
     newName: string
   ) => {
     const updatedSegments = segments.map((segment) => {
-      if (segment.segment_id === segmentId && segment.speaker === oldName) {
-        handleSpeakerNameChange(segment.segment_id, oldName, newName);
+      if (segment.id === segmentId && segment.speaker === oldName) {
+        handleSpeakerNameChange(segment.id, oldName, newName);
         return { ...segment, speaker: newName };
       }
       return segment;
@@ -254,16 +356,15 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
     setSegments(updatedSegments);
     updateUniqueSpeakers(updatedSegments);
+    setSaveState('needs saving');
   };
 
   const handleEditSegment = useCallback(() => {
     if (menuState.segmentId) {
-      const segment = segments.find(
-        (s) => s.segment_id === menuState.segmentId
-      );
+      const segment = segments.find((s) => s.id === menuState.segmentId);
       if (segment) {
         setSingleRenameData({
-          segmentId: segment.segment_id,
+          segmentId: segment.id,
           oldName: segment.speaker,
           newName: '',
         });
@@ -274,32 +375,12 @@ const TextEditor: React.FC<TextEditorProps> = ({
   }, [menuState.segmentId, segments, closeMenu]);
 
   const handleCopySegment = useCallback(() => {
-    const segment = segments.find((s) => s.segment_id === menuState.segmentId);
+    const segment = segments.find((s) => s.id === menuState.segmentId);
     if (segment && typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(segment.transcribed_text);
+      navigator.clipboard.writeText(segment.text);
     }
     closeMenu();
   }, [menuState.segmentId, segments, closeMenu]);
-
-  const handleBlur = useCallback(
-    (
-      segmentId: string,
-      originalText: string,
-      e: React.FocusEvent<HTMLSpanElement>
-    ) => {
-      const newText = e.currentTarget.textContent || '';
-      if (newText !== originalText) {
-        handleTranscribedTextChange(segments, segmentId, newText);
-        const updatedSegments = segments.map((segment) =>
-          segment.segment_id === segmentId
-            ? { ...segment, transcribed_text: newText }
-            : segment
-        );
-        setSegments(updatedSegments);
-      }
-    },
-    [handleTranscribedTextChange, segments]
-  );
 
   const handleBadgeMouseEnter = useCallback((segmentId: string) => {
     setHoveredSegmentId(segmentId);
@@ -311,46 +392,110 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   return (
     <Card>
+      <div className='fixed bottom-4 left-4 z-50'>
+        <AnimatePresence>
+          {saveState === 'saved' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className='flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full shadow-lg'
+            >
+              <CheckCircle size={18} />
+              <span className='font-medium'>Değişiklikler Kaydedildi</span>
+            </motion.div>
+          )}
+          {saveState === 'no changes made' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className='flex items-center space-x-2 bg-gray-100 text-gray-800 px-4 py-2 rounded-full shadow-lg'
+            >
+              <Info size={18} />
+              <span className='font-medium'>Değişiklik Yok</span>
+            </motion.div>
+          )}
+          {saveState === 'needs saving' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className='flex items-center space-x-2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full shadow-lg'
+            >
+              <AlertCircle size={18} />
+              <span className='font-medium'>
+                Kaydetmek için{' '}
+                <kbd className='px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg'>
+                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} + S
+                </kbd>{' '}
+                tuşuna basınız
+              </span>
+            </motion.div>
+          )}
+          {saveState === 'save failed' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className='flex items-center space-x-2 bg-red-100 text-red-800 px-4 py-2 rounded-full shadow-lg'
+            >
+              <XCircle size={18} />
+              <span className='font-medium'>Save Failed</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       <div className='flex justify-between'>
         <Link href='/speech' passHref>
           <Button
             icon='pi pi-arrow-left'
             label='Sentezleyici'
-            className='p-button-text  p-button-plain'
+            className='p-button-text p-button-plain'
           />
         </Link>
-        <ExportButtons
-          handleDeleteTranscription={handleDeleteTranscription}
-          isTranscriptionNameEditing={isTranscriptionNameEditing}
-          setTranscriptionNameEditing={setIsTranscriptionNameEditing}
-          data={transcription}
-          fileName='output'
-        />
+
+        <div className='flex-col-reverse flex md:flex-row items-start md:items-center md:justify-between mb-4'>
+          <ExportButtons
+            handleDeleteTranscription={handleDeleteTranscription}
+            isTranscriptionNameEditing={isTranscriptionNameEditing}
+            setTranscriptionNameEditing={setIsTranscriptionNameEditing}
+            data={transcription}
+            fileName='output'
+          />
+        </div>
       </div>
-      <div className='flex-col-reverse flex md:flex-row items-start md:items-center md:justify-between mb-4'>
-        <div className='flex md:items-center  space-x-4 w-10/12  px-4'>
+
+      <div className='flex md:items-center space-x-4 w-full px-4'>
+        <div className='relative w-full  group'>
           {isTranscriptionNameEditing ? (
             <textarea
               ref={editingRef}
-              className='text-2xl w-full cursor-text min-w-52 font-bold p-2 rounded border focus:outline-none break-words whitespace-pre-wrap'
+              className='text-2xl w-full  min-w-52 my-2 font-bold p-2 rounded border focus:outline-none break-words whitespace-pre-wrap'
               rows={2}
               value={transcriptionName}
+              onChange={(e) => {
+                setSaveState('needs saving');
+                setTranscriptionName(e.target.value);
+              }}
               onBlur={handleNameChange}
-              onChange={(e) => setTranscriptionName(e.target.value)}
             />
           ) : (
-            <div>
-              <h1
-                className='text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap'
-                onClick={handleTranscriptionNameChange}
-              >
+            <div
+              onClick={handleTranscriptionNameChange}
+              className='group inline-flex items-center gap-2 p-2 rounded transition-all duration-200 hover:bg-gray-100'
+            >
+              <h1 className='text-2xl font-bold break-words whitespace-pre-wrap'>
                 {transcriptionName}
               </h1>
+              <div className='opacity-0 transition-opacity duration-200 group-hover:opacity-100'>
+                <Edit className='text-gray-500 hover:text-gray-700' size={24} />
+              </div>
             </div>
           )}
         </div>
 
-        <div className='flex md:flex-row self-end flex-row-reverse space-x-2'>
+        <div className='flex md:flex-row self-center flex-row-reverse space-x-2'>
           <div className='dropdown dropdown-end'>
             <label tabIndex={0} className='btn btn-primary btn-sm'>
               Konuşmacılar
@@ -376,11 +521,18 @@ const TextEditor: React.FC<TextEditorProps> = ({
               setViewMode(viewMode === 'inline' ? 'list' : 'inline')
             }
           >
-            {viewMode === 'inline' ? (
-              <AlignStartHorizontal size={20} />
-            ) : (
-              <AlignStartVertical size={20} />
-            )}
+            <motion.div
+              animate={{
+                rotate: viewMode === 'inline' ? 0 : 90,
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              {viewMode === 'inline' ? (
+                <AlignStartHorizontal size={20} />
+              ) : (
+                <AlignStartVertical size={20} />
+              )}
+            </motion.div>
           </button>
         </div>
       </div>
@@ -392,13 +544,12 @@ const TextEditor: React.FC<TextEditorProps> = ({
         <AnimatePresence>
           {segments.map((segment, index) => {
             const isHighlighted =
-              currentTime >= segment.start_time &&
-              currentTime <= segment.end_time;
-            const isHovered = hoveredSegmentId === segment.segment_id;
+              currentTime >= segment.start && currentTime <= segment.end;
+            const isHovered = hoveredSegmentId === segment.id;
 
             return (
               <motion.div
-                key={segment.segment_id}
+                key={segment.id}
                 className={`${
                   viewMode === 'inline' ? 'inline-block' : 'block mb-2'
                 }`}
@@ -407,24 +558,33 @@ const TextEditor: React.FC<TextEditorProps> = ({
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.1, delay: index * 0.01 }}
                 ref={(el) => {
-                  segmentRefs.current[segment.segment_id] = el;
+                  segmentRefs.current[segment.id] = el;
                 }}
               >
-                <span className='badge badge-sm mr-1'>{segment.speaker}</span>
                 <span
-                  className='badge badge-sm badge-outline cursor-pointer mr-1'
-                  onClick={(e) => showSegmentMenu(e, segment.segment_id)}
-                  onMouseEnter={() => handleBadgeMouseEnter(segment.segment_id)}
+                  className={`badge ${
+                    menuState.segmentId === segment.id
+                      ? 'bg-neutral text-white'
+                      : 'hover:bg-neutral hover:text-white'
+                  } transition-all duration-200 ease-in-out badge-sm badge-outline cursor-pointer mr-1`}
+                  onClick={(e) => showSegmentMenu(e, segment.id)}
+                  onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
                   onMouseLeave={handleBadgeMouseLeave}
                 >
-                  {segment.start_time.toFixed(2)}s
+                  {segment.speaker}
                 </span>
                 <span
+                  className='badge badge-sm badge-outline cursor-pointer mr-1'
+                  onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
+                  onMouseLeave={handleBadgeMouseLeave}
+                >
+                  {segment.start.toFixed(2)}s
+                </span>
+                <span
+                  ref={(el) => {
+                    segmentRefs.current[segment.id] = el as HTMLSpanElement;
+                  }}
                   contentEditable
-                  suppressContentEditableWarning
-                  className={`${
-                    viewMode === 'list' ? 'block mt-1' : 'inline'
-                  } focus:outline-none focus:bg-red-500 rounded p-1 transition-colors duration-200`}
                   style={{
                     backgroundColor: isHovered
                       ? 'rgba(191, 255, 0, 0.2)'
@@ -432,12 +592,18 @@ const TextEditor: React.FC<TextEditorProps> = ({
                       ? speakerColors[segment.speaker]
                       : 'transparent',
                   }}
-                  onBlur={(e) =>
-                    handleBlur(segment.segment_id, segment.transcribed_text, e)
-                  }
+                  suppressContentEditableWarning
+                  className={`
+    ${viewMode === 'list' ? 'block mt-1' : 'inline'}
+    focus:outline-none focus:bg-red-50 rounded-xl 
+    p-1 transition-colors duration-200
+  `}
+                  onFocus={() => handleFocusSegment(segment.id)}
+                  onInput={() => handleInputSegment(segment.id)}
                 >
-                  {segment.transcribed_text}
+                  {segment.text}
                 </span>
+
                 {viewMode === 'list' && <br />}
               </motion.div>
             );
@@ -450,16 +616,14 @@ const TextEditor: React.FC<TextEditorProps> = ({
         position={menuState.position}
         onClose={closeMenu}
         onDelete={handleDeleteSegment}
-        onEdit={handleEditSegment} // Pass the handleEditSegment function here
+        onEdit={handleEditSegment}
         onCopy={handleCopySegment}
-        segmentId={menuState.segmentId ?? ''} // Pass the correct segmentId
+        segmentId={menuState.segmentId ?? ''}
         oldName={
-          segments.find((s) => s.segment_id === menuState.segmentId)?.speaker ??
-          ''
-        } // Pass the oldName
+          segments.find((s) => s.id === menuState.segmentId)?.speaker ?? ''
+        }
       />
 
-      {/* PrimeReact Dialog for speaker name change (all segments) */}
       <Dialog
         visible={showDialog}
         style={{ width: '50vw' }}
@@ -492,15 +656,14 @@ const TextEditor: React.FC<TextEditorProps> = ({
           <InputText
             value={dialogData.newName}
             placeholder='Yeni isim'
-            onChange={(e) =>
-              setDialogData({ ...dialogData, newName: e.target.value })
-            }
+            onChange={(e) => {
+              setDialogData({ ...dialogData, newName: e.target.value });
+            }}
             className='w-full mt-2'
           />
         </div>
       </Dialog>
 
-      {/* Dialog for single speaker rename */}
       <Dialog
         visible={showSingleRenameDialog}
         style={{ width: '50vw' }}

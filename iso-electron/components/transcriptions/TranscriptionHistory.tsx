@@ -6,12 +6,7 @@ import { formatDate } from '@/utils/formatDate';
 import ChatSideMenuSkeleton from '@/components/ui/transcription-history-skeleton';
 import CalendarComponent from '@/components/ui/calendar-component'; // Adjust the import path accordingly
 import { Nullable } from 'primereact/ts-helpers';
-
-type Transcript = {
-  transcription_id: string;
-  created_at: string;
-  name: string;
-};
+import { Transcript } from '@/types';
 
 type TranscriptionHistoryProps = {
   activePageId?: string;
@@ -20,7 +15,7 @@ type TranscriptionHistoryProps = {
 const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   activePageId,
 }) => {
-  const [responses, setResponses] = useState<Transcript[]>([]);
+  const [transcriptions, setTranscriptions] = useState<Transcript[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [itemsPerPage, setItemsPerPage] = useState<number>(8);
@@ -37,9 +32,9 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-      setResponses(sortedData);
+      setTranscriptions(sortedData);
 
-      console.log(responses);
+      // Set the latest available date as the default selected date
       if (sortedData.length > 0) {
         setSelectedDate(new Date(sortedData[0].created_at));
       }
@@ -78,9 +73,9 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   // Load active transcription from localStorage and determine the correct page
   useEffect(() => {
     const storedActiveId = localStorage.getItem('activeTranscriptionId');
-    if (storedActiveId && responses.length > 0) {
-      const activeIndex = responses.findIndex(
-        (response) => response.transcription_id === storedActiveId
+    if (storedActiveId && transcriptions.length > 0) {
+      const activeIndex = transcriptions.findIndex(
+        (transcription) => transcription._id === storedActiveId
       );
 
       if (activeIndex !== -1) {
@@ -88,7 +83,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
         setCurrentPage(calculatedPage);
       }
     }
-  }, [responses, itemsPerPage]);
+  }, [transcriptions, itemsPerPage]);
 
   // Save the currently active transcription to localStorage whenever it changes
   useEffect(() => {
@@ -97,29 +92,30 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     }
   }, [activePageId]);
 
-  // Extract unique available dates from responses
+  // Extract unique available dates from transcriptions
   const availableDates = Array.from(
-    new Set(responses.map((response) => new Date(response.created_at)))
+    new Set(
+      transcriptions.map((transcription) => new Date(transcription.created_at))
+    )
   ).sort((a, b) => a.getTime() - b.getTime());
 
-  // Filter responses based on the selected date
-  const filteredResponses = selectedDate
-    ? responses.filter(
-        (response) =>
-          new Date(response.created_at).toDateString() ===
+  // Filter transcriptions based on the selected date
+  const filteredTranscriptions = selectedDate
+    ? transcriptions.filter(
+        (transcription) =>
+          new Date(transcription.created_at).toDateString() ===
           selectedDate.toDateString()
       )
-    : responses;
+    : transcriptions;
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredResponses.slice(
+  const currentItems = filteredTranscriptions.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
 
-  const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
-  console.log();
+  const totalPages = Math.ceil(filteredTranscriptions.length / itemsPerPage);
 
   return (
     <div
@@ -143,24 +139,24 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                 Henüz kayıt yok.
               </p>
             ) : (
-              currentItems.map((response) => (
-                <li key={response.transcription_id}>
-                  <Link href={`/transcription?id=${response.transcription_id}`}>
+              currentItems.map((transcription) => (
+                <li key={transcription._id}>
+                  <Link href={`/transcriptions?id=${transcription._id}`}>
                     <div
                       className={`p-2 rounded transition-colors ${
-                        response.transcription_id === activePageId
+                        transcription._id === activePageId
                           ? 'bg-primary text-gray-100'
                           : 'hover:bg-indigo-100'
                       }`}
                     >
                       <p className='text-sm   font-medium flex-wrap  flex '>
-                        {response.name}
+                        {transcription.name}
                       </p>
                       <p className='text-sm font-medium truncate'>
-                        {response.transcription_id}
+                        {transcription._id}
                       </p>
                       <p className='text-xs mt-1'>
-                        {formatDate(response.created_at)}
+                        {formatDate(transcription.created_at)}
                       </p>
                     </div>
                   </Link>

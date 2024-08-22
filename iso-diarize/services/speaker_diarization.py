@@ -11,7 +11,6 @@ from whisper_run import AudioProcessor
 from datetime import datetime, timezone
 import requests
 from config import XMLConfig
-from bson import ObjectId
 
 os.environ["CURL_CA_BUNDLE"] = ""
 
@@ -33,90 +32,84 @@ class SpeakerDiarizationProcessor:
         socketio.emit("progress", {"progress": progress})
 
     def rename_segments(self, transcription_id, old_names, new_name):
-        collection = self.mongo_db["segments"]
+        collection = self.mongo_db["transcripts"]
         update_result = collection.update_many(
-            {"speaker": {"$in": old_names}, "transcript_id": transcription_id},
-            {"$set": {"speaker": new_name}},
+            {"_id": ObjectId(transcription_id), "segments.speaker": {"$in": old_names}},
+            {"$set": {"segments.$[].speaker": new_name}}  # Use $[] to update all matching elements in the array
         )
 
         if update_result.modified_count > 0:
             return {"status": "success"}
         else:
             return {"status": "no changes made"}
-
+        
     def rename_selected_segments(self, transcription_id, old_names, new_name, segment_ids):
-        collection = self.mongo_db["segments"]
-        
-        if not isinstance(segment_ids, list):
-            segment_ids = [segment_ids]
-        
-        object_ids = []
-        for segment_id in segment_ids:
-            try:
-                object_ids.append(ObjectId(segment_id))
-            except Exception as e:
-                self.logger.error(f"Invalid segment ID: {segment_id}, Error: {str(e)}")
-        
-        if not object_ids:
-            return {"status": "error", "message": "No valid segment IDs provided"}
-        
-        # Log the individual parameters
-        self.logger.info(f"Transcription ID: {transcription_id}")
-        self.logger.info(f"Old Names: {old_names}")
-        self.logger.info(f"New Name: {new_name}")
-        self.logger.info(f"Segment Object IDs: {object_ids}")
-        
+        collection = self.mongo_db["transcripts"]
+
+        # Convert segment_ids to integers
+        segment_ids = [int(segment_id) for segment_id in segment_ids]
+
+        # Use integer segment IDs directly
         update_result = collection.update_many(
             {
-                "_id": {"$in": object_ids},
-                "speaker": {"$in": old_names},
-                "transcript_id": transcription_id
+                "_id": ObjectId(transcription_id),
+                "segments.id": {"$in": segment_ids},  # Match segments by integer ID
+                "segments.speaker": {"$in": old_names}  # Match the old speaker names
             },
-            {"$set": {"speaker": new_name}},
+            {
+                "$set": {"segments.$[elem].speaker": new_name}  # Update the speaker name
+            },
+            array_filters=[{"elem.id": {"$in": segment_ids}, "elem.speaker": {"$in": old_names}}]  # Apply update to all matching segments
         )
-
-        # Log the result
-        self.logger.info(f"Matched: {update_result.matched_count}, Modified: {update_result.modified_count}")
 
         if update_result.modified_count > 0:
             return {"status": "success"}
-        elif update_result.matched_count > 0:
-            return {"status": "no changes made"}
         else:
-            return {"status": "error", "message": "No matching segments found"}
-
+            return {"status": "no changes made"}
 
 
     def rename_transcribed_text(self, transcription_id, old_texts, new_text):
-        segments_collection = self.mongo_db["segments"]
-        transcripts_collection = self.mongo_db["transcripts"]
+        collection = self.mongo_db["transcripts"]
 
-        segments_update_result = segments_collection.update_many(
-            {"transcribed_text": {"$in": old_texts}, "transcript_id": transcription_id},
-            {"$set": {"transcribed_text": new_text}},
+        # Update transcribed text within segments and the full_text
+        update_result = collection.update_many(
+            {
+                "_id": ObjectId(transcription_id),
+                "segments.text": {"$in": old_texts}
+            },
+            {
+                "$set": {
+                    "segments.$[].text": new_text,
+                    "text": self.replace_text_in_full_text(collection, transcription_id, old_texts, new_text)
+                }
+            }
         )
 
-        transcripts_update_result = transcripts_collection.update_many(
-            {"_id": ObjectId(transcription_id), "full_text": {"$regex": "|".join(old_texts)}},
-            {"$set": {"full_text": self.replace_text_in_full_text(transcripts_collection, transcription_id, old_texts, new_text)}},
-        )
-
-        if segments_update_result.modified_count > 0 or transcripts_update_result.modified_count > 0:
+        if update_result.modified_count > 0:
             return {"status": "success"}
         else:
             return {"status": "no changes made"}
 
     def rename_selected_texts(self, transcription_id, old_texts, new_text, segment_ids):
-        segments_collection = self.mongo_db["segments"]
+        collection = self.mongo_db["transcripts"]
 
-        segments_update_result = segments_collection.update_many(
-            {"_id": {"$in": [ObjectId(segment_id) for segment_id in segment_ids]},
-             "transcribed_text": {"$in": old_texts},
-             "transcript_id": transcription_id},
-            {"$set": {"transcribed_text": new_text}},
+        # Find and update the specified segments based on their integer IDs
+        update_result = collection.update_many(
+            {
+                "_id": ObjectId(transcription_id),
+                "segments.id": {"$in": segment_ids},  # Match segments by integer ID
+                "segments.text": {"$in": old_texts}  # Ensure the text matches as well
+            },
+            {
+                "$set": {
+                    "segments.$[elem].text": new_text,
+                    "text": self.replace_text_in_full_text(collection, transcription_id, old_texts, new_text)
+                }
+            },
+            array_filters=[{"elem.id": {"$in": segment_ids}}]  # Apply update to matching segments
         )
 
-        if segments_update_result.modified_count > 0:
+        if update_result.modified_count > 0:
             return {"status": "success"}
         else:
             return {"status": "no changes made"}
@@ -142,39 +135,50 @@ class SpeakerDiarizationProcessor:
             return {"status": "no changes made"}
 
     def delete_segments(self, transcription_id, segment_ids):
-        collection = self.mongo_db["segments"]
-        delete_result = collection.delete_many(
-            {"_id": {"$in": [ObjectId(segment_id) for segment_id in segment_ids]},
-             "transcript_id": transcription_id}
+        collection = self.mongo_db["transcripts"]
+
+        # Convert string segment IDs to ObjectIds
+        object_ids = [ObjectId(segment_id) for segment_id in segment_ids]
+
+        # Pull specific segments from the array
+        update_result = collection.update_one(
+            {"_id": ObjectId(transcription_id)},
+            {"$pull": {"segments": {"_id": {"$in": object_ids}}}}
         )
 
-        if delete_result.deleted_count > 0:
+        if update_result.modified_count > 0:
             return {"status": "success"}
         else:
             return {"status": "no changes made"}
+
 
     def get_all_transcriptions(self):
         try:
             collection = self.mongo_db["transcripts"]
             cursor = collection.find({})
-            all_transcriptions = [
-                {
-                    "name": doc["name"],
-                    "transcription_id": str(doc["_id"]),  # Convert ObjectId to string here
-                    "created_at": doc["created_at"],
-                    "full_text": doc.get("full_text", ""),
-                }
-                for doc in cursor
-            ]
+            
+            all_transcriptions = []
+            for doc in cursor:
+                # Convert ObjectId to string for the transcription ID
+                doc["_id"] = str(doc["_id"])
+
+                # Convert ObjectId to string for each segment if any
+                if "segments" in doc:
+                    for segment in doc["segments"]:
+                        if isinstance(segment.get("_id"), ObjectId):
+                            segment["_id"] = str(segment["_id"])
+                
+                all_transcriptions.append(doc)
+
             return all_transcriptions
         except Exception as e:
             self.logger.info(f"Database error: {str(e)}")
             return {"error": str(e)}
 
+
     def get_transcription(self, id):
         try:
             transcripts_collection = self.mongo_db["transcripts"]
-            segments_collection = self.mongo_db["segments"]
 
             # Convert the string ID to ObjectId
             object_id = ObjectId(id)
@@ -185,35 +189,22 @@ class SpeakerDiarizationProcessor:
                 self.logger.error(f"No transcription found for ID: {id}")
                 return {"error": "No transcription found for this ID"}
 
-            segments = list(segments_collection.find({"transcript_id": id}))
-            if not segments:
-                self.logger.error(f"No transcription segments found for ID: {id}")
-                return {"error": "No transcription segments found for this ID"}
+            # Convert ObjectId to string for the transcription ID
+            transcription["_id"] = str(transcription["_id"])
 
-            segments_data = [
-                {
-                    "segment_id": str(segment["_id"]),  # Convert ObjectId to string here
-                    "start_time": segment["start_time"],
-                    "end_time": segment["end_time"],
-                    "speaker": segment["speaker"],
-                    "transcribed_text": segment["transcribed_text"],
-                }
-                for segment in segments
-            ]
+            # Convert ObjectId to string for each segment if any
+            if "segments" in transcription:
+                for segment in transcription["segments"]:
+                    if isinstance(segment.get("_id"), ObjectId):
+                        segment["_id"] = str(segment["_id"])
 
-            result = {
-                "name": str(transcription["name"]),
-                "transcription_id": str(transcription["_id"]),  # Convert ObjectId to string here
-                "created_at": transcription["created_at"],
-                "full_text": transcription.get("full_text", ""),
-                "segments": segments_data,
-            }
-            return result
+            return transcription
         except Exception as e:
             error_message = f"Error during transcription retrieval: {e}"
             self.logger.error(error_message, exc_info=True)
             return {"error": "An error occurred while retrieving the transcription"}
-        
+    
+    
     def process_audio(self):
         if "file" not in request.files:
             self.logger.error("No file part in request")
@@ -229,7 +220,7 @@ class SpeakerDiarizationProcessor:
             transcript_id = str(ObjectId())
             wav_filename = f"{transcript_id}.wav"
             wav_file_path = os.path.join("temp", wav_filename)
-            
+
             # Save the original file temporarily for conversion
             original_file_path = os.path.join("temp", secure_filename(file.filename))
             file.save(original_file_path)
@@ -249,11 +240,11 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(10)
             self.emit_progress(30)
             self.emit_progress(50)
-            
-            # model_dir = os.path.join(os.path.dirname(__file__), "large-v3/")
+
             model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "large-v3"))
             processor = AudioProcessor(self.file_path, self.device, model_name=model_dir)
             transcription = processor.process()
+            print(transcription)
             self.emit_progress(70)
             self.emit_progress(90)
 
@@ -266,32 +257,16 @@ class SpeakerDiarizationProcessor:
                 "created_at": created_at,
             }
 
+            # Insert the transcription with segments into the transcripts collection
             self.mongo_db.transcripts.insert_one(
                 {
                     "_id": ObjectId(transcript_id),
                     "name": wav_filename,
                     "created_at": created_at,
-                    "full_text": transcription["text"],
+                    "text": transcription["text"],  # Keep the text field intact
+                    "segments": transcription["segments"],  # Keep segments as returned by processor
                 }
             )
-
-            try:
-                # response = requests.post('http://utils_service:5004/add_to_solr', json=response_data)
-                # response.raise_for_status()
-                print("Successfully added data to Solr")
-            except requests.exceptions.RequestException as e:
-                print(f"Failed to add data to Solr: {e}")
-
-            for segment in transcription["segments"]:
-                self.mongo_db.segments.insert_one(
-                    {
-                        "transcript_id": transcript_id,
-                        "start_time": segment["start"],
-                        "end_time": segment["end"],
-                        "transcribed_text": segment["text"],
-                        "speaker": segment["speaker"],
-                    }
-                )
 
             return response_data
         except Exception as e:
@@ -332,4 +307,3 @@ class SpeakerDiarizationProcessor:
             # If an exception occurs, log the error and return an error message
             self.logger.error(f"Error during renaming transcription: {str(e)}", exc_info=True)
             return {"error": f"An error occurred while renaming the transcription: {str(e)}"}
-

@@ -1,22 +1,33 @@
 interface Segment {
-  segment_id: string;
-  start_time: number;
-  end_time: number;
+  id: string;
+  seek: number;
+  start: number;
+  end: number;
+  text: string;
+  temparature: number;
+
+  avg_logprob: number;
+  no_speech_prob: number;
+  words: string | null;
   speaker: string;
-  transcribed_text: string;
 }
 interface Transcript {
   name: string;
   created_at: string;
   segments: Segment[];
-  language: string;
-  transcription_id: string;
-  full_text: string;
+  _id: string;
+  text: string;
 }
 
 interface ApiResponse {
   created_at: string;
   transcription_id: String;
+}
+
+interface Changes {
+  segmentId: string;
+  initialText: string;
+  currentText: string;
 }
 
 interface CameraStream {

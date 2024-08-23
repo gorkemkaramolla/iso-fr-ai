@@ -11,7 +11,7 @@ from generate_patches import CropImage
 from utility import parse_model_name
 warnings.filterwarnings('ignore')
 
-def process_frame(frame, model_test, image_cropper, model_dir):
+def process_frame(frame, model_test: AntiSpoofPredict, image_cropper, anti_spoofing_model_path):
     bbox = model_test.get_bbox(frame)
     if bbox is None:
         return frame, None, None, 0
@@ -19,25 +19,25 @@ def process_frame(frame, model_test, image_cropper, model_dir):
     prediction = np.zeros((1, 3))
     test_speed = 0
 
-    for model_name in os.listdir(model_dir):
-        h_input, w_input, model_type, scale = parse_model_name(model_name)
-        param = {
-            "org_img": frame,
-            "bbox": bbox,
-            "scale": scale,
-            "out_w": w_input,
-            "out_h": h_input,
-            "crop": True,
-        }
-        if scale is None:
-            param["crop"] = False
-        img = image_cropper.crop(**param)
-        start = time.time()
-        prediction += model_test.predict(img, os.path.join(model_dir, model_name))
-        test_speed += time.time() - start
+    # for model_name in os.listdir(model_dir):
+    h_input, w_input, model_type, scale = parse_model_name(os.path.basename(anti_spoofing_model_path))
+    param = {
+        "org_img": frame,
+        "bbox": bbox,
+        "scale": scale,
+        "out_w": w_input,
+        "out_h": h_input,
+        "crop": True,
+    }
+    if scale is None:
+        param["crop"] = False
+    img = image_cropper.crop(**param)
+    start = time.time()
+    prediction += model_test.predict(img)
+    test_speed += time.time() - start
 
     label = np.argmax(prediction)
-    value = prediction[0][label] / 2
+    value = prediction[0][label] 
     color = (255, 0, 0) if label == 1 else (0, 0, 255)
     result_text = "RealFace Score: {:.2f}".format(value) if label == 1 else "FakeFace Score: {:.2f}".format(value)
 
@@ -47,13 +47,13 @@ def process_frame(frame, model_test, image_cropper, model_dir):
     return frame, label, value, test_speed
 
 
-def run_real_time(camera_url, model_dir, device_id, scrfd_model_path):
+def run_real_time(camera_url, anti_spoofing_model_path, scrfd_model_path):
     cap = cv2.VideoCapture(camera_url)
     if not cap.isOpened():
         print("Error: Could not open video stream.")
         return
 
-    model_test = AntiSpoofPredict(device_id, scrfd_model_path)
+    model_test = AntiSpoofPredict(anti_spoofing_model_path, scrfd_model_path)
     image_cropper = CropImage()
 
     while True:
@@ -62,7 +62,7 @@ def run_real_time(camera_url, model_dir, device_id, scrfd_model_path):
             print("Error: Failed to capture frame.")
             break
 
-        processed_frame, label, value, test_speed = process_frame(frame, model_test, image_cropper, model_dir)
+        processed_frame, label, value, test_speed = process_frame(frame, model_test, image_cropper, anti_spoofing_model_path)
 
         # Display the processed frame
         cv2.imshow('Anti-Spoofing Detection', processed_frame)
@@ -77,13 +77,13 @@ def run_real_time(camera_url, model_dir, device_id, scrfd_model_path):
 if __name__ == "__main__":
     desc = "Real-time Anti-Spoofing Detection"
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument("--device_id", type=int, default=0, help="which GPU id, [0/1/2/3]")
-    parser.add_argument("--model_dir", type=str, default="../models/anti_spoof_models", help="model library used for testing")
-    parser.add_argument("--camera_url", type=str,  default="http://root:N143g144@192.168.100.152/mjpg/video.mjpg?resolution=1920x1080&compression=50&mirror=1&fps=15&audio=0&maxframesize=0&videocodec=jpeg&rotation=180&text=1&textstring=Compression:%23c Frame size:%23F kbytes FPS:%23r&timestamp=1723643483761](http://root:N143g144@192.168.100.152/mjpg/video.mjpg?resolution=1920x1080&compression=20&mirror=1&fps=15&audio=0&maxframesize=0&videocodec=jpeg&rotation=180&text=1&textstring=Compression:%23c%20Frame%20size:%23F%20kbytes%20FPS:%23r&timestamp=1723643483761", help="IP camera URL")
+    # parser.add_argument("--device_id", type=int, default=0, help="which GPU id, [0/1/2/3]")
+    parser.add_argument("--anti_spoofing_model_path", type=str, default="../models/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth", help="model library used for testing")
+    parser.add_argument("--camera_url", type=str,  default="http://root:N143g144@192.168.100.152/mjpg/video.mjpg?resolution=1920x1080&compression=20&mirror=1&fps=15&audio=0&maxframesize=0&videocodec=jpeg&rotation=180&text=1&textstring=Compression:%23c Frame size:%23F kbytes FPS:%23r&timestamp=1723643483761](http://root:N143g144@192.168.100.152/mjpg/video.mjpg?resolution=1920x1080&compression=20&mirror=1&fps=15&audio=0&maxframesize=0&videocodec=jpeg&rotation=180&text=1&textstring=Compression:%23c%20Frame%20size:%23F%20kbytes%20FPS:%23r&timestamp=1723643483761", help="IP camera URL")
     parser.add_argument("--scrfd_model_path", type=str, default="../models/buffalo_l/det_10g.onnx", help="Path to the SCRFD model")
     args = parser.parse_args()
 
-    run_real_time(args.camera_url, args.model_dir, args.device_id, args.scrfd_model_path)
+    run_real_time(args.camera_url, args.anti_spoofing_model_path, args.scrfd_model_path)
 
 
 

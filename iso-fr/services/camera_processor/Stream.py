@@ -21,7 +21,9 @@ from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
 import requests
 import os
-
+from services.camera_processor.anti_spoof_predict import AntiSpoofPredict
+from services.camera_processor.generate_patches import CropImage
+from services.camera_processor.utility import parse_model_name
 # Unset proxy environment variables
 os.environ.pop('HTTP_PROXY', None)
 os.environ.pop('HTTPS_PROXY', None)
@@ -42,7 +44,7 @@ class Stream:
         
         # Face Recognition
         self.last_recognitions: Dict[str, datetime.datetime] = {}
-        self.similarity_threshold: float = 0.2
+        self.similarity_threshold: float = 0.3
         face_rec_model = os.path.join(onnx_models_dir, "w600k_r50.onnx")
         self.face_recognizer = ArcFaceONNX(face_rec_model)
         self.face_recognizer.prepare(0 if device == "cuda" else -1)
@@ -56,6 +58,11 @@ class Stream:
         emotion_model = os.path.join(onnx_models_dir, "emotion_model.onnx")
         self.emotion_detector = EmotionDetector(emotion_model)
 
+        # Anti-Spoofing
+        # anti_spoofing_model_path="../models/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
+        self.anti_spoofing_model_path = "/app/services/models/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
+        self.anti_spoof_predictor = AntiSpoofPredict(self.anti_spoofing_model_path, face_detector_model)
+        self.image_cropper = CropImage()
         # MongoDB
         client = MongoClient(os.getenv("MONGO_DB_URI"))
         self.db = client["isoai"]
@@ -360,33 +367,52 @@ class Stream:
             "camera": camera,
             "personnel_id": personnel_id
         }
-        notify_new_face(log_record)
-        self.recognition_logs_collection.insert_one(log_record)
+
+        if is_known:
+            notify_new_face(log_record)
+            self.recognition_logs_collection.insert_one(log_record)
 
         return file_path
-
     def _get_attributes(
         self, frame: np.ndarray, camera: str = None
     ) -> Tuple[
         List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
     ]:
-        
         if frame is None or len(frame.shape) < 2:
             return [], [], [], [], [], []
 
-        bboxes, kpss = self.face_detector.detect(frame, input_size=(640,640), max_num=49, thresh=0.8)
+        bboxes, kpss = self.face_detector.detect(frame, input_size=(640, 640), max_num=49, thresh=0.75)
         if len(bboxes) == 0:
             return [], [], [], [], [], []
 
         labels, sims, emotions, ages, genders = [], [], [], [], []
 
         for idx, kps in enumerate(kpss):
+            bbox = bboxes[idx]
+            x1, y1, x2, y2 = map(int, bbox[:4])
+            face_image = frame[y1:y2, x1:x2]
+
+            # Perform anti-spoofing check
+            spoofing_label, spoofing_score = self._perform_anti_spoofing_check(frame, bbox)
+            # if spoofing_label == 0:  # Fake face detected, draw red border
+            #     color = (0, 0, 255)  # Red color in BGR
+            # else:  # Real face detected, draw green border
+            #     color = (0, 255, 0)  # Green color in BGR
+
+            # # Draw the border around the face
+            # cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+
+            # If the face is fake, skip further processing
+            if spoofing_label == 0:
+                continue
+
+            # Perform face recognition
             embedding = self.face_recognizer.get(frame, kps)
             min_dist = float("inf")
             best_match = None
             label = "Unknown"
             is_known = False
-
+            personnel_id = None
             for id, db_embedding in self.database.items():
                 dist = np.linalg.norm(db_embedding - embedding)
                 if dist < min_dist:
@@ -396,39 +422,26 @@ class Stream:
             sim = self.face_recognizer.compute_sim(embedding, self.database.get(best_match, np.zeros_like(embedding)))
             if sim >= self.similarity_threshold:
                 try:
-                    # Extract personnel ID from the best match
                     personnel_id = best_match
-                    
-                    # Send a GET request to fetch personnel details
                     url = f"http://utils_service:5004/personel/{personnel_id}"
                     response = requests.get(url, proxies={"http": None, "https": None})
                     response.raise_for_status()
-                    
-                    # Parse the response to get the personnel's name and last name
                     person = response.json()
                     if person and "name" in person and "lastname" in person:
                         label = f"{person['name']} {person['lastname']}"
                         is_known = True
                     else:
-                        label = best_match  # Fallback to best match if name and lastname are not found
+                        label = best_match
                         is_known = False
                 except requests.exceptions.RequestException as e:
                     print(f"An error occurred while fetching personnel details: {e}")
-                    label = best_match  # Fallback to best match in case of an error
+                    label = best_match
                     is_known = False
-            # if sim >= self.similarity_threshold:
-                
-            #     label = best_match
-            #     is_known = True
 
-            bbox = bboxes[idx]
-            x1, y1, x2, y2 = map(int, bbox[:4])
-            face_image = frame[y1:y2, x1:x2]
-
-            if not is_known:
-                label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
-                personnel_id = None
-                self.database[label] = embedding
+            # if not is_known:
+            #     label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+            #     personnel_id = None
+            #     self.database[label] = embedding
 
             labels.append(label)
             sims.append(sim)
@@ -443,6 +456,187 @@ class Stream:
             self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera, personnel_id)
 
         return bboxes, labels, sims, emotions, genders, ages
+
+    # def _get_attributes(
+    #     self, frame: np.ndarray, camera: str = None
+    # ) -> Tuple[
+    #     List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
+    # ]:
+    #     if frame is None or len(frame.shape) < 2:
+    #         return [], [], [], [], [], []
+
+    #     bboxes, kpss = self.face_detector.detect(frame, input_size=(640, 640), max_num=49, thresh=0.8)
+    #     if len(bboxes) == 0:
+    #         return [], [], [], [], [], []
+
+    #     labels, sims, emotions, ages, genders = [], [], [], [], []
+
+    #     for idx, kps in enumerate(kpss):
+    #         bbox = bboxes[idx]
+    #         x1, y1, x2, y2 = map(int, bbox[:4])
+    #         face_image = frame[y1:y2, x1:x2]
+
+    #         # Perform anti-spoofing check
+    #         spoofing_label, spoofing_score = self._perform_anti_spoofing_check(frame, bbox)
+    #         if spoofing_label == 0:  # Fake face detected, skip this face
+    #             continue
+
+    #         # Perform face recognition
+    #         embedding = self.face_recognizer.get(frame, kps)
+    #         min_dist = float("inf")
+    #         best_match = None
+    #         label = "Unknown"
+    #         is_known = False
+
+    #         for id, db_embedding in self.database.items():
+    #             dist = np.linalg.norm(db_embedding - embedding)
+    #             if dist < min_dist:
+    #                 min_dist = dist
+    #                 best_match = id
+
+    #         sim = self.face_recognizer.compute_sim(embedding, self.database.get(best_match, np.zeros_like(embedding)))
+    #         if sim >= self.similarity_threshold:
+    #             try:
+    #                 personnel_id = best_match
+    #                 url = f"http://utils_service:5004/personel/{personnel_id}"
+    #                 response = requests.get(url, proxies={"http": None, "https": None})
+    #                 response.raise_for_status()
+    #                 person = response.json()
+    #                 if person and "name" in person and "lastname" in person:
+    #                     label = f"{person['name']} {person['lastname']}"
+    #                     is_known = True
+    #                 else:
+    #                     label = best_match
+    #                     is_known = False
+    #             except requests.exceptions.RequestException as e:
+    #                 print(f"An error occurred while fetching personnel details: {e}")
+    #                 label = best_match
+    #                 is_known = False
+
+    #         if not is_known:
+    #             label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    #             personnel_id = None
+    #             self.database[label] = embedding
+
+    #         labels.append(label)
+    #         sims.append(sim)
+
+    #         gender, age = self.gender_age_detector.get(frame, face=bbox)
+    #         ages.append(age)
+    #         genders.append("M" if gender == 1 else "F")
+
+    #         emotion = self.emotion_detector.detect_emotion_from_array(face_image)
+    #         emotions.append(emotion)
+
+    #         self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera, personnel_id)
+
+    #     return bboxes, labels, sims, emotions, genders, ages
+
+
+    def _perform_anti_spoofing_check(self, frame, bbox):
+        # Crop face image using the bbox
+        x1, y1, x2, y2 = map(int, bbox[:4])
+        face_image = frame[y1:y2, x1:x2]
+
+        # Prepare the input for the anti-spoofing model
+        h_input, w_input, model_type, scale = parse_model_name(os.path.basename(self.anti_spoofing_model_path))
+        param = {
+            "org_img": frame,
+            "bbox": bbox,
+            "scale": scale,
+            "out_w": w_input,
+            "out_h": h_input,
+            "crop": True,
+        }
+        if scale is None:
+            param["crop"] = False
+        img = self.image_cropper.crop(**param)
+
+        # Perform prediction using the anti-spoofing model
+        prediction = self.anti_spoof_predictor.predict(img)
+        label = np.argmax(prediction)
+        value = prediction[0][label]
+
+        return label, value  # label = 1: real, label = 0: fake
+
+    # def _get_attributes(
+    #     self, frame: np.ndarray, camera: str = None
+    # ) -> Tuple[
+    #     List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
+    # ]:
+        
+    #     if frame is None or len(frame.shape) < 2:
+    #         return [], [], [], [], [], []
+
+    #     bboxes, kpss = self.face_detector.detect(frame, input_size=(640,640), max_num=49, thresh=0.8)
+    #     if len(bboxes) == 0:
+    #         return [], [], [], [], [], []
+
+    #     labels, sims, emotions, ages, genders = [], [], [], [], []
+
+    #     for idx, kps in enumerate(kpss):
+    #         embedding = self.face_recognizer.get(frame, kps)
+    #         min_dist = float("inf")
+    #         best_match = None
+    #         label = "Unknown"
+    #         is_known = False
+
+    #         for id, db_embedding in self.database.items():
+    #             dist = np.linalg.norm(db_embedding - embedding)
+    #             if dist < min_dist:
+    #                 min_dist = dist
+    #                 best_match = id
+
+    #         sim = self.face_recognizer.compute_sim(embedding, self.database.get(best_match, np.zeros_like(embedding)))
+    #         if sim >= self.similarity_threshold:
+    #             try:
+    #                 # Extract personnel ID from the best match
+    #                 personnel_id = best_match
+                    
+    #                 # Send a GET request to fetch personnel details
+    #                 url = f"http://utils_service:5004/personel/{personnel_id}"
+    #                 response = requests.get(url, proxies={"http": None, "https": None})
+    #                 response.raise_for_status()
+                    
+    #                 # Parse the response to get the personnel's name and last name
+    #                 person = response.json()
+    #                 if person and "name" in person and "lastname" in person:
+    #                     label = f"{person['name']} {person['lastname']}"
+    #                     is_known = True
+    #                 else:
+    #                     label = best_match  # Fallback to best match if name and lastname are not found
+    #                     is_known = False
+    #             except requests.exceptions.RequestException as e:
+    #                 print(f"An error occurred while fetching personnel details: {e}")
+    #                 label = best_match  # Fallback to best match in case of an error
+    #                 is_known = False
+    #         # if sim >= self.similarity_threshold:
+                
+    #         #     label = best_match
+    #         #     is_known = True
+
+    #         bbox = bboxes[idx]
+    #         x1, y1, x2, y2 = map(int, bbox[:4])
+    #         face_image = frame[y1:y2, x1:x2]
+
+    #         if not is_known:
+    #             label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    #             personnel_id = None
+    #             self.database[label] = embedding
+
+    #         labels.append(label)
+    #         sims.append(sim)
+
+    #         gender, age = self.gender_age_detector.get(frame, face=bbox)
+    #         ages.append(age)
+    #         genders.append("M" if gender == 1 else "F")
+
+    #         emotion = self.emotion_detector.detect_emotion_from_array(face_image)
+    #         emotions.append(emotion)
+
+    #         self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera, personnel_id)
+
+    #     return bboxes, labels, sims, emotions, genders, ages
     
     def recog_face_ip_cam(self, stream_id, camera: str, is_recording=False):
         self.stop_flag.clear()
@@ -473,22 +667,27 @@ class Stream:
                 if not writer.isOpened():
                     logging.error("Error initializing video writer")
                     break
-
             for bbox, label, sim, emotion, gender, age in zip(
-                *self._get_attributes(frame, camera)
-            ):
-                x1, y1, x2, y2 = map(int, bbox[:4])
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
-                text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"
-                cv2.putText(
-                    frame,
-                    text_label,
-                    (x1 + 5, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8,
-                    (0, 255, 0),
-                    2,
-                )
+                            *self._get_attributes(frame, camera)
+                        ):
+                            x1, y1, x2, y2 = map(int, bbox[:4])
+                            if label == "Unknown":
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 4)  # Blue borders
+                                text_label = f"{label}: {emotion}, gender: {gender}, age: {age}"
+                                text_color = (255, 0, 0)  # Blue text
+                            else:
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)  # Green borders
+                                text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"
+                                text_color = (0, 255, 0)  # Green text
+                            cv2.putText(
+                                frame,
+                                text_label,
+                                (x1 + 5, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.8,
+                                text_color,
+                                2,
+                            )
             if writer:
                 writer.write(frame)
             _, buffer = cv2.imencode(".jpg", frame)

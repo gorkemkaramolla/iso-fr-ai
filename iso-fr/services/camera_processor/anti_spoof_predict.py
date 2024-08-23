@@ -6,10 +6,10 @@ import math
 import torch
 import numpy as np
 import torch.nn.functional as F
-from MiniFASNet import MiniFASNetV1, MiniFASNetV2, MiniFASNetV1SE, MiniFASNetV2SE
-import transform as trans
-from utility import get_kernel, parse_model_name
-from scrfd import SCRFD  # Make sure to import your SCRFD class
+from services.camera_processor.MiniFASNet import MiniFASNetV1, MiniFASNetV2, MiniFASNetV1SE, MiniFASNetV2SE
+import services.camera_processor.transform as trans
+from services.camera_processor.utility import get_kernel, parse_model_name
+from services.camera_processor.scrfd import SCRFD  # Make sure to import your SCRFD class
 
 MODEL_MAPPING = {
     'MiniFASNetV1': MiniFASNetV1,
@@ -20,11 +20,14 @@ MODEL_MAPPING = {
 
 
 class AntiSpoofPredict:
-    def __init__(self, device_id, scrfd_model_path):
+    def __init__(self, anti_spoof_model_path, scrfd_model_path):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # Initialize SCRFD with the given model path
         self.detector = SCRFD(model_file=scrfd_model_path)
         self.detector.prepare(ctx_id=0)  # Use CUDA (ctx_id=0), set to -1 for CPU
+        self.anti_spoof_model_path = anti_spoof_model_path
+        self.model: MiniFASNetV2 = None
+        self._load_model(self.anti_spoof_model_path)
 
     def _load_model(self, model_path):
         # Define and load the MiniFASNet model
@@ -38,6 +41,9 @@ class AntiSpoofPredict:
         if 'module.' in list(state_dict.keys())[0]:
             state_dict = {k[7:]: v for k, v in state_dict.items()}
         self.model.load_state_dict(state_dict)
+        self.model.eval()
+
+       
 
     def get_bbox(self, img):
         # Use SCRFD to detect faces and return the bounding box
@@ -48,14 +54,14 @@ class AntiSpoofPredict:
         bbox = bboxes[0]
         return [int(bbox[0]), int(bbox[1]), int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1])]
 
-    def predict(self, img, model_path):
+    def predict(self, img):
         # Preprocess and predict using the MiniFASNet model
         test_transform = trans.Compose([
             trans.ToTensor(),
         ])
+                # Initialize MiniFASNet model
+      
         img = test_transform(img).unsqueeze(0).to(self.device)
-        self._load_model(model_path)
-        self.model.eval()
         with torch.no_grad():
             result = self.model.forward(img)
             result = F.softmax(result).cpu().numpy()

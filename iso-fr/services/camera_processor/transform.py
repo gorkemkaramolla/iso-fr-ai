@@ -17,7 +17,7 @@ import numpy as np
 import numbers
 import types
 
-import functional as F
+import services.camera_processor.functional as F
 
 __all__ = ["Compose", "ToTensor", "ToPILImage", "Normalize", "RandomHorizontalFlip",
            "Lambda", "RandomResizedCrop", "ColorJitter", "RandomRotation"]

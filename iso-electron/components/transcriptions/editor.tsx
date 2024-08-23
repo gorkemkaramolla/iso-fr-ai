@@ -216,7 +216,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
     if (saveState === 'needs saving') {
       // Here you should invoke your save API or logic
       setSaveState('saved');
-      setTimeout(() => setSaveState('no changes made'), 1000);
+      setTimeout(() => setSaveState('no changes made'), 2000);
     }
   }, [saveState, setSaveState]);
 
@@ -488,8 +488,11 @@ const TextEditor: React.FC<TextEditorProps> = ({
               <h1 className='text-2xl font-bold break-words whitespace-pre-wrap'>
                 {transcriptionName}
               </h1>
-              <div className='opacity-0 transition-opacity duration-200 group-hover:opacity-100'>
-                <Edit className='text-gray-500 hover:text-gray-700' size={24} />
+              <div className='opacity-0 cursor-pointer transition-opacity duration-200 group-hover:opacity-100'>
+                <Edit
+                  className='text-gray-500 cursor-pointer hover:text-gray-700'
+                  size={24}
+                />
               </div>
             </div>
           )}
@@ -524,13 +527,14 @@ const TextEditor: React.FC<TextEditorProps> = ({
             <motion.div
               animate={{
                 rotate: viewMode === 'inline' ? 0 : 90,
+                rotateY: viewMode === 'inline' ? 0 : 360,
               }}
               transition={{ duration: 0.3 }}
             >
               {viewMode === 'inline' ? (
-                <AlignStartHorizontal size={20} />
+                <AlignStartHorizontal className='' size={20} />
               ) : (
-                <AlignStartVertical size={20} />
+                <AlignStartHorizontal size={20} />
               )}
             </motion.div>
           </button>
@@ -632,13 +636,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
         footer={
           <div>
             <Button
-              label='Cancel'
+              label='İptal'
               icon='pi pi-times'
               onClick={() => setShowDialog(false)}
               className='p-button-text'
             />
             <Button
-              label='Confirm'
+              label='Onayla'
               icon='pi pi-check'
               onClick={confirmChangeSpeakerName}
               autoFocus
@@ -672,13 +676,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
         footer={
           <div>
             <Button
-              label='Cancel'
+              label='İptal'
               icon='pi pi-times'
               onClick={() => setShowSingleRenameDialog(false)}
               className='p-button-text'
             />
             <Button
-              label='Confirm'
+              label='Onayla'
               icon='pi pi-check'
               onClick={confirmSingleRename}
               autoFocus
@@ -689,9 +693,11 @@ const TextEditor: React.FC<TextEditorProps> = ({
       >
         <div>
           <p>
-            <strong>{' ' + singleRenameData.oldName}</strong> adlı konuşmacının
-            ismini değiştirmek üzeresiniz
+            <strong>{`"${singleRenameData.segmentId}"`}</strong> ID'li Konuşma
+            alt segmentine ait <strong>{singleRenameData.oldName + ' '}</strong>
+            konuşmacı adını değiştirmek üzeresiniz.
           </p>
+
           <InputText
             value={singleRenameData.newName}
             placeholder='Yeni isim'

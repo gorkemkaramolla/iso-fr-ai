@@ -41,28 +41,28 @@ class PersonelService:
                 {"$set": update_data}
             )
 
-            if result.matched_count > 0:
-                self.logger.info(f"Updated personel with id {personel_id}")
+            # if result.matched_count > 0:
+            #     self.logger.info(f"Updated personel with id {personel_id}")
 
-                # Retrieve the full updated record to send to Solr
-                updated_personel = self.db["Personel"].find_one({"_id": ObjectId(personel_id)})
+            #     # Retrieve the full updated record to send to Solr
+            #     updated_personel = self.db["Personel"].find_one({"_id": ObjectId(personel_id)})
 
-                if updated_personel:
-                    updated_personel['_id'] = str(updated_personel['_id'])  # Convert ObjectId to string
-                    solr_response = self.solr_searcher.update_record_in_solr(updated_personel)
+            #     if updated_personel:
+            #         updated_personel['_id'] = str(updated_personel['_id'])  # Convert ObjectId to string
+            #         solr_response = self.solr_searcher.update_record_in_solr(updated_personel)
 
-                    if solr_response['status'] == 'success':
-                        return {"status": "success", "message": "Personnel updated successfully in both MongoDB and Solr"}, 200
-                    else:
-                        self.logger.error("Error updating data in Solr")
-                        return {"status": "error", "message": "Error updating data in Solr", "solr_response": solr_response}, 500
-                else:
-                    self.logger.error(f"Personel with id {personel_id} could not be retrieved after update")
-                    return {"status": "error", "message": "Personnel could not be retrieved after update"}, 500
+            #         if solr_response['status'] == 'success':
+            #             return {"status": "success", "message": "Personnel updated successfully in both MongoDB and Solr"}, 200
+            #         else:
+            #             self.logger.error("Error updating data in Solr")
+            #             return {"status": "error", "message": "Error updating data in Solr", "solr_response": solr_response}, 500
+            #     else:
+            #         self.logger.error(f"Personel with id {personel_id} could not be retrieved after update")
+            #         return {"status": "error", "message": "Personnel could not be retrieved after update"}, 500
 
-            else:
-                self.logger.error(f"Personel with id {personel_id} not found")
-                return {"status": "error", "message": "Personel not found"}, 404
+            # else:
+            #     self.logger.error(f"Personel with id {personel_id} not found")
+            #     return {"status": "error", "message": "Personel not found"}, 404
 
         except Exception as e:
             self.logger.error(f"Error updating personel: {e}")

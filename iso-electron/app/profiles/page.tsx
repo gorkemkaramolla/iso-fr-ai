@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Personel } from '@/types';
 import createApi from '@/utils/axios_instance';
-import RecogPage from '@/components/camera/Recog2/recog-page';
+// import RecogPage from '@/components/camera/Recog2/recog-page';
 
 // Import the ClientProfile dynamically with no SSR
 const ClientProfile = dynamic(() => import('./profile'), {

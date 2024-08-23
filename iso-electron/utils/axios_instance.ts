@@ -31,7 +31,7 @@
 //     },
 //   });
 // }
-function getCsrfTokenFromCookies(): string {
+export function getCsrfTokenFromCookies(): string {
   if (typeof document !== 'undefined') {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; csrf_access_token=`);

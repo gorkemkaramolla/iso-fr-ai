@@ -101,8 +101,12 @@ def update_personel_route(personel_id):
         else:
             image = None
         
-        data = request.form.to_dict()  # Use request.form to handle multipart/form-data
+        if request.is_json:
+            data = request.get_json()  # Handle JSON data
+        else:
+            data = request.form.to_dict()  # Handle multipart/form-data
         
+        print(data)
         result, status = personel_service.update_personel(personel_id, data, file=image)
         return jsonify(result), status
     except Exception as e:

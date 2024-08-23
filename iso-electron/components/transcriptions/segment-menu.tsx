@@ -78,7 +78,9 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
             startContent={<Trash2 size={16} />}
             onPress={() => {
               if (
-                window.confirm('Are you sure you want to delete this segment?')
+                window.confirm(
+                  'Bu segmenti silmek istediğinizden emin misiniz?'
+                )
               ) {
                 onDelete();
               }

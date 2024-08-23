@@ -16,21 +16,19 @@ import { Changes, Segment, Transcript } from '@/types';
 import createApi from '@/utils/axios_instance';
 import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
 import { FaGripVertical } from 'react-icons/fa6';
+import { useResize } from '@/hooks/useResize';
 
 interface Props {
   transcription: Transcript;
 }
 
 const Transcription: React.FC<Props> = ({ transcription }) => {
+  const transcriptionHistoryRef = useRef<HTMLDivElement>(null);
   const [changes, setChanges] = useState<Changes[]>([]);
-  const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
-  const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
-  const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
+
   const currentTime = useStore((state) => state.currentTime);
   const transcriptionRef = useRef<HTMLDivElement>(null);
-  const [highlightedSegment, setHighlightedSegment] = useState<string | null>(
-    null
-  );
+
   const [rightScreen, setRightScreen] = useState<string | null>('history');
   const [rightPanelSize, setRightPanelSize] = useState<number>(25);
 
@@ -79,9 +77,9 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
         );
       });
 
-      setTimeout(() => {
-        setSaveState('no changes made');
-      }, 3000);
+      // setTimeout(() => {
+      //   setSaveState('no changes made');
+      // }, 3700);
     }
   }, [saveState, changes, transcription.segments]);
 
@@ -110,11 +108,11 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
         }
       );
 
-      if (response.status === 204) {
-        console.log('No changes were made.');
-        setSaveState('no changes made');
-        return;
-      }
+      // if (response.status === 204) {
+      //   console.log('No changes were made.');
+      //   setSaveState('no changes made');
+      //   return;
+      // }
 
       console.log('Successfully renamed transcribed text');
       setSaveState('saved');
@@ -212,7 +210,11 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
       setRightScreen(null);
     }
   }, [rightPanelSize]);
+  const { width, height } = useResize(transcriptionHistoryRef);
 
+  useEffect(() => {
+    console.log(width, height);
+  }, [width, height]);
   return (
     <div className='relative'>
       <Toast ref={toast} />
@@ -270,20 +272,20 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
             </div>
           </Panel>
           <PanelResizeHandle className='cursor-col-resize w-[2px] max-h-[90vh] bg-gray-200 relative md:flex hidden'>
-            <div className='absolute top-1/2 bg-primary text-white py-2 px-[3px] rounded-xl left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
+            <div className='absolute top-1/2 bg-primary text-white py-[6px] px-[3px] rounded-xl left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
               <FaGripVertical style={{ zIndex: 100 }} className='text-[12px]' />
             </div>
           </PanelResizeHandle>
           {rightScreen && (
             <Panel
               defaultSize={25}
-              minSize={0.5}
+              minSize={1.5}
               className='z-0 md:block hidden '
             >
               <div className='flex w-full justify-between'></div>
 
               {rightScreen === 'history' && (
-                <div>
+                <div ref={transcriptionHistoryRef}>
                   <TranscriptionHistory activePageId={transcription?._id} />
                 </div>
               )}

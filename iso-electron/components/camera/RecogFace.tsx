@@ -166,13 +166,13 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
         }
       });
 
-      // Show success toast
-      toast.current?.show({
-        severity: 'info',
-        summary: 'Yeni Yüz Tanımlandı',
-        detail: `"${newFace.label}" adlı yüz tanımlandı.`,
-        life: 4000,
-      });
+      // // Show success toast
+      // toast.current?.show({
+      //   severity: 'info',
+      //   summary: 'Yeni Yüz Tanımlandı',
+      //   detail: `"${newFace.label}" adlı yüz tanımlandı.`,
+      //   life: 4000,
+      // });
     });
 
     return () => {

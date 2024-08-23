@@ -58,28 +58,28 @@ const RecogFaceCollapsedItem: React.FC<RecogFaceCollapsedItemProps> = ({
           title='Profile Git'
         /> */}
       </>
-      {editingName === group.name ? (
-        <div className='flex items-center gap-2'>
-          <input
-            type='text'
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className='input input-sm input-bordered w-full max-w-xs text-xs font-normal px-2'
-          />
-          <button
-            onClick={() => handleEditName(group.name)}
-            className='btn btn-sm btn-primary text-white'
-          >
-            Kaydet
-          </button>
-          <button
-            onClick={() => setEditingName(null)}
-            className='btn btn-sm btn-secondary text-white'
-          >
-            İptal
-          </button>
-        </div>
-      ) : (
+      {/* {editingName === group.name ? (
+        // <div className='flex items-center gap-2'>
+        //   <input
+        //     type='text'
+        //     value={newName}
+        //     onChange={(e) => setNewName(e.target.value)}
+        //     className='input input-sm input-bordered w-full max-w-xs text-xs font-normal px-2'
+        //   />
+        //   <button
+        //     onClick={() => handleEditName(group.name)}
+        //     className='btn btn-sm btn-primary text-white'
+        //   >
+        //     Kaydet
+        //   </button>
+        //   <button
+        //     onClick={() => setEditingName(null)}
+        //     className='btn btn-sm btn-secondary text-white'
+        //   >
+        //     İptal
+        //   </button>
+        // </div>
+      ) : ( */}
         <div className='flex justify-between items-center w-full'>
           <div className='text-xs overflow-hidden'>
             <span
@@ -94,7 +94,7 @@ const RecogFaceCollapsedItem: React.FC<RecogFaceCollapsedItemProps> = ({
               {formatLastSeen(getLatestTimestamp(group.faces))}
             </span>
           </div>
-          <button
+          {/* <button
             onClick={(e) => {
               e.stopPropagation();
               setEditingName(group.name);
@@ -103,9 +103,9 @@ const RecogFaceCollapsedItem: React.FC<RecogFaceCollapsedItemProps> = ({
             className='btn btn-sm btn-outline'
           >
             Düzenle
-          </button>
+          </button> */}
         </div>
-      )}
+      {/* )} */}
     </div>
   );
 };

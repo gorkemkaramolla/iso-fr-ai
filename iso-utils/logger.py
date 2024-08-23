@@ -24,7 +24,7 @@ class JsonConsoleHandler(logging.StreamHandler):
 
 def configure_logging(log_level=logging.INFO):
     aggressive_mode = os.getenv("AGGRESSIVE_LOGGING", "False").lower() in ['true', '1', 't']
-    logger = logging.getLogger('audio_processing')
+    logger = logging.getLogger('utils')
     logger.setLevel(log_level)
 
     f_handler = JsonConsoleHandler()

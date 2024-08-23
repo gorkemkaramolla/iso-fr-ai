@@ -93,7 +93,7 @@ export default function AddUserDialog({ isModalOpen, setIsModalOpen }: Props) {
   const footerContent = (
     <div>
       <Button
-        label='Cancel'
+        label='İptal'
         icon='pi pi-times'
         onClick={() => setIsModalOpen(false)}
         className='p-button-text'

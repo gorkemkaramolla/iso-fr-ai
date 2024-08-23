@@ -281,7 +281,7 @@ const RecognizedFacesTable: React.FC = () => {
   const confirmDelete = async (event: any) => {
     confirmPopup({
       target: event.currentTarget,
-      message: 'Do you want to delete this record?',
+      message: 'Bu kayıtları silmek istediğinizden emin misiniz?',
       icon: 'pi pi-info-circle',
       defaultFocus: 'reject',
       acceptClassName: 'p-button-danger',

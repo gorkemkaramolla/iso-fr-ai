@@ -90,7 +90,7 @@ export default function EditUserDialog({
   const footerContent = (
     <div>
       <Button
-        label='Cancel'
+        label='İptal'
         icon='pi pi-times'
         onClick={() => setIsModalOpen(false)}
         className='p-button-text'

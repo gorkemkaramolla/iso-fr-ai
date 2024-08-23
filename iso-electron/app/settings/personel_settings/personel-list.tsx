@@ -338,7 +338,7 @@ export default function App() {
       message: `Seçilen ${Array.from(
         selectedKeys
       )} id'li personeli silmek istediğinizden emin misiniz?`,
-      header: 'Confirmation',
+      header: 'Onaylama',
       icon: 'pi pi-exclamation-triangle',
       accept: deletePersonel,
       reject: () => {

@@ -17,12 +17,14 @@ import createApi from '@/utils/axios_instance';
 import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
 import { FaGripVertical } from 'react-icons/fa6';
 import { useResize } from '@/hooks/useResize';
+import { useRouter } from 'next/navigation';
 
 interface Props {
   transcription: Transcript;
 }
 
 const Transcription: React.FC<Props> = ({ transcription }) => {
+  const router = useRouter();
   const transcriptionHistoryRef = useRef<HTMLDivElement>(null);
   const [changes, setChanges] = useState<Changes[]>([]);
 
@@ -81,7 +83,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
       //   setSaveState('no changes made');
       // }, 3700);
     }
-  }, [saveState, changes, transcription.segments]);
+  }, [saveState]);
 
   const handleTranscribedTextChange = async (
     segments: Segment[],
@@ -135,6 +137,9 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   const handleDeleteTranscription = async () => {
     const response = await api.delete(`transcriptions/${transcription._id}`);
     const data = await response.json();
+    if (response.status === 200) {
+      router.push('/transcriptions');
+    }
     console.log(data);
   };
 
@@ -263,7 +268,6 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
                 handleEditName={handleEditTranscriptionName}
                 handleDeleteTranscription={handleDeleteTranscription}
                 handleSpeakerNameChange={handleSpeakerNameChange}
-                handleTranscribedTextChange={handleTranscribedTextChange}
                 transcriptionRef={transcriptionRef}
                 isEditing={isEditing}
                 saveState={saveState}

@@ -135,7 +135,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
           />
           <ul className='space-y-2 mt-4'>
             {currentItems.length === 0 ? (
-              <p className='text-center text-sm text-gray-500'>
+              <p className='text-center text-sm text-gray-400'>
                 Henüz kayıt yok.
               </p>
             ) : (
@@ -143,19 +143,19 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                 <li key={transcription._id}>
                   <Link href={`/transcriptions?id=${transcription._id}`}>
                     <div
-                      className={`p-2 rounded transition-colors ${
+                      className={`p-3 rounded-lg transition-all duration-300 ${
                         transcription._id === activePageId
-                          ? 'bg-primary text-gray-100'
-                          : 'hover:bg-indigo-100'
+                          ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                       }`}
                     >
-                      <p className='text-sm   font-medium flex-wrap  flex '>
+                      <p className='text-sm font-medium flex-wrap flex'>
                         {transcription.name}
                       </p>
-                      <p className='text-sm font-medium truncate'>
+                      <p className='text-xs font-medium truncate opacity-75'>
                         {transcription._id}
                       </p>
-                      <p className='text-xs mt-1'>
+                      <p className='text-xs mt-1 opacity-75'>
                         {formatDate(transcription.created_at)}
                       </p>
                     </div>

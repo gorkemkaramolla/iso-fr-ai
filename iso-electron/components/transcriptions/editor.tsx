@@ -693,8 +693,9 @@ const TextEditor: React.FC<TextEditorProps> = ({
       >
         <div>
           <p>
-            <strong>{`"${singleRenameData.segmentId}"`}</strong> ID'li Konuşma
-            alt segmentine ait <strong>{singleRenameData.oldName + ' '}</strong>
+            <strong>{`&lsquo;${singleRenameData.segmentId}&rsquo;`}</strong>{' '}
+            ID&apos;li Konuşma alt segmentine ait{' '}
+            <strong>{singleRenameData.oldName + ' '}</strong>
             konuşmacı adını değiştirmek üzeresiniz.
           </p>
 

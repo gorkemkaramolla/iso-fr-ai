@@ -66,12 +66,7 @@ export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className='flex w-full  items-center justify-center'>
-        <div className='w-2/4 '>
-          <ProfileContent />
-        </div>
-        {/* <div className='w-1/4 '>
-          <RecogPage />
-        </div> */}
+        <ProfileContent />
       </div>
     </Suspense>
   );

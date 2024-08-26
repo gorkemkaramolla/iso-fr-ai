@@ -23,7 +23,7 @@ const SettingsLayout = ({ children }: SettingsLayoutProps) => {
           <Button
             icon='pi pi-arrow-left'
             label='Ayarlara dön'
-            className='p-button-text p-button-plain'
+            className='p-button-text p-button-plain m-2'
           />
         </Link>
       )}

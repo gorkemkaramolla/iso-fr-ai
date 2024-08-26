@@ -150,10 +150,18 @@ export default function ShowUsers() {
               </DropdownTrigger>
               <DropdownMenu>
                 <DropdownItem onClick={() => handleEditUser(user)}>
-                  <Edit /> Edit
+                  <span className='flex gap-2 items-center justify-between'>
+                    <span>Düzenle</span>
+                    <span>
+                      <Edit />
+                    </span>
+                  </span>
                 </DropdownItem>
-                <DropdownItem onClick={() => confirmDelete()}>
-                  <Trash2 /> Delete
+                <DropdownItem className='flex' onClick={() => confirmDelete()}>
+                  <span className='flex gap-2 items-center justify-between'>
+                    <span>Sil</span>
+                    <Trash2 />
+                  </span>
                 </DropdownItem>
               </DropdownMenu>
             </Dropdown>

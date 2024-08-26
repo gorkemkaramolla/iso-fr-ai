@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -21,6 +21,25 @@ const ChangeAllNamesDialog: React.FC<ChangeAllNamesDialogProps> = ({
   onHide,
   onConfirm,
 }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        onConfirm();
+      }
+    },
+    [onConfirm]
+  );
+
+  useEffect(() => {
+    if (visible) {
+      setTimeout(() => {
+        if (inputRef.current) inputRef.current.focus();
+      }, 200);
+    }
+  }, [visible]);
+
   return (
     <Dialog
       visible={visible}
@@ -52,11 +71,13 @@ const ChangeAllNamesDialog: React.FC<ChangeAllNamesDialogProps> = ({
           konuşma alt segmentlerini değiştirmek üzeresiniz.
         </p>
         <InputText
+          ref={inputRef}
           value={dialogData.newName}
           placeholder='Yeni isim'
           onChange={(e) =>
             setDialogData({ ...dialogData, newName: e.target.value })
           }
+          onKeyDown={handleKeyDown}
           className='w-full mt-2'
         />
       </div>

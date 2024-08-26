@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -26,6 +26,25 @@ const SingleRenameDialog: React.FC<SingleRenameDialogProps> = ({
   onHide,
   onConfirm,
 }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        onConfirm();
+      }
+    },
+    [onConfirm]
+  );
+
+  useEffect(() => {
+    if (visible) {
+      setTimeout(() => {
+        if (inputRef.current) inputRef.current.focus();
+      }, 200);
+    }
+  }, [visible]);
+
   return (
     <Dialog
       visible={visible}
@@ -58,6 +77,7 @@ const SingleRenameDialog: React.FC<SingleRenameDialogProps> = ({
         </p>
 
         <InputText
+          ref={inputRef}
           value={singleRenameData.newName}
           placeholder='Yeni isim'
           onChange={(e) =>
@@ -66,6 +86,7 @@ const SingleRenameDialog: React.FC<SingleRenameDialogProps> = ({
               newName: e.target.value,
             })
           }
+          onKeyDown={handleKeyDown}
           className='w-full mt-2'
         />
       </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 
@@ -23,6 +23,15 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   cancelLabel = 'İptal',
   confirmClassName = 'p-button-danger',
 }) => {
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter') {
+        onConfirm();
+      }
+    },
+    [onConfirm]
+  );
+
   return (
     <Dialog
       visible={visible}
@@ -47,7 +56,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       }
       onHide={onHide}
     >
-      <div>
+      <div onKeyDown={handleKeyDown} tabIndex={0}>
         <p>{message}</p>
       </div>
     </Dialog>

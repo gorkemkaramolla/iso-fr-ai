@@ -13,7 +13,15 @@ import {
   NavbarMenuItem,
 } from '@nextui-org/react';
 import { useRouter } from 'next/navigation';
-import { AudioLines, Contact, ListTodo, ScanFace, User, UserRoundCheck, Users } from 'lucide-react';
+import {
+  AudioLines,
+  Contact,
+  ListTodo,
+  ScanFace,
+  User,
+  UserRoundCheck,
+  Users,
+} from 'lucide-react';
 import Image from 'next/image';
 import { handleLogout } from '@/utils/logout';
 import { Menu } from 'primereact/menu';
@@ -74,12 +82,12 @@ export default function App() {
     },
     {
       label: 'Yoklama',
-      icon: ()=> <ListTodo className='w-5 mr-1.5 -ml-0.5' />,
+      icon: () => <ListTodo className='w-5 mr-1.5 -ml-0.5' />,
       command: () => {
         router.push('/attendance');
       },
       href: '/attendance',
-    }
+    },
   ];
   const profileItems = [
     {
@@ -132,7 +140,6 @@ export default function App() {
         ],
         wrapper: ['max-w-full', 'border-b', 'border-base-300'],
       }}
-      
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
     >
@@ -157,7 +164,11 @@ export default function App() {
       </NavbarContent>
       <NavbarContent className='hidden sm:flex gap-10' justify='center'>
         {menuItems.map((item, index) => (
-          <NavbarItem key={index} isActive={pathname === item.href}>
+          <NavbarItem
+            className='text-sm'
+            key={index}
+            isActive={pathname === item.href}
+          >
             <Link
               // color={pathname == item.href ? 'foreground' : 'warning'}
               href={item.href}
@@ -244,7 +255,7 @@ export default function App() {
           isIconOnly
           className='text-slate-500'
         >
-          <AvatarIcon  />
+          <AvatarIcon />
         </Button>
         <Menu model={profileItems} popup ref={profileMenu} />
         {/* <NavbarItem className='hidden lg:flex'>

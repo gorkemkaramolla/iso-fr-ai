@@ -145,7 +145,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                     <div
                       className={`p-3 rounded-lg transition-all duration-300 ${
                         transcription._id === activePageId
-                          ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg'
+                          ? 'bg-gradient-to-br from-primary via-primary to-purple-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2'
                           : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                       }`}
                     >

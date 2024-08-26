@@ -5,7 +5,7 @@ flask-Cors==4.0.1
 pymongo==4.7.3
 # torch==2.3.0
 torchvision==0.18.0 
-whisper-run== 1.2.61
+whisper-run== 1.2.63
 python-dotenv==1.0.1
 flask-SocketIO==5.3.6
 flask-jwt-extended==4.6.0

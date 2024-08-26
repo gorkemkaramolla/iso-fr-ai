@@ -98,12 +98,13 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
   const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
 
   const performDateFilter = useCallback(
-    async (dateRange: { start: string; end: string }) => {
+    async (dateRange: { start: number; end: number }) => {
       try {
         const queryString = qs.stringify({
           start_date: dateRange.start,
           end_date: dateRange.end,
         });
+        console.log(queryString);
 
         const response = await api.get(`/filter_logs?${queryString}`);
         const data = await response.json();
@@ -158,7 +159,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
     debouncedSearch(searchQuery);
   };
 
-  const handleDateRangeChange = (dateRange: { start: string; end: string }) => {
+  const handleDateRangeChange = (dateRange: { start: number; end: number }) => {
     performDateFilter(dateRange);
   };
 

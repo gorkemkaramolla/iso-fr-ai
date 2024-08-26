@@ -4,7 +4,7 @@ import { parseZonedDateTime, ZonedDateTime } from '@internationalized/date';
 import { now, getLocalTimeZone } from '@internationalized/date';
 
 interface NextDateRangePickerProps {
-  onDateRangeChange: (dateRange: { start: string; end: string }) => void;
+  onDateRangeChange: (dateRange: { start: number; end: number }) => void;
 }
 
 const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
@@ -22,10 +22,20 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
       const storedDateRange = localStorage.getItem('dateRange');
       if (storedDateRange) {
         const parsedDateRange = JSON.parse(storedDateRange);
+
+        // Create a time zone-aware string
+        const startIsoString = new Date(parsedDateRange.start)
+          .toISOString()
+          .replace('Z', '[UTC]');
+        const endIsoString = new Date(parsedDateRange.end)
+          .toISOString()
+          .replace('Z', '[UTC]');
+
         setDateRange({
-          start: parseZonedDateTime(parsedDateRange.start),
-          end: parseZonedDateTime(parsedDateRange.end),
+          start: parseZonedDateTime(startIsoString),
+          end: parseZonedDateTime(endIsoString),
         });
+
         onDateRangeChange({
           start: parsedDateRange.start,
           end: parsedDateRange.end,
@@ -49,8 +59,8 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
 
       if (typeof window !== 'undefined') {
         const dateRange = {
-          start: value.start.toString(),
-          end: value.end.toString(),
+          start: value.start.toDate().getTime(),
+          end: value.end.toDate().getTime(),
         };
         localStorage.setItem('dateRange', JSON.stringify(dateRange));
         onDateRangeChange(dateRange);

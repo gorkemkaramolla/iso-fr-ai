@@ -156,6 +156,21 @@ def search_logs_route():
     results, status_code = searcher.search_logs(query)
     return jsonify(results), status_code
 
+@solr_search_bp.route("/filter_logs", methods=["GET"])
+def filter_logs_route():
+    date_picker = request.args.get("date_picker")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    today = request.args.get("today", default=False, type=bool)
+
+    results, status_code = searcher.filter_logs(
+        date_picker=date_picker,
+        start_date=start_date,
+        end_date=end_date,
+        today=today
+    )
+    return jsonify(results), status_code
+
 app.register_blueprint(solr_search_bp)
 
 ######################### System Check ###################################

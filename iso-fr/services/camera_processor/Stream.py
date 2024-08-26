@@ -44,7 +44,7 @@ class Stream:
         
         # Face Recognition
         self.last_recognitions: Dict[str, datetime.datetime] = {}
-        self.similarity_threshold: float = 0.3
+        self.similarity_threshold: float = 0.45
         face_rec_model = os.path.join(onnx_models_dir, "w600k_r50.onnx")
         self.face_recognizer = ArcFaceONNX(face_rec_model)
         self.face_recognizer.prepare(0 if device == "cuda" else -1)

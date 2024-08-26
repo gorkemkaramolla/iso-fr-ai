@@ -18,11 +18,15 @@ RUN apt-get update && \
 # Prepare the models directory within the /app directory and download model files
 # Prepare the models directory within the /app directory and download model files
 RUN mkdir -p /app/services/models/buffalo_l && \
+    mkdir -p /app/services/models/anti_spoof_models && \
     wget -O /app/services/models/buffalo_l/buffalo_l.zip "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip" && \
     unzip /app/services/models/buffalo_l/buffalo_l.zip -d /app/services/models/buffalo_l && \
     rm /app/services/models/buffalo_l/buffalo_l.zip && \
     wget -O /app/services/models/buffalo_l/emotion_model.onnx "https://github.com/shangeth/Facial-Emotion-Recognition-PyTorch-ONNX/raw/master/ONNX/models/onnx_model.onnx" && \
+    wget -O /app/services/models/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth "https://github.com/minivision-ai/Silent-Face-Anti-Spoofing/raw/master/resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth" && \
+    wget -O /app/services/models/anti_spoof_models/4_0_0_80x80_MiniFASNetV1SE.pth "https://github.com/minivision-ai/Silent-Face-Anti-Spoofing/raw/master/resources/anti_spoof_models/4_0_0_80x80_MiniFASNetV1SE.pth" && \
     chmod -R 777 /app/services/models/buffalo_l && \
+    chmod -R 777 /app/services/models/anti_spoof_models && \
     echo "Listing contents of the model directory:" && \
     ls -la /app/services/models/buffalo_l
 

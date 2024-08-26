@@ -13,7 +13,7 @@ import {
   NavbarMenuItem,
 } from '@nextui-org/react';
 import { useRouter } from 'next/navigation';
-import { AudioLines, Contact, ScanFace, User, Users } from 'lucide-react';
+import { AudioLines, Contact, ListTodo, ScanFace, User, UserRoundCheck, Users } from 'lucide-react';
 import Image from 'next/image';
 import { handleLogout } from '@/utils/logout';
 import { Menu } from 'primereact/menu';
@@ -72,6 +72,14 @@ export default function App() {
       },
       href: '/monitoring',
     },
+    {
+      label: 'Yoklama',
+      icon: ()=> <ListTodo className='w-5 mr-1.5 -ml-0.5' />,
+      command: () => {
+        router.push('/attendance');
+      },
+      href: '/attendance',
+    }
   ];
   const profileItems = [
     {

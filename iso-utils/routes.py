@@ -34,7 +34,8 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_time
 # Setup MongoDB
 client = MongoClient(xml_mongo_config.MONGO_DB_URI)
 db = client[xml_mongo_config.MONGO_DB_NAME]
-
+personel_collection = db['Personel']
+recognition_collection = db['logs']
 # Setup Solr Searcher
 solr_url = xml_config.SOLR_URL
 searcher = SolrSearcher(db, solr_url)  # Ensure SolrSearcher is correctly instantiated
@@ -50,6 +51,42 @@ system_check = Blueprint("system_check", __name__)
 personel_bp = Blueprint("personel_bp", __name__)
 
 ############################## PERSONEL ##############################################
+@personel_bp.route("/personel/last_recog", methods=["GET"])
+def get_last_recog():
+  
+
+    # Fetch all personnel documents
+    personnels = personel_collection.find()
+    print(personnels)
+    results = []
+    for personnel in personnels:
+        personnel_id = personnel.get("personnel_id")
+        if not personnel_id:
+            continue
+
+        # Query MongoDB for the last recognized times by personnel_id
+        last_recog = recognition_collection.find_one(
+            {"personnel_id": personnel_id},
+            sort=[("timestamp", -1)]
+        )
+
+        if last_recog:
+            # Format the result
+            result = {
+                "timestamp": last_recog["timestamp"] ,
+                "label": last_recog["label"],
+                "similarity": last_recog["similarity"],
+                "emotion": last_recog["emotion"],
+                "gender": last_recog["gender"],
+                "age": last_recog["age"],
+                "image_path": last_recog["image_path"],
+                "personnel_id": last_recog["personnel_id"],
+                "camera": last_recog["camera"]
+            }
+            results.append(result)
+    print(results)
+    return jsonify(results)
+
 @personel_bp.route("/personel", methods=["POST"])
 def add_personel():
     data = request.form.to_dict()

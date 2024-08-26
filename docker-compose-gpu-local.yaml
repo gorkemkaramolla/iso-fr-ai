@@ -154,27 +154,27 @@ services:
       - solr
       - fluentbit
 
-  nextjs_service:
-    build:
-      context: ./iso-electron
-      dockerfile: Dockerfile
-    ports:
-      - '3000:3000'
-    env_file:
-      - .env
-    volumes:
-      - ./iso-electron:/app # Bind mount for development
-    networks:
-      - isoai-network
-    logging:
-      driver: 'fluentd'
-      options:
-        fluentd-address: localhost:24224
-        tag: nextjs_service
-    depends_on:
-      - mongo
-      - solr
-      - fluentbit
+  # nextjs_service:
+  #   build:
+  #     context: ./iso-electron
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - '3000:3000'
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - ./iso-electron:/app # Bind mount for development
+  #   networks:
+  #     - isoai-network
+  #   logging:
+  #     driver: 'fluentd'
+  #     options:
+  #       fluentd-address: localhost:24224
+  #       tag: nextjs_service
+  #   depends_on:
+  #     - mongo
+  #     - solr
+  #     - fluentbit
 
 volumes:
   mongo_data:

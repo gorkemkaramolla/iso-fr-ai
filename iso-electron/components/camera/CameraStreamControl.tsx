@@ -188,11 +188,11 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
           </div>
           <div className='flex flex-row gap-4 items-center'>
             {/* {isNaN(parseFloat(selectedCamera?.url ?? '')) ? ( */}
-              <QualityDropdown
+              {/* <QualityDropdown
                 id={id}
                 selectedQuality={selectedQuality}
                 handleQualityChange={handleQualityChange}
-              />
+              /> */}
             {/* // ) : null} */}
             <CameraControls
               isPlaying={isPlaying}

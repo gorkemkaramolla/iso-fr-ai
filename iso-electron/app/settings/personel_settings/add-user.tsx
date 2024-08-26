@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { useState, useRef, ChangeEvent } from "react";
-import { Button, Textarea } from "@nextui-org/react";
-import { Input } from "@nextui-org/react";
+import React, { useState, useRef, ChangeEvent } from 'react';
+import { Button, Textarea } from '@nextui-org/react';
+import { Input } from '@nextui-org/react';
 import {
   Modal,
   ModalContent,
@@ -12,10 +12,10 @@ import {
   useDisclosure,
   Checkbox,
   Link,
-} from "@nextui-org/react";
-import { z } from "zod";
-import FileUploader from "@/components/FileUploader";
-import { useRouter } from "next/navigation";
+} from '@nextui-org/react';
+import { z } from 'zod';
+import FileUploader from '@/components/FileUploader';
+import { useRouter } from 'next/navigation';
 
 interface FormDataState {
   name: string;
@@ -33,13 +33,13 @@ interface FormDataState {
 }
 
 const formSchema = z.object({
-  name: z.string().nonempty({ message: "İsim boş bırakılmamalı" }),
-  lastname: z.string().nonempty({ message: "Soyisim boş bırakılmamalı" }),
-  email: z.string().email({ message: "Geçersiz email adresi" }),
+  name: z.string().nonempty({ message: 'İsim boş bırakılmamalı' }),
+  lastname: z.string().nonempty({ message: 'Soyisim boş bırakılmamalı' }),
+  email: z.string().email({ message: 'Geçersiz email adresi' }),
   phone: z.string().optional(),
   gsm: z
     .string()
-    .regex(/^\d+$/, { message: "GSM sadece rakam içermelidir" })
+    .regex(/^\d+$/, { message: 'GSM sadece rakam içermelidir' })
     .optional(),
   address: z.string().optional(),
   title: z.string().optional(),
@@ -60,17 +60,17 @@ export default function AddPersonelDialog({
   setIsModalOpen,
 }: AddPersonelDialogProps) {
   const [formData, setFormData] = useState<FormDataState>({
-    name: "",
-    lastname: "",
-    title: "",
-    address: "",
-    phone: "",
-    email: "",
-    gsm: "",
-    resume: "",
-    birth_date: "",
-    iso_phone: "",
-    iso_phone2: "",
+    name: '',
+    lastname: '',
+    title: '',
+    address: '',
+    phone: '',
+    email: '',
+    gsm: '',
+    resume: '',
+    birth_date: '',
+    iso_phone: '',
+    iso_phone2: '',
     uploadedFile: null,
   });
   const [errors, setErrors] = useState<
@@ -90,60 +90,62 @@ export default function AddPersonelDialog({
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-  
+
     try {
       // Check for null fields
-      const nullFields = Object.entries(formData).filter(([key, value]) => value === null);
+      const nullFields = Object.entries(formData).filter(
+        ([key, value]) => value === null
+      );
       if (nullFields.length > 0) {
         const fieldErrors: Partial<Record<keyof FormDataState, string>> = {};
         nullFields.forEach(([key]) => {
-          fieldErrors[key as keyof FormDataState] = "This field cannot be null";
+          fieldErrors[key as keyof FormDataState] = 'This field cannot be null';
         });
         setErrors(fieldErrors);
-        throw new Error("Please fill in all required fields.");
+        throw new Error('Please fill in all required fields.');
       }
-  
+
       formSchema.parse(formData);
       setErrors({});
-  
+
       const fd = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null) fd.append(key, value as string | Blob);
       });
-  
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_UTILS_URL}/personel`,
         {
-          method: "POST",
+          method: 'POST',
           body: fd,
         }
       );
       const data = await response.json();
       if (response.ok) {
-        alert(data.message || "Personel başarıyla eklendi.");
-  
+        alert(data.message || 'Personel başarıyla eklendi.');
+
         // Send a request to update the database
         const updateResponse = await fetch(
           `${process.env.NEXT_PUBLIC_FLASK_URL}/update_database_with_id`,
           {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({ personnel_id: data.data._id }),
           }
         );
-  
+
         if (updateResponse.ok) {
-          console.log("Database updated successfully");
+          console.log('Database updated successfully');
         } else {
-          console.error("Failed to update the database");
+          console.error('Failed to update the database');
         }
-  
+
         router.push(`/profiles?id=${data.data._id}`);
         setIsModalOpen(false);
       } else {
-        throw new Error(data.message || "Bir hata oluştu.");
+        throw new Error(data.message || 'Bir hata oluştu.');
       }
     } catch (e) {
       if (e instanceof z.ZodError) {
@@ -156,7 +158,7 @@ export default function AddPersonelDialog({
       } else if (e instanceof Error) {
         alert(e.message);
       } else {
-        alert("An unexpected error occurred");
+        alert('An unexpected error occurred');
       }
     } finally {
       setIsSubmitting(false);
@@ -228,150 +230,147 @@ export default function AddPersonelDialog({
 
   return (
     <>
-      <Button onPress={onOpen} color="primary">
-        Yeni Kullanıcı Ekle
-      </Button>
       <Modal
         isOpen={isModalOpen}
         onOpenChange={onOpenChange}
-        placement="top-center"
-        size="4xl"
+        placement='top-center'
+        size='4xl'
         onClose={() => setIsModalOpen(false)}
       >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <ModalHeader className='flex flex-col gap-1'>
                 Yeni Kullanıcı Ekle
               </ModalHeader>
               <ModalBody>
-                <div className="grid grid-cols-3 gap-4">
-                  <div >
+                <div className='grid grid-cols-3 gap-4'>
+                  <div>
                     <FileUploader
                       onFileUpload={(file: File | null) =>
                         setFormData((prev) => ({ ...prev, uploadedFile: file }))
                       }
                     />
                   </div>
-                  <div  >
-                    <div className="flex gap-4">
+                  <div>
+                    <div className='flex gap-4'>
                       <Input
-                        id="name"
+                        id='name'
                         value={formData.name}
                         onChange={handleChange}
-                        label="Name"
+                        label='Name'
                         isInvalid={!!errors.name}
                         errorMessage={errors.name}
-                        variant="underlined"
+                        variant='underlined'
                       />
                       <Input
-                        id="lastname"
+                        id='lastname'
                         value={formData.lastname}
                         onChange={handleChange}
-                        label="Lastname"
+                        label='Lastname'
                         isInvalid={!!errors.lastname}
                         errorMessage={errors.lastname}
-                        variant="underlined"
+                        variant='underlined'
                       />
                     </div>
                     <div>
                       <Input
-                        id="email"
-                        type="email"
+                        id='email'
+                        type='email'
                         value={formData.email}
                         onChange={handleChange}
-                        label="Email"
+                        label='Email'
                         isInvalid={!!errors.email}
                         errorMessage={errors.email}
-                        variant="underlined"
+                        variant='underlined'
                       />
                     </div>
-                    <div className="flex gap-4">
+                    <div className='flex gap-4'>
                       <Input
-                        id="title"
+                        id='title'
                         value={formData.title}
                         onChange={handleChange}
-                        label="Title"
+                        label='Title'
                         isInvalid={!!errors.title}
                         errorMessage={errors.title}
-                        variant="underlined"
+                        variant='underlined'
                       />
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className='flex gap-4'>
                       <Input
-                        id="phone"
+                        id='phone'
                         value={formData.phone}
                         onChange={handleChange}
-                        label="Phone"
+                        label='Phone'
                         isInvalid={!!errors.phone}
                         errorMessage={errors.phone}
-                        variant="underlined"
+                        variant='underlined'
                       />
                       <Input
-                        id="gsm"
+                        id='gsm'
                         value={formData.gsm}
                         onChange={handleChange}
-                        label="GSM"
+                        label='GSM'
                         isInvalid={!!errors.gsm}
                         errorMessage={errors.gsm}
-                        variant="underlined"
+                        variant='underlined'
                       />
                     </div>
-                    <div className="flex gap-4">
+                    <div className='flex gap-4'>
                       <Input
-                        id="iso_phone"
+                        id='iso_phone'
                         value={formData.iso_phone}
                         onChange={handleChange}
-                        label="ISO Phone"
+                        label='ISO Phone'
                         isInvalid={!!errors.iso_phone}
                         errorMessage={errors.iso_phone}
-                        variant="underlined"
+                        variant='underlined'
                       />
                       <Input
-                        id="iso_phone2"
+                        id='iso_phone2'
                         value={formData.iso_phone2}
                         onChange={handleChange}
-                        label="ISO Phone 2"
+                        label='ISO Phone 2'
                         isInvalid={!!errors.iso_phone2}
                         errorMessage={errors.iso_phone2}
-                        variant="underlined"
+                        variant='underlined'
                       />
                     </div>
                     <div>
                       <Input
-                        id="address"
+                        id='address'
                         value={formData.address}
                         onChange={handleChange}
-                        label="Address"
+                        label='Address'
                         isInvalid={!!errors.address}
                         errorMessage={errors.address}
-                        variant="underlined"
+                        variant='underlined'
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col gap-4 flex-1 flex-grow flex-shrink w-72">
+                  <div className='flex flex-col gap-4 flex-1 flex-grow flex-shrink w-72'>
                     <Input
-                      id="birth_date"
-                      type="date"
+                      id='birth_date'
+                      type='date'
                       value={formData.birth_date}
                       onChange={handleChange}
-                      label="Birth Date"
+                      label='Birth Date'
                       isInvalid={!!errors.birth_date}
                       errorMessage={errors.birth_date}
-                      variant="underlined"
+                      variant='underlined'
                     />
 
                     <Textarea
-                      id="resume"
+                      id='resume'
                       value={formData.resume}
                       onChange={handleChange}
-                      label="Resume"
+                      label='Resume'
                       isInvalid={!!errors.resume}
                       errorMessage={errors.resume}
-                      variant="bordered"
+                      variant='bordered'
                       classNames={{
-                        input: "resize-y min-h-56",
+                        input: 'resize-y min-h-56',
                       }}
                     />
                   </div>
@@ -397,14 +396,14 @@ export default function AddPersonelDialog({
               </ModalBody>
               <ModalFooter>
                 <Button
-                  color="danger"
-                  variant="flat"
+                  color='danger'
+                  variant='flat'
                   onPress={() => setIsModalOpen(false)}
                 >
                   Close
                 </Button>
                 <Button
-                  color="primary"
+                  color='primary'
                   onPress={handleSubmit}
                   disabled={isSubmitting}
                 >

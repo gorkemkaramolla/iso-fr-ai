@@ -69,7 +69,7 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
             startContent={<Edit2 size={16} />}
             onPress={onEdit}
           >
-            Edit Speaker Name
+            Konuşmacı Adını Düzenle
           </DropdownItem>
           <DropdownItem
             key='delete'
@@ -86,14 +86,14 @@ const SegmentMenu: React.FC<SegmentMenuProps> = ({
               }
             }}
           >
-            Delete Segment
+            Segmenti Sil
           </DropdownItem>
           <DropdownItem
             key='copy'
             startContent={<Copy size={16} />}
             onPress={onCopy}
           >
-            Copy
+            Kopyala
           </DropdownItem>
         </DropdownMenu>
       </Dropdown>

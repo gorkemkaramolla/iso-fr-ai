@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users } from 'lucide-react';
 import ShowUsers from './user-list';
+import Header from '@/components/ui/header';
 
 const Dashboard = () => {
   const [activeComponent, setActiveComponent] = useState<string | null>(
@@ -16,11 +17,9 @@ const Dashboard = () => {
 
   return (
     <div className=''>
-      <header className='container mx-auto px-5 pt-8 pb-4'>
-        <h1 className=''>Yönetim Paneli</h1>
-      </header>
-
       <main className='container mx-auto px-4 py-8'>
+        <Header title='Yönetim Paneli' />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

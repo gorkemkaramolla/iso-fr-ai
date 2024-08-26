@@ -1,7 +1,7 @@
 import { SystemInfo } from '@/types';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
+import io, { Socket } from 'socket.io-client';
 
 interface UsageData {
   name: string;
@@ -24,18 +24,23 @@ const useSystemInfo = () => {
   const [gpuUsageData, setGpuUsageData] = useState<UsageData[]>([]);
 
   useEffect(() => {
-    axios
-      .get(`${process.env.NEXT_PUBLIC_UTILS_URL}/search_logs?query=`)
-      .then((res) => {
+    const fetchLogsData = async () => {
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_UTILS_URL}/search_logs?query=`
+        );
         console.log(res.data);
         setSystemInfo((prev) => ({ ...prev, logs_data: res.data }));
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+      } catch (err) {
+        console.error('Error fetching logs data:', err);
+      }
+    };
+
+    fetchLogsData();
   }, []);
+
   useEffect(() => {
-    const socket = io('http://localhost:5004');
+    const socket: Socket = io('http://localhost:5004');
 
     socket.on('connect', () => {
       console.log('Connected to WebSocket server');
@@ -53,12 +58,14 @@ const useSystemInfo = () => {
       console.log('Received system_info:', data);
       setSystemInfo(data);
 
+      const timestamp = new Date().toLocaleTimeString();
+
       // Update CPU usage data
       setCpuUsageData((prevData) =>
         [
           ...prevData,
           {
-            name: new Date().toLocaleTimeString(),
+            name: timestamp,
             usage: parseFloat(data.host_cpu_usage),
           },
         ].slice(-20)
@@ -69,7 +76,7 @@ const useSystemInfo = () => {
         [
           ...prevData,
           {
-            name: new Date().toLocaleTimeString(),
+            name: timestamp,
             usage: parseFloat(data.host_gpu_usage),
           },
         ].slice(-20)

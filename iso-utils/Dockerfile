@@ -19,5 +19,5 @@ RUN apt-get update && \
 # Make port 5004 available to the world outside this container
 EXPOSE 5004
 
-# Run Gunicorn with Gevent when the container launches
-CMD ["gunicorn", "--worker-class", "gevent", "-w", "3", "-b", "0.0.0.0:5004", "app:app"]
+# Run Gunicorn with Gevent and a single worker to support Socket.IO
+CMD ["gunicorn", "--worker-class", "gevent", "-w", "1", "-b", "0.0.0.0:5004", "app:app"]

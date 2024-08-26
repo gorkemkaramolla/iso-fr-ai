@@ -133,22 +133,22 @@ def get_personel_by_id(id):
 @jwt_required()
 def update_personel_route(personel_id):
     try:
-        if 'image' in request.files:
-            image = request.files['image']
-        else:
-            image = None
+        image = request.files.get('image', None)
         
         if request.is_json:
             data = request.get_json()  # Handle JSON data
         else:
             data = request.form.to_dict()  # Handle multipart/form-data
-        
-        print(data)
+
+        app.logger.info(f"Received data for updating personel: {data}")
+
         result, status = personel_service.update_personel(personel_id, data, file=image)
         return jsonify(result), status
+
     except Exception as e:
-        app.logger.error(f"Error in update_personel_route: {str(e)}")
+        app.logger.error(f"Error in update_personel_route: {str(e)}", exc_info=True)
         return jsonify({"status": "error", "message": "Internal Server Error"}), 500
+
 
 @personel_bp.route('/personel/image/', methods=['GET'])
 def get_user_images():
@@ -191,6 +191,21 @@ def search():
 def search_logs_route():
     query = request.args.get("query")
     results, status_code = searcher.search_logs(query)
+    return jsonify(results), status_code
+
+@solr_search_bp.route("/filter_logs", methods=["GET"])
+def filter_logs_route():
+    date_picker = request.args.get("date_picker")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    today = request.args.get("today", default=False, type=bool)
+
+    results, status_code = searcher.filter_logs(
+        date_picker=date_picker,
+        start_date=start_date,
+        end_date=end_date,
+        today=today
+    )
     return jsonify(results), status_code
 
 app.register_blueprint(solr_search_bp)

@@ -2,10 +2,11 @@ import logging
 import json
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote_plus  # Import quote_plus
 from pymongo import MongoClient
 import uuid
 from logger import configure_logging
+import datetime
 class SolrSearcher:
     def __init__(self, mongo_db, solr_url="http://solr:8983/solr/isoai"):
         self.solr_logs_url="http://solr:8983/solr/logs"
@@ -211,29 +212,23 @@ class SolrSearcher:
             return {"status": "error", "message": str(e)}
 
                 
-    def search_logs(self, query=None):
+    
+    def search_logs(self, query=None, fields=["date", "log", "source", "id", "container_name", "container_id", "date_formatted"]):
         try:
             # Prepare query
-            fields = ["date", "log", "source", "id", "container_name", "container_id"]
             field_query = " OR ".join([f"{field}:\"{query}\"" for field in fields]) if query else "*:*"
             
             # Debug the query
             logging.info(f"Search query for logs: {field_query}")
 
             # Query parameters
-            if query:
-                query_params = urlencode({
-                    'q': field_query,
-                    'wt': 'json',
-                    'defType': 'edismax',
-                    'qf': ' '.join(fields)
-                })
-            else:
-                query_params = urlencode({
-                    'q': '*:*',
-                    'wt': 'json',
-                    'rows': 1000
-                })
+            query_params = urlencode({
+                'q': field_query,
+                'wt': 'json',
+                'defType': 'edismax',
+                'qf': ' '.join(fields),
+                'rows': 1000
+            })
             
             # Solr URL for logs core
             url = f'{self.solr_logs_url}/select?{query_params}'
@@ -259,3 +254,59 @@ class SolrSearcher:
         except Exception as e:
             logging.exception("Exception during logs search")
             return {"error": "An error occurred during logs search", "details": str(e)}, 500
+   
+   
+    def filter_logs(self, date_picker=None, start_date=None, end_date=None, today=False):
+        try:
+            if today:
+                start_date = datetime.datetime.utcnow().timestamp()
+                end_date = datetime.datetime.utcnow().replace(hour=23, minute=59, second=59, microsecond=999999).timestamp()
+            elif date_picker:
+                start_date = datetime.datetime.strptime(date_picker, "%Y-%m-%d").timestamp()
+                end_date = datetime.datetime.strptime(date_picker, "%Y-%m-%d").replace(hour=23, minute=59, second=59, microsecond=999999).timestamp()
+            elif start_date and end_date:
+                # Convert 13-digit milliseconds to seconds
+                if len(str(start_date)) == 13:
+                    start_date = float(start_date) / 1000
+                if len(str(end_date)) == 13:
+                    end_date = float(end_date) / 1000
+            else:
+                return {"error": "Invalid date parameters"}, 400
+
+            # Construct the date filter query in seconds
+            date_filter_query = f"date:[{int(start_date)} TO {int(end_date)}]"
+
+            # Log the calculated timestamps for debugging
+            logging.info(f"Start date timestamp (seconds): {start_date}")
+            logging.info(f"End date timestamp (seconds): {end_date}")
+            logging.info(f"Date filter query for logs: {date_filter_query}")
+
+            query_params = {
+                'q': '*:*',
+                'fq': date_filter_query,
+                'wt': 'json',
+                'rows': 1000
+            }
+
+            url = f'{self.solr_logs_url}/select?{urlencode(query_params)}'
+            logging.info(f"Connecting to Solr logs URL: {url}")
+
+            connection = urlopen(url, timeout=10)
+            response = json.load(connection)
+
+            results = response.get('response', {}).get('docs', [])
+            if not results:
+                return {"error": "No results found"}, 404
+
+            logging.info(f"Filtered results: {results}")
+            return results, 200
+
+        except HTTPError as e:
+            logging.error(f"HTTPError during logs filtering: {e.code} {e.reason}")
+            return {"error": f"HTTPError: {e.reason}", "details": e.read().decode()}, 500
+        except URLError as e:
+            logging.error(f"URLError during logs filtering: {e.reason}")
+            return {"error": f"URLError: {e.reason}"}, 500
+        except Exception as e:
+            logging.exception("Exception during logs filtering")
+            return {"error": "An error occurred during logs filtering", "details": str(e)}, 500

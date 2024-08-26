@@ -211,10 +211,9 @@ class SolrSearcher:
             return {"status": "error", "message": str(e)}
 
                 
-    def search_logs(self, query=None):
+    def search_logs(self, query=None, fields = ["date", "log", "source", "id", "container_name", "container_id"]):
         try:
             # Prepare query
-            fields = ["date", "log", "source", "id", "container_name", "container_id"]
             field_query = " OR ".join([f"{field}:\"{query}\"" for field in fields]) if query else "*:*"
             
             # Debug the query

@@ -96,22 +96,22 @@ def get_personel_by_id(id):
 @jwt_required()
 def update_personel_route(personel_id):
     try:
-        if 'image' in request.files:
-            image = request.files['image']
-        else:
-            image = None
+        image = request.files.get('image', None)
         
         if request.is_json:
             data = request.get_json()  # Handle JSON data
         else:
             data = request.form.to_dict()  # Handle multipart/form-data
-        
-        print(data)
+
+        app.logger.info(f"Received data for updating personel: {data}")
+
         result, status = personel_service.update_personel(personel_id, data, file=image)
         return jsonify(result), status
+
     except Exception as e:
-        app.logger.error(f"Error in update_personel_route: {str(e)}")
+        app.logger.error(f"Error in update_personel_route: {str(e)}", exc_info=True)
         return jsonify({"status": "error", "message": "Internal Server Error"}), 500
+
 
 @personel_bp.route('/personel/image/', methods=['GET'])
 def get_user_images():

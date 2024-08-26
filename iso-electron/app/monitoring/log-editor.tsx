@@ -1,13 +1,11 @@
-// components/LogEditor.tsx
-'use client';
 import qs from 'qs';
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { debounce } from 'lodash';
 import Editor from '@monaco-editor/react';
-import axios from 'axios';
 import { Check, Copy, Expand } from 'lucide-react';
 import FilterChip from '@/components/ui/chip';
+import NextDateRangePicker from '@/components/ui/date-range-picker';
+import createApi from '@/utils/axios_instance';
 
 type LogField =
   | 'date'
@@ -15,7 +13,8 @@ type LogField =
   | 'source'
   | 'id'
   | 'container_name'
-  | 'container_id';
+  | 'container_id'
+  | 'date_formatted';
 
 interface LogEditorProps {
   systemInfo: any;
@@ -96,25 +95,43 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
     }
   };
 
+  const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
+
+  const performDateFilter = useCallback(
+    async (dateRange: { start: string; end: string }) => {
+      try {
+        const queryString = qs.stringify({
+          start_date: dateRange.start,
+          end_date: dateRange.end,
+        });
+
+        const response = await api.get(`/filter_logs?${queryString}`);
+        const data = await response.json();
+
+        setEditorContent(JSON.stringify(data, null, 2));
+      } catch (error) {
+        console.error('Error filtering logs:', error);
+        setEditorContent('Error filtering logs');
+      }
+    },
+    []
+  );
+
   const performSearch = async (query: string) => {
     setIsSearching(true);
     try {
-      // Construct the URL with query and fields parameters using custom serialization
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_UTILS_URL}/search_logs`,
+      const queryString = qs.stringify(
         {
-          params: {
-            query: query, // no need to encode, axios will do it automatically
-            fields: activeFilters, // Send the active filters as the 'fields' parameter
-          },
-          paramsSerializer: (params) => {
-            return qs.stringify(params, { arrayFormat: 'repeat' });
-          },
-        }
+          query: query,
+          fields: activeFilters,
+        },
+        { arrayFormat: 'repeat' }
       );
 
-      // Filter the logs based on the active filters
-      const filteredLogs = response.data.filter((log: any) =>
+      const response = await api.get(`search_logs?${queryString}`);
+      const data = await response.json();
+
+      const filteredLogs = data.filter((log: any) =>
         activeFilters.every((filter) => log.hasOwnProperty(filter))
       );
       setEditorContent(JSON.stringify(filteredLogs, null, 2));
@@ -141,11 +158,18 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
     debouncedSearch(searchQuery);
   };
 
+  const handleDateRangeChange = (dateRange: { start: string; end: string }) => {
+    performDateFilter(dateRange);
+  };
+
   return (
     <div className='bg-gray-900 shadow-lg rounded-lg overflow-hidden'>
       <div ref={containerRef} className='flex flex-col h-full'>
-        <div className='bg-gray-800 text-white p-4 flex justify-between items-center'>
+        <div className='text-white p-4 flex justify-between items-center'>
           <h2 className='text-xl font-semibold'>System Logs</h2>
+
+          <NextDateRangePicker onDateRangeChange={handleDateRangeChange} />
+
           <div className='flex items-center space-x-2'>
             <input
               type='search'
@@ -176,7 +200,6 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
               height='100%'
               defaultLanguage='json'
               value={editorContent}
-              theme='vs-dark'
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,

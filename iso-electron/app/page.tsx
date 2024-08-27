@@ -8,6 +8,8 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { ChartData, ChartOptions } from 'chart.js';
+import { getRecogFaces } from '@/services/camera/service';
+import { RecogFace } from '@/types';
 
 interface DetectionData {
   recognized: number;
@@ -38,6 +40,7 @@ const SecurityDashboard: React.FC = () => {
   const [topDetections, setTopDetections] = useState<PersonDetection[]>([]);
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string>('lastDay');
+  const [recogList, setRecogList] = useState<RecogFace[]>([]);
 
   const periodOptions: PeriodOption[] = [
     { label: 'Last 24 Hours', value: 'lastDay' },
@@ -46,42 +49,124 @@ const SecurityDashboard: React.FC = () => {
   ];
 
   useEffect(() => {
-    fetchData(periodFilter, dateFilter);
-  }, [periodFilter, dateFilter]);
+    const storedDate = localStorage.getItem('homepageDate');
+    const initialDate = storedDate ? new Date(storedDate) : new Date();
+    setDateFilter(initialDate);
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getRecogFaces(dateFilter?.toISOString());
+      setRecogList(data);
+      console.log(data);
+    };
+    if (dateFilter) {
+      fetchData();
+    }
+  }, [dateFilter]);
+
+  useEffect(() => {
+    if (dateFilter && recogList.length > 0) {
+      fetchData(periodFilter, dateFilter);
+    }
+  }, [periodFilter, dateFilter, recogList]);
+
+  const handleDateChange = (e: any) => {
+    const newDate = e.value as Date;
+    setDateFilter(newDate);
+    localStorage.setItem('homepageDate', newDate.toISOString());
+  };
 
   const fetchData = (period: string, date: Date | null) => {
-    // Simulated API calls
     setDetectionData({
       labels: ['Recognized', 'Unrecognized'],
       datasets: [
         {
-          data: [85, 15],
+          data: [recogList.length, 0],
           backgroundColor: ['#36A2EB', '#FF6384'],
           hoverBackgroundColor: ['#36A2EB', '#FF6384'],
         },
       ],
     });
 
+    // Process recogList for time series data
+    const timeData = processTimeSeriesData(recogList);
     setTimeSeriesData({
-      labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+      labels: timeData.labels,
       datasets: [
         {
           label: 'Detections',
-          data: [12, 5, 25, 30, 40, 35],
+          data: timeData.data,
           fill: false,
           borderColor: '#4BC0C0',
           tension: 0.4,
         },
       ],
     });
+    const formatDate = (timestamp: number) => {
+      const date = new Date(timestamp);
+      return `${date.toLocaleString('default', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })} (${timestamp})`;
+    };
 
-    setTopDetections([
-      { name: 'John Doe', count: 15, lastSeen: '2024-08-13 14:30' },
-      { name: 'Jane Smith', count: 12, lastSeen: '2024-08-13 13:45' },
-      { name: 'Bob Johnson', count: 10, lastSeen: '2024-08-13 12:15' },
-      { name: 'Alice Brown', count: 8, lastSeen: '2024-08-13 11:30' },
-      { name: 'Charlie Wilson', count: 7, lastSeen: '2024-08-13 10:00' },
-    ]);
+    const formatDateString = (timestamp: number) => {
+      const date = new Date(timestamp);
+      return date.toLocaleString('tr_TR', {
+        year: '2-digit',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      });
+    };
+
+    const topDetections = Object.values(
+      recogList.reduce((acc, recog) => {
+        const name = recog.label || 'Unknown';
+        if (!acc[name]) {
+          acc[name] = {
+            name,
+            count: 0,
+            lastSeen: formatDate(Number(recog.timestamp)),
+          };
+        }
+        acc[name].count++;
+        const currentTimestamp = Number(recog.timestamp);
+        const storedTimestamp = new Date(acc[name].lastSeen).getTime();
+        acc[name].lastSeen =
+          storedTimestamp > currentTimestamp
+            ? acc[name].lastSeen
+            : formatDate(currentTimestamp);
+        return acc;
+      }, {} as Record<string, PersonDetection>)
+    )
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    setTopDetections(topDetections);
+  };
+
+  const processTimeSeriesData = (data: RecogFace[]) => {
+    const hourCounts: { [key: string]: number } = {};
+    data.forEach((face) => {
+      const hour = new Date(face.timestamp).getHours();
+      const hourKey = `${hour.toString().padStart(2, '0')}:00`;
+      hourCounts[hourKey] = (hourCounts[hourKey] || 0) + 1;
+    });
+
+    const sortedHours = Object.keys(hourCounts).sort();
+    return {
+      labels: sortedHours,
+      data: sortedHours.map((hour) => hourCounts[hour]),
+    };
   };
 
   const chartOptions: ChartOptions = {
@@ -99,7 +184,6 @@ const SecurityDashboard: React.FC = () => {
       <h1 className='text-4xl font-bold mb-12 text-center text-gray-800'>
         Security Camera Analytics
       </h1>
-
       <div className='flex justify-center mb-12 space-x-4'>
         <Dropdown
           value={periodFilter}
@@ -110,10 +194,12 @@ const SecurityDashboard: React.FC = () => {
         />
         <Calendar
           value={dateFilter}
-          onChange={(e: any) => setDateFilter(e.value as Date)}
+          onChange={handleDateChange}
           showIcon
           placeholder='Select Date'
           className='w-48'
+          maxDate={new Date()}
+          dateFormat='dd/mm/yy'
         />
       </div>
 

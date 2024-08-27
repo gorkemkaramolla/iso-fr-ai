@@ -18,6 +18,7 @@ import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
 import { FaGripVertical } from 'react-icons/fa6';
 import { useResize } from '@/hooks/useResize';
 import { useRouter } from 'next/navigation';
+import { deleteTranscription } from '@/utils/transcription/transcription';
 
 interface Props {
   transcription: Transcript;
@@ -71,50 +72,51 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
 
   useEffect(() => {
     if (saveState === 'saved') {
+      // Gather all changes into arrays
+      const segmentIds: string[] = [];
+      const oldTexts: string[] = [];
+      const newTexts: string[] = [];
+
       changes.forEach((change) => {
-        handleTranscribedTextChange(
-          transcription.segments,
-          change.segmentId,
-          change.currentText
-        );
+        const oldText = transcription.segments.find(
+          (segment: Segment) => segment.id === change.segmentId
+        )?.text;
+
+        if (oldText) {
+          segmentIds.push(change.segmentId);
+          oldTexts.push(oldText);
+          newTexts.push(change.currentText);
+        }
       });
 
-      // setTimeout(() => {
-      //   setSaveState('no changes made');
-      // }, 3700);
+      // If there are valid changes, handle them in bulk
+      if (segmentIds.length > 0) {
+        handleBulkTranscribedTextChange(segmentIds, oldTexts, newTexts);
+      }
     }
   }, [saveState]);
 
-  const handleTranscribedTextChange = async (
-    segments: Segment[],
-    segmentId: string,
-    newText: string
+  const handleBulkTranscribedTextChange = async (
+    segmentIds: string[],
+    oldTexts: string[],
+    newTexts: string[]
   ) => {
-    const oldText = segments.find(
-      (segment: Segment) => segment.id === segmentId
-    )?.text;
-
-    if (!oldText) {
-      console.error('Old text not found for the segment.');
-      return;
-    }
-
     setSaveState('needs saving');
     try {
       const response = await api.post(
         `/rename_transcribed_text/${transcription._id}`,
         {
-          old_texts: [oldText],
-          new_text: newText,
-          segment_ids: [segmentId],
+          old_texts: oldTexts,
+          new_text: newTexts[0], // Assuming all changes have the same new text; otherwise, adjust this logic
+          segment_ids: segmentIds,
         }
       );
 
-      // if (response.status === 204) {
-      //   console.log('No changes were made.');
-      //   setSaveState('no changes made');
-      //   return;
-      // }
+      if (response.status === 204) {
+        console.log('No changes were made.');
+        setSaveState('no changes made');
+        return;
+      }
 
       console.log('Successfully renamed transcribed text');
       setSaveState('saved');
@@ -135,12 +137,16 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   };
 
   const handleDeleteTranscription = async () => {
-    const response = await api.delete(`transcriptions/${transcription._id}`);
-    const data = await response.json();
-    if (response.status === 200) {
+    // const response = await api.delete(`transcriptions/${transcription._id}`);
+    // const data = await response.json();
+    // if (response.status === 200) {
+    //   router.push('/transcriptions');
+    // }
+    // console.log(data);
+    const status = await deleteTranscription(transcription._id);
+    if (status === 200) {
       router.push('/transcriptions');
     }
-    console.log(data);
   };
 
   const handleSpeakerNameChange = async (

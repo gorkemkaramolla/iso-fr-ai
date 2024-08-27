@@ -7,6 +7,9 @@ import ChatSideMenuSkeleton from '@/components/ui/transcription-history-skeleton
 import CalendarComponent from '@/components/ui/calendar-component'; // Adjust the import path accordingly
 import { Nullable } from 'primereact/ts-helpers';
 import { Transcript } from '@/types';
+import { EllipsisVertical } from 'lucide-react';
+import ExportButtons from './export-buttons';
+import { deleteTranscription } from '@/utils/transcription/transcription';
 
 type TranscriptionHistoryProps = {
   activePageId?: string;
@@ -21,11 +24,11 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   const [itemsPerPage, setItemsPerPage] = useState<number>(8);
   const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
 
   const getTranscriptions = async () => {
     setLoading(true);
     try {
-      const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
       const storedResponses = await api.get('/transcriptions/', {});
       const data: Transcript[] = await storedResponses.json();
       const sortedData = data.sort(
@@ -119,7 +122,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
 
   return (
     <div
-      className='h-full  sticky top-0 border-gray-200  overflow-y-auto'
+      className='h-full  sticky top-0 border-gray-200  min-h-[92vh] overflow-y-auto'
       ref={containerRef}
     >
       {loading ? (
@@ -141,25 +144,42 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
             ) : (
               currentItems.map((transcription) => (
                 <li key={transcription._id}>
-                  <Link href={`/transcriptions?id=${transcription._id}`}>
-                    <div
-                      className={`p-3 rounded-lg transition-all duration-300 ${
-                        transcription._id === activePageId
-                          ? 'bg-gradient-to-br from-primary via-primary to-purple-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2'
-                          : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-                      }`}
-                    >
-                      <p className='text-sm font-medium flex-wrap flex'>
-                        {transcription.name}
-                      </p>
-                      <p className='text-xs font-medium truncate opacity-75'>
-                        {transcription._id}
-                      </p>
-                      <p className='text-xs mt-1 opacity-75'>
-                        {formatDate(transcription.created_at)}
-                      </p>
-                    </div>
-                  </Link>
+                  <div
+                    className={`p-3 flex justify-between items-center rounded-lg transition-all duration-300 ${
+                      transcription._id === activePageId
+                        ? 'bg-gradient-to-br from-primary via-primary to-purple-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                    }`}
+                  >
+                    <Link href={`/transcriptions?id=${transcription._id}`}>
+                      <span className='flex-grow'>
+                        <p className='text-sm font-medium flex-wrap flex'>
+                          {transcription.name}
+                        </p>
+                        <p className='text-xs font-medium truncate opacity-75'>
+                          {transcription._id}
+                        </p>
+                        <p className='text-xs mt-1 opacity-75'>
+                          {formatDate(transcription.created_at)}
+                        </p>
+                      </span>
+                    </Link>
+
+                    <span>
+                      <ExportButtons
+                        setTranscriptionNameEditing={() => {}}
+                        isTranscriptionNameEditing={false}
+                        data={transcription}
+                        showDelete={true}
+                        showExport={true}
+                        showRename={true}
+                        fileName='output'
+                        handleDeleteTranscription={() =>
+                          deleteTranscription(transcription._id)
+                        }
+                      />
+                    </span>
+                  </div>
                 </li>
               ))
             )}

@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import createApi from '@/utils/axios_instance';
 import { Personel } from '@/types';
+import RecogList from '@/components/personnel/RecogList';
 
 const ClientProfile = dynamic(() => import('./profile'), {
   ssr: false,
@@ -54,6 +55,7 @@ export default function Page() {
     <Suspense fallback={<div>Loading...</div>}>
       <div className='flex w-full items-center justify-center'>
         <ProfileContent />
+        <RecogList/>
       </div>
     </Suspense>
   );

@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Chip, User, Input, DateRangePicker } from "@nextui-org/react";
-import { MultiSelect, MultiSelectChangeEvent } from 'primereact/multiselect';
-import { now, getLocalTimeZone, ZonedDateTime } from "@internationalized/date";
-import { I18nProvider } from "@react-aria/i18n";
-
+import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
+import CalendarComponent from "@/components/camera/Calendar";
+import { getRecogFaces } from "@/services/camera/service";
+import { Nullable } from "primereact/ts-helpers";
 interface Personnel {
   _id: string;
   name: string;
@@ -28,37 +28,28 @@ type Status = "Giriş" | "Çıkış" | "Gelmedi";
 
 export default function PersonnelAttendance() {
   const [personnel, setPersonnel] = useState<Personnel[] | null>(null);
-  // const [personnelStatus, setPersonnelStatus] = useState<{ [key: string]: Status }>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Status[]>(["Giriş", "Çıkış", "Gelmedi"]);
-  const [dateRange, setDateRange] = useState<{ start: ZonedDateTime; end: ZonedDateTime }>(() => {
-    const today = now(getLocalTimeZone());
-    return {
-      start: new ZonedDateTime(today.year, today.month, today.day, "UTC", 0, 0, 0, 0, 0),
-      end: new ZonedDateTime(today.year, today.month, today.day, "UTC", 0, 23, 59, 59, 999),
-    };
-  });
+  const [statusFilter, setStatusFilter] = useState<Status[]>([
+    "Giriş",
+    "Çıkış",
+    "Gelmedi",
+  ]);
+  const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(new Date());
 
   useEffect(() => {
-    fetchPersonnelForDateRange(dateRange.start, dateRange.end);
+    fetchPersonnelForDateRange();
   }, []);
 
-  const fetchPersonnelForDateRange = async (start: ZonedDateTime, end: ZonedDateTime) => {
+  const fetchPersonnelForDateRange = async () => {
     setLoading(true);
     try {
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_UTILS_URL}/personel`
       );
       const data = await response.json();
       if (response.ok) {
-        const initialStatus: { [key: string]: Status } = {};
-        // data.forEach((person: Personnel) => {
-        //   initialStatus[person._id] = "Gelmedi";
-        // });
         setPersonnel(data);
-        // setPersonnelStatus(initialStatus);
       } else {
         console.error("Failed to fetch personnel data for date range");
       }
@@ -69,35 +60,37 @@ export default function PersonnelAttendance() {
     }
   };
 
-
-  const fetchLastRecogs = async (start: ZonedDateTime, end: ZonedDateTime) => {
+  const fetchLastRecogs = async () => {
     setLoading(true);
     try {
-      const startMillis = start.toDate().getTime();
-      const endMillis = end.toDate().getTime();
-      const response = await fetch(`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/last_recog`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          start: startMillis,
-          end: endMillis,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        // Process the data as needed
-        console.log("Last recognized personnel data:", data);
-  
-        // Example: Update state with the fetched data
-           setPersonnel(prevPersonnel => {
-          return prevPersonnel!.map(personnel => {
-            const matchedData = data.find((item: any) => item.personnel_id === personnel._id);
+
+      const faces = await getRecogFaces(selectedDate?.toISOString());
+      if (faces) {
+     console.log(faces)
+        setPersonnel((prevPersonnel) => {
+          return prevPersonnel!.map((personnel) => {
+            // Sort the faces array by timestamp
+            const sortedFaces = faces.sort((a: any, b:any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            
+            // Find the first matching object
+            const matchedData = sortedFaces.find(
+              (item: any) => item.personnel_id === personnel._id
+            );
+        
             if (matchedData) {
-              return { ...personnel, status: "Giriş", entry_time: matchedData.timestamp, exit_time: matchedData.timestamp };
+              return {
+                ...personnel,
+                status: "Giriş",
+                entry_time: matchedData.timestamp,
+                exit_time: matchedData.timestamp,
+              };
             }
-            return { ...personnel, status: undefined, entry_time: undefined, exit_time: undefined };
+            return {
+              ...personnel,
+              status: undefined,
+              entry_time: undefined,
+              exit_time: undefined,
+            };
           });
         });
       } else {
@@ -109,35 +102,44 @@ export default function PersonnelAttendance() {
       setLoading(false);
     }
   };
-  
+
   // Example usage of fetchLastRecogs
   useEffect(() => {
-    
-    fetchLastRecogs(dateRange.start, dateRange.end);
-  }, [dateRange]);
-  
+    fetchLastRecogs();
+  }, [selectedDate]);
 
   const handleStatusFilterChange = (e: MultiSelectChangeEvent) => {
     const newStatusFilter = e.value as Status[];
-    setStatusFilter(newStatusFilter.length > 0 ? newStatusFilter : ["Giriş", "Çıkış", "Gelmedi"]);
+    setStatusFilter(
+      newStatusFilter.length > 0
+        ? newStatusFilter
+        : ["Giriş", "Çıkış", "Gelmedi"]
+    );
   };
 
-   const filteredPersonnel = personnel?.filter((person) => {
-    const nameMatch = `${person.name} ${person.lastname}`.toLowerCase().includes(searchTerm.toLowerCase());
-    const statusMatch = personnel.filter(p => statusFilter.includes(p.status || "Gelmedi")).includes(person);
-    return nameMatch && statusMatch;
-  }).sort((a, b) => {
-    const statusPriority = {
-      "Çıkış": 1,
-      "Giriş": 2,
-      "Gelmedi": 3
-    };
-    return (statusPriority[a.status || "Gelmedi"] || 4) - (statusPriority[b.status || "Gelmedi"] || 4);
-  });
+  const filteredPersonnel = personnel
+    ?.filter((person) => {
+      const nameMatch = `${person.name} ${person.lastname}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const statusMatch = personnel
+        .filter((p) => statusFilter.includes(p.status || "Gelmedi"))
+        .includes(person);
+      return nameMatch && statusMatch;
+    })
+    .sort((a, b) => {
+      const statusPriority = {
+        Çıkış: 1,
+        Giriş: 2,
+        Gelmedi: 3,
+      };
+      return (
+        (statusPriority[a.status || "Gelmedi"] || 4) -
+        (statusPriority[b.status || "Gelmedi"] || 4)
+      );
+    });
 
-  const statusOptions = [
-    "Giriş", "Çıkış", "Gelmedi"
-  ];
+  const statusOptions = ["Giriş", "Çıkış", "Gelmedi"];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -147,47 +149,37 @@ export default function PersonnelAttendance() {
 
       <div className="mb-6 flex flex-col md:flex-row gap-4 justify-center items-center">
         <div className="flex gap-4">
-
-        <Input
-          type="text"
-          placeholder="İsime göre arama..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-[260px]"
-          size="md"
-          classNames={{
-            input: "!h-[3.5rem]",
-            innerWrapper: "h-[3.5rem]",
-            inputWrapper: "h-[3.5rem]",
-          }}
+          <Input
+            type="text"
+            placeholder="İsime göre arama..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-[260px]"
+            size="md"
+            classNames={{
+              input: "!h-[3.5rem]",
+              innerWrapper: "h-[3.5rem]",
+              inputWrapper: "h-[3.5rem]",
+            }}
           />
           <div className="max-w-[260px]">
-          <MultiSelect
-            value={statusFilter}
-            onChange={handleStatusFilterChange}
-            options={statusOptions}
-            panelHeaderTemplate={() => null}
-            optionLabel=""
-            placeholder="Durum Seçin"
-            className="w-full md:w-20rem border-none rounded-xl bg-[rgb(244,244,245)] shadow-sm h-[3.5rem] items-center flex"
-            
+            <MultiSelect
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              options={statusOptions}
+              panelHeaderTemplate={() => null}
+              optionLabel=""
+              placeholder="Durum Seçin"
+              className="w-full md:w-20rem border-none rounded-xl bg-[rgb(244,244,245)] shadow-sm h-[3.5rem] items-center flex text-gray-600"
             />
+          </div>
         </div>
-            </div>
-        <I18nProvider locale="tr-TR">
-          <DateRangePicker
-            label="Tarih Aralığı"
-            hideTimeZone
-            visibleMonths={2}
-            defaultValue={dateRange}
-            onChange={setDateRange}
-            hourCycle={24}
-            className="max-w-sm"
-            size="md"
-            pageBehavior="visible"
-          />
-        </I18nProvider>
-      
+        <CalendarComponent
+          className="[&_.p-inputtext]:bg-[rgb(244,244,245)] [&_.p-inputtext]:rounded-l-xl [&_.p-inputtext]:border-none [&_.p-inputtext]:shadow-sm [&_.p-inputtext]:py-4 [&_button]:rounded-r-xl [&_button]:shadow-sm"
+          minDate={new Date("2024-08-01")}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+        />
       </div>
 
       {loading ? (
@@ -195,17 +187,21 @@ export default function PersonnelAttendance() {
       ) : (
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-3xl">
           {filteredPersonnel?.map((person) => (
-            <div key={person._id} className="flex items-center justify-between p-4 border-b last:border-b-0">
+            <div
+              key={person._id}
+              className="flex items-center justify-between p-4 border-b last:border-b-0"
+            >
               <User
                 avatarProps={{
                   size: "md",
-                  src: `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${person._id}` || undefined,
+                  src:
+                    `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${person._id}` ||
+                    undefined,
                 }}
                 description={person.title}
                 name={`${person.name} ${person.lastname}`}
               />
               <div className="flex items-center gap-2 flex-col md:flex-row">
-                        
                 {person.status === "Çıkış" && (
                   <>
                     <Chip
@@ -232,7 +228,7 @@ export default function PersonnelAttendance() {
                     </Chip>
                   </>
                 )}
-                
+
                 {person.status === "Giriş" && (
                   <Chip
                     color="primary"
@@ -246,8 +242,8 @@ export default function PersonnelAttendance() {
                     </span>
                   </Chip>
                 )}
-                
-                {person.status === undefined  && (
+
+                {person.status === undefined && (
                   <Chip
                     color="danger"
                     className="text-white select-none font-black"
@@ -265,7 +261,6 @@ export default function PersonnelAttendance() {
     </div>
   );
 }
-
 
 // "use client";
 // import React, { useState, useEffect } from "react";
@@ -302,7 +297,7 @@ export default function PersonnelAttendance() {
 //   }>({});
 //   const [loading, setLoading] = useState(true);
 //   const [searchTerm, setSearchTerm] = useState("");
-  
+
 //   const [statusFilter, setStatusFilter] = useState<Set<Status | "All">>(new Set(["All"]));
 //   // import { useState } from 'react';
 //   // import { now, getLocalTimeZone, ZonedDateTime, parseDateTime } from '@internationalized/date';
@@ -421,7 +416,6 @@ export default function PersonnelAttendance() {
 //       return { ...prevStatus, [personId]: newStatus };
 //     });
 //   };
-
 
 //   const handleStatusFilterChange = (keys: SharedSelection) => {
 //     const newStatusFilter = new Set(keys as Set<Status | "All">);

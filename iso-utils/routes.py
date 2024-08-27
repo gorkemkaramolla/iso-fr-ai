@@ -55,46 +55,35 @@ personel_bp = Blueprint("personel_bp", __name__)
 def get_last_recog():
     # Get start and end parameters from the request body
     data = request.get_json()
-    start = data.get("start")
-    end = data.get("end")
+    personnel_id = str(data.get("id"))
 
-    if not start or not end:
-        return jsonify({"error": "Start and end parameters are required"}), 400
+   
+    if not personnel_id:
+        return jsonify({"status": "error", "message": "Personnel ID is required"}), 400
 
-    # Fetch all personnel documents
-    personnels = list(db["Personel"].find())
-    print(personnels)
-    results = []
-    for personnel in personnels:
-        personnel_id = str(personnel.get("_id"))
-        if not personnel_id:
-            continue
+    # Query MongoDB for the last recognized times by personnel_id within the start and end range
+    last_recog = db['logs'].find_one(
+        {
+            "personnel_id": personnel_id,
+        },
+        sort=[("timestamp", -1)]
+    )
+    result = {}
+    if last_recog:
+        # Format the result
+        result = {
+            "timestamp": last_recog["timestamp"],
+            "label": last_recog["label"],
+            "similarity": last_recog["similarity"],
+            "emotion": last_recog["emotion"],
+            "gender": last_recog["gender"],
+            "age": last_recog["age"],
+            "image_path": last_recog["image_path"],
+            "personnel_id": last_recog["personnel_id"],
+            "camera": last_recog["camera"]
+        }
+    return jsonify(result), 200
 
-        # Query MongoDB for the last recognized times by personnel_id within the start and end range
-        last_recog = db['logs'].find_one(
-            {
-                "personnel_id": personnel_id,
-                "timestamp": {"$gte": start, "$lte": end}
-            },
-            sort=[("timestamp", -1)]
-        )
-
-        if last_recog:
-            # Format the result
-            result = {
-                "timestamp": last_recog["timestamp"],
-                "label": last_recog["label"],
-                "similarity": last_recog["similarity"],
-                "emotion": last_recog["emotion"],
-                "gender": last_recog["gender"],
-                "age": last_recog["age"],
-                "image_path": last_recog["image_path"],
-                "personnel_id": last_recog["personnel_id"],
-                "camera": last_recog["camera"]
-            }
-            results.append(result)
-    print(results)
-    return jsonify(results)
 
 @personel_bp.route("/personel", methods=["POST"])
 def add_personel():

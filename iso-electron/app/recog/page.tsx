@@ -299,7 +299,7 @@ const RecognizedFacesTable: React.FC = () => {
           <IconField iconPosition='left'>
             <InputIcon className='pi pi-search' />
             <InputText
-              className='w-[400px]'
+              className='w-[400px] py-2'
               value={globalFilterValue}
               onChange={onGlobalFilterChange}
               placeholder='Keyword Search'
@@ -518,7 +518,7 @@ const RecognizedFacesTable: React.FC = () => {
         ]}
         onChange={(e) => options.filterCallback(e.value, options.index)}
         placeholder='Select an Emotion'
-        className='p-column-filter h-8'
+        className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
         showClear
       
         
@@ -539,7 +539,7 @@ const RecognizedFacesTable: React.FC = () => {
         onChange={(e) => options.filterCallback(e.value, options.index)}
         optionLabel='label'
         placeholder='Select a Gender'
-        className='p-column-filter h-8'
+        className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
         showClear
       />
     );

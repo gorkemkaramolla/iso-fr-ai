@@ -69,12 +69,12 @@
 # def rename_segments_route(transcription_id, old_name, new_name):
 #     data = request.json
 #     segment_ids = data.get("segment_ids", None)
-    
+
 #     if segment_ids:
 #         result = diarization_processor.rename_selected_segments(transcription_id, old_name, new_name, segment_ids)
-#     else: 
+#     else:
 #         result = diarization_processor.rename_segments(transcription_id, old_name, new_name)
-    
+
 #     return jsonify(result), 200 if result["status"] == "success" else 500
 
 # @audio_bp.route("/rename_transcribed_text/<transcription_id>/<old_text>/<new_text>", methods=["POST"])
@@ -82,12 +82,12 @@
 # def rename_transcribed_text_route(transcription_id, old_text, new_text):
 #     data = request.json
 #     segment_ids = data.get("segment_ids", None)
-    
+
 #     if segment_ids:
 #         result = diarization_processor.rename_selected_texts(transcription_id, old_text, new_text, segment_ids)
 #     else:
 #         result = diarization_processor.rename_transcribed_text(transcription_id, old_text, new_text)
-    
+
 #     return jsonify(result), 200 if result["status"] == "success" else 500
 
 # @audio_bp.route("/delete_segments/<transcription_id>", methods=["POST"])
@@ -96,7 +96,7 @@
 #     data = request.json
 #     segment_ids = data.get("segment_ids", [])
 #     result = diarization_processor.delete_segments(transcription_id, segment_ids)
-    
+
 #     return jsonify(result), 200 if result["status"] == "success" else 500
 
 # #######################################################################
@@ -107,7 +107,7 @@
 #     try:
 #         # Get the path to the WAV file
 #         wav_file_path = os.path.join("temp", f"{transcription_id}.wav")
-        
+
 #         # Check if the file exists
 #         if not os.path.exists(wav_file_path):
 #             abort(404, description="Resource not found")
@@ -130,30 +130,39 @@
 import os
 from threading import Lock
 from flask import Flask, Blueprint, request, jsonify, abort, Response
-from flask_jwt_extended import JWTManager, jwt_required,get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from pymongo import MongoClient
 from services.speaker_diarization import SpeakerDiarizationProcessor
 from logger import configure_logging
 from config import XMLConfig  # Import the XML configuration
 import torch
+
 app = Flask(__name__)
-xml_config = XMLConfig(service_name='speaker_diarization_service')
-xml_mongo_config = XMLConfig(service_name='mongo')
+xml_config = XMLConfig(service_name="speaker_diarization_service")
+xml_mongo_config = XMLConfig(service_name="mongo")
 
 # Configure JWT using XML config
 app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
 app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
 app.config["JWT_REFRESH_COOKIE_PATH"] = xml_config.JWT_REFRESH_COOKIE_PATH
-app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE  # Set to False in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT  # Enable CSRF protection in production
+app.config["JWT_COOKIE_SECURE"] = (
+    xml_config.JWT_COOKIE_SECURE
+)  # Set to False in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = (
+    xml_config.JWT_COOKIE_CSRF_PROTECT
+)  # Enable CSRF protection in production
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = xml_config.get_jwt_expire_timedelta()
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_timedelta()
 
 
 # Configure CORS using XML config
-CORS(app, supports_credentials=xml_config.SUPPORTS_CREDENTIALS, origins=xml_config.CORS_ORIGINS)
+CORS(
+    app,
+    supports_credentials=xml_config.SUPPORTS_CREDENTIALS,
+    origins=xml_config.CORS_ORIGINS,
+)
 
 # Initialize JWT Manager
 jwt = JWTManager(app)
@@ -171,7 +180,7 @@ if torch.cuda.is_available():
 else:
     print("CUDA is not available. Using CPU.")
     x = torch.device("cpu")
-    
+
 diarization_processor = SpeakerDiarizationProcessor(device=xml_config.DEVICE)
 
 # Initialize logger
@@ -181,24 +190,29 @@ logger = configure_logging()
 audio_bp = Blueprint("audio_bp", __name__)
 processing_flags = {}
 lock = Lock()
+
+
 def set_processing_flag(user_id):
     with lock:
         processing_flags[user_id] = True
+
 
 def clear_processing_flag(user_id):
     with lock:
         if user_id in processing_flags:
             del processing_flags[user_id]
 
+
 def is_processing(user_id):
     return processing_flags.get(user_id, False)
+
 
 @audio_bp.route("/process-audio/", methods=["POST"])
 @jwt_required()
 def process_audio_route():
     identity = get_jwt_identity()  # This returns a dictionary
     username = identity.get("username")  # Extract the unique user identifier
-    
+
     if not username:
         return jsonify({"error": f"Invalid user identity {identity}"}), 400
     if is_processing(username):
@@ -211,21 +225,20 @@ def process_audio_route():
     finally:
         clear_processing_flag(username)
 
-        
+
 @audio_bp.route("/check-process/", methods=["GET"], strict_slashes=False)
 @jwt_required()
 def check_process_route():
     identity = get_jwt_identity()  # This returns a dictionary
     username = identity.get("username")  # Extract the username
-    
+
     if not username:
         return jsonify({"error": f"Invalid user identity: {identity}"}), 400
-    
+
     if is_processing(username):
         return jsonify({"processing": True}), 200
     else:
         return jsonify({"processing": False}), 200
-
 
 
 # @audio_bp.route("/process-audio/", methods=["POST"])
@@ -238,7 +251,7 @@ def check_process_route():
 @audio_bp.route("/hello", methods=["GET"])
 @jwt_required()
 def hello_route():
-    #CHECK CUDA
+    # CHECK CUDA
 
     # Check if CUDA is available
     if torch.cuda.is_available():
@@ -250,6 +263,7 @@ def hello_route():
         logger.info(f"Running on device: {x}")
     return "Hello", 200
 
+
 @audio_bp.route("/transcriptions/", defaults={"id": None}, methods=["GET"])
 @audio_bp.route("/transcriptions/<id>", methods=["GET"])
 def get_transcription_route(id):
@@ -259,12 +273,13 @@ def get_transcription_route(id):
         response = diarization_processor.get_transcription(id)
     return jsonify(response), 200 if "error" not in response else 500
 
+
 @audio_bp.route("/transcriptions/<id>", methods=["DELETE"])
 @jwt_required()
 def delete_transcription_route(id):
     if id is None:
         return jsonify({"message": "ID is required"}), 404
-    
+
     try:
         response = diarization_processor.delete_transcription(id)
         if "error" in response:
@@ -272,8 +287,8 @@ def delete_transcription_route(id):
         return jsonify(response), 200
     except Exception as e:
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
-    
-    
+
+
 def sanitize_name(name):
     """
     Sanitizes the input name by removing unwanted characters such as
@@ -281,10 +296,11 @@ def sanitize_name(name):
     """
     if not isinstance(name, str):
         return None
-    
+
     # Remove new lines, carriage returns, and tabs, then strip leading/trailing whitespace
-    sanitized_name = name.strip().replace('\n', '').replace('\r', '').replace('\t', '')
+    sanitized_name = name.strip().replace("\n", "").replace("\r", "").replace("\t", "")
     return sanitized_name if sanitized_name else None
+
 
 @audio_bp.route("/transcriptions/<id>", methods=["PUT"])
 @jwt_required()
@@ -293,8 +309,8 @@ def rename_transcription_route(id):
         return jsonify({"message": "ID is required"}), 404
 
     data = request.get_json()
-    new_name = data.get('name')
-    
+    new_name = data.get("name")
+
     if not new_name:
         return jsonify({"message": "New name is required"}), 400
 
@@ -309,14 +325,14 @@ def rename_transcription_route(id):
         if "error" in response:
             return jsonify(response), 500
         elif response.get("status") == "no changes made":
-            return jsonify(response), 204  # 204 No Content indicates the request was successful but there was no change
+            return (
+                jsonify(response),
+                204,
+            )  # 204 No Content indicates the request was successful but there was no change
         return jsonify(response), 200
     except Exception as e:
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
-
-
-    
 
 @audio_bp.route("/rename_segments/<transcription_id>", methods=["POST"])
 @jwt_required()
@@ -327,12 +343,15 @@ def rename_segments_route(transcription_id):
     segment_ids = data.get("segment_ids")
 
     try:
-        result = diarization_processor.rename_selected_segments(transcription_id, old_names, new_name, segment_ids)
+        result = diarization_processor.rename_selected_segments(
+            transcription_id, old_names, new_name, segment_ids
+        )
     except Exception as e:
         logger.error(f"Error renaming segments: {str(e)}")
         return jsonify({"error": str(e)}), 500
-    
+
     return jsonify(result), 200 if result["status"] == "success" else 500
+
 
 @audio_bp.route("/rename_transcribed_text/<transcription_id>", methods=["POST"])
 @jwt_required()
@@ -341,28 +360,22 @@ def rename_transcribed_text_route(transcription_id):
     old_texts = data.get("old_texts")
     new_text = data.get("new_text")
     segment_ids = data.get("segment_ids")
-    
+
     if segment_ids:
-        result = diarization_processor.rename_selected_texts(transcription_id, old_texts, new_text, segment_ids)
+        result = diarization_processor.rename_selected_texts(
+            transcription_id, old_texts, new_text, segment_ids
+        )
     else:
-        result = diarization_processor.rename_transcribed_text(transcription_id, old_texts, new_text)
-    
+        result = diarization_processor.rename_transcribed_text(
+            transcription_id, old_texts, new_text
+        )
+
     if result["status"] == "success":
         return jsonify(result), 200
     elif result["status"] == "no changes made":
-        return '', 204  # Return 204 No Content if no changes were made
+        return "", 204  # Return 204 No Content if no changes were made
     else:
         return jsonify(result), 500
-
-
-
-
-
-
-
-
-
-
 
 
 @audio_bp.route("/delete_segments/<transcription_id>", methods=["POST"])
@@ -371,17 +384,18 @@ def delete_segments_route(transcription_id):
     data = request.json
     segment_ids = data.get("segment_ids", [])
     result = diarization_processor.delete_segments(transcription_id, segment_ids)
-    
-    return jsonify(result), 200 if result["status"] == "success" else 500
 
+    return jsonify(result), 200 if result["status"] == "success" else 500
 
 
 @audio_bp.route("/stream-audio/<transcription_id>", methods=["GET"])
 @jwt_required()
 def stream_audio_route(transcription_id):
     try:
-        wav_file_path = os.path.join(xml_config.TEMP_DIRECTORY, f"{transcription_id}.wav")
-        
+        wav_file_path = os.path.join(
+            xml_config.TEMP_DIRECTORY, f"{transcription_id}.wav"
+        )
+
         if not os.path.exists(wav_file_path):
             abort(404, description="Resource not found")
 
@@ -398,5 +412,5 @@ def stream_audio_route(transcription_id):
         logger.exception("Failed to stream audio")
         return jsonify({"error": str(e)}), 500
 
-app.register_blueprint(audio_bp)
 
+app.register_blueprint(audio_bp)

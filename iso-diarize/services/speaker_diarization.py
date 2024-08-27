@@ -14,6 +14,7 @@ from config import XMLConfig
 
 os.environ["CURL_CA_BUNDLE"] = ""
 
+
 class SpeakerDiarizationProcessor:
     def __init__(self, device):
         # Initialize configuration from config.xml
@@ -22,7 +23,7 @@ class SpeakerDiarizationProcessor:
         # Setup MongoDB connection using the configuration
         self.mongo_client = MongoClient(xml_mongo_config.MONGO_DB_URI)
         self.mongo_db = self.mongo_client[xml_mongo_config.MONGO_DB_NAME]
-        
+
         self.device = device
         self.hf_auth_token = os.getenv("HF_AUTH_TOKEN")
         self.logger = configure_logging()
@@ -35,15 +36,41 @@ class SpeakerDiarizationProcessor:
         collection = self.mongo_db["transcripts"]
         update_result = collection.update_many(
             {"_id": ObjectId(transcription_id), "segments.speaker": {"$in": old_names}},
-            {"$set": {"segments.$[].speaker": new_name}}  # Use $[] to update all matching elements in the array
+            {
+                "$set": {"segments.$[].speaker": new_name}
+            },  # Use $[] to update all matching elements in the array
         )
 
         if update_result.modified_count > 0:
             return {"status": "success"}
         else:
             return {"status": "no changes made"}
-        
-    def rename_selected_segments(self, transcription_id, old_names, new_name, segment_ids):
+
+    # def rename_transcribed_text(self, transcription_id, old_texts, new_text):
+    #     collection = self.mongo_db["transcripts"]
+
+    #     # Update transcribed text within segments and the full_text
+    #     update_result = collection.update_many(
+    #         {
+    #             "_id": ObjectId(transcription_id),
+    #             "segments.text": {"$in": old_texts}
+    #         },
+    #         {
+    #             "$set": {
+    #                 "segments.$[].text": new_text,
+    #                 "text": self.replace_text_in_full_text(collection, transcription_id, old_texts, new_text)
+    #             }
+    #         }
+    #     )
+
+    #     if update_result.modified_count > 0:
+    #         return {"status": "success"}
+    #     else:
+    #         return {"status": "no changes made"}
+
+    def rename_selected_segments(
+        self, transcription_id, old_names, new_name, segment_ids
+    ):
         collection = self.mongo_db["transcripts"]
 
         # Convert segment_ids to integers
@@ -54,12 +81,12 @@ class SpeakerDiarizationProcessor:
             {
                 "_id": ObjectId(transcription_id),
                 "segments.id": {"$in": segment_ids},  # Match segments by integer ID
-                "segments.speaker": {"$in": old_names}  # Match the old speaker names
+                "segments.speaker": {"$in": old_names},  # Match the old speaker names
             },
-            {
-                "$set": {"segments.$[elem].speaker": new_name}  # Update the speaker name
-            },
-            array_filters=[{"elem.id": {"$in": segment_ids}, "elem.speaker": {"$in": old_names}}]  # Apply update to all matching segments
+            {"$set": {"segments.$[elem].speaker": new_name}},  # Update the speaker name
+            array_filters=[
+                {"elem.id": {"$in": segment_ids}, "elem.speaker": {"$in": old_names}}
+            ],  # Apply update to all matching segments
         )
 
         if update_result.modified_count > 0:
@@ -67,22 +94,32 @@ class SpeakerDiarizationProcessor:
         else:
             return {"status": "no changes made"}
 
-
-    def rename_transcribed_text(self, transcription_id, old_texts, new_text):
+    def rename_transcribed_text(
+        self, transcription_id, old_texts, new_text, segment_ids
+    ):
         collection = self.mongo_db["transcripts"]
+
+        # Convert segment_ids to integers
+        segment_ids = [int(segment_id) for segment_id in segment_ids]
 
         # Update transcribed text within segments and the full_text
         update_result = collection.update_many(
             {
                 "_id": ObjectId(transcription_id),
-                "segments.text": {"$in": old_texts}
+                "segments.id": {"$in": segment_ids},
+                "segments.text": {"$in": old_texts},
             },
             {
                 "$set": {
-                    "segments.$[].text": new_text,
-                    "text": self.replace_text_in_full_text(collection, transcription_id, old_texts, new_text)
+                    "segments.$[elem].text": new_text,
+                    "text": self.replace_text_in_full_text(
+                        collection, transcription_id, old_texts, new_text
+                    ),
                 }
-            }
+            },
+            array_filters=[
+                {"elem.id": {"$in": segment_ids}, "elem.text": {"$in": old_texts}}
+            ],
         )
 
         if update_result.modified_count > 0:
@@ -98,15 +135,19 @@ class SpeakerDiarizationProcessor:
             {
                 "_id": ObjectId(transcription_id),
                 "segments.id": {"$in": segment_ids},  # Match segments by integer ID
-                "segments.text": {"$in": old_texts}  # Ensure the text matches as well
+                "segments.text": {"$in": old_texts},  # Ensure the text matches as well
             },
             {
                 "$set": {
                     "segments.$[elem].text": new_text,
-                    "text": self.replace_text_in_full_text(collection, transcription_id, old_texts, new_text)
+                    "text": self.replace_text_in_full_text(
+                        collection, transcription_id, old_texts, new_text
+                    ),
                 }
             },
-            array_filters=[{"elem.id": {"$in": segment_ids}}]  # Apply update to matching segments
+            array_filters=[
+                {"elem.id": {"$in": segment_ids}}
+            ],  # Apply update to matching segments
         )
 
         if update_result.modified_count > 0:
@@ -114,9 +155,12 @@ class SpeakerDiarizationProcessor:
         else:
             return {"status": "no changes made"}
 
-
-    def replace_text_in_full_text(self, transcripts_collection, transcription_id, old_texts, new_text):
-        transcript = transcripts_collection.find_one({"_id": ObjectId(transcription_id)})
+    def replace_text_in_full_text(
+        self, transcripts_collection, transcription_id, old_texts, new_text
+    ):
+        transcript = transcripts_collection.find_one(
+            {"_id": ObjectId(transcription_id)}
+        )
         if transcript:
             full_text = transcript.get("full_text", "")
             for old_text in old_texts:
@@ -143,7 +187,7 @@ class SpeakerDiarizationProcessor:
         # Pull specific segments from the array
         update_result = collection.update_one(
             {"_id": ObjectId(transcription_id)},
-            {"$pull": {"segments": {"_id": {"$in": object_ids}}}}
+            {"$pull": {"segments": {"_id": {"$in": object_ids}}}},
         )
 
         if update_result.modified_count > 0:
@@ -151,12 +195,11 @@ class SpeakerDiarizationProcessor:
         else:
             return {"status": "no changes made"}
 
-
     def get_all_transcriptions(self):
         try:
             collection = self.mongo_db["transcripts"]
             cursor = collection.find({})
-            
+
             all_transcriptions = []
             for doc in cursor:
                 # Convert ObjectId to string for the transcription ID
@@ -167,14 +210,13 @@ class SpeakerDiarizationProcessor:
                     for segment in doc["segments"]:
                         if isinstance(segment.get("_id"), ObjectId):
                             segment["_id"] = str(segment["_id"])
-                
+
                 all_transcriptions.append(doc)
 
             return all_transcriptions
         except Exception as e:
             self.logger.info(f"Database error: {str(e)}")
             return {"error": str(e)}
-
 
     def get_transcription(self, id):
         try:
@@ -203,8 +245,7 @@ class SpeakerDiarizationProcessor:
             error_message = f"Error during transcription retrieval: {e}"
             self.logger.error(error_message, exc_info=True)
             return {"error": "An error occurred while retrieving the transcription"}
-    
-    
+
     def process_audio(self):
         if "file" not in request.files:
             self.logger.error("No file part in request")
@@ -229,7 +270,9 @@ class SpeakerDiarizationProcessor:
             if original_file_path.endswith((".mp4", ".mp3", ".avi")):
                 original = AudioSegment.from_file(original_file_path)
                 original.export(wav_file_path, format="wav")
-                os.remove(original_file_path)  # Remove the original file after conversion
+                os.remove(
+                    original_file_path
+                )  # Remove the original file after conversion
             else:
                 # If the file is already in WAV format, just rename it
                 os.rename(original_file_path, wav_file_path)
@@ -241,8 +284,12 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(30)
             self.emit_progress(50)
 
-            model_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "large-v3"))
-            processor = AudioProcessor(self.file_path, self.device, model_name=model_dir)
+            model_dir = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "large-v3")
+            )
+            processor = AudioProcessor(
+                self.file_path, self.device, model_name=model_dir
+            )
             transcription = processor.process()
             print(transcription)
             self.emit_progress(70)
@@ -264,7 +311,9 @@ class SpeakerDiarizationProcessor:
                     "name": wav_filename,
                     "created_at": created_at,
                     "text": transcription["text"],  # Keep the text field intact
-                    "segments": transcription["segments"],  # Keep segments as returned by processor
+                    "segments": transcription[
+                        "segments"
+                    ],  # Keep segments as returned by processor
                 }
             )
 
@@ -274,36 +323,42 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(0)
             return {"error": str(e)}
 
-
     def rename_transcription(self, transcription_id, new_name):
         try:
             # Access the transcripts collection from the MongoDB database
             collection = self.mongo_db["transcripts"]
-            
+
             # Find the transcription by its ID
             transcription = collection.find_one({"_id": ObjectId(transcription_id)})
-            
+
             if not transcription:
                 # If the transcription is not found, return an error message
                 self.logger.error(f"Transcription not found for ID: {transcription_id}")
                 return {"error": "Transcription not found"}
-            
+
             # Update the transcription name
             update_result = collection.update_one(
-                {"_id": ObjectId(transcription_id)},
-                {"$set": {"name": new_name}}
+                {"_id": ObjectId(transcription_id)}, {"$set": {"name": new_name}}
             )
-            
+
             if update_result.modified_count > 0:
                 # If the update was successful, return a success message
-                self.logger.info(f"Transcription ID {transcription_id} renamed to {new_name}")
+                self.logger.info(
+                    f"Transcription ID {transcription_id} renamed to {new_name}"
+                )
                 return {"message": "Transcription renamed successfully"}
             else:
                 # If no changes were made, return a relevant message
-                self.logger.info(f"No changes made for transcription ID {transcription_id}")
+                self.logger.info(
+                    f"No changes made for transcription ID {transcription_id}"
+                )
                 return {"status": "no changes made"}
-        
+
         except Exception as e:
             # If an exception occurs, log the error and return an error message
-            self.logger.error(f"Error during renaming transcription: {str(e)}", exc_info=True)
-            return {"error": f"An error occurred while renaming the transcription: {str(e)}"}
+            self.logger.error(
+                f"Error during renaming transcription: {str(e)}", exc_info=True
+            )
+            return {
+                "error": f"An error occurred while renaming the transcription: {str(e)}"
+            }

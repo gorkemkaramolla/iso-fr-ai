@@ -518,7 +518,7 @@ const RecognizedFacesTable: React.FC = () => {
         ]}
         onChange={(e) => options.filterCallback(e.value, options.index)}
         placeholder='Select an Emotion'
-        className='p-column-filter'
+        className='p-column-filter h-8'
         showClear
       
         
@@ -693,7 +693,7 @@ const RecognizedFacesTable: React.FC = () => {
         // @ts-ignore
         <DataTable
           ref={dt}
-          className='custom-datatable w-full nunito-400'
+          className='custom-datatable w-full nunito-400 [&_tr]:p-0 [&_tr]:m-0 [&_tr_td:p-0 [&_tr_td]:m-0'
           value={recognizedFaces}
           size='small'
           paginator
@@ -717,7 +717,7 @@ const RecognizedFacesTable: React.FC = () => {
           onSelectionChange={(
             e: DataTableSelectionCellChangeEvent<RecognizedFace[]>
           ) => setSelectedFaces(e.value as unknown as RecognizedFace[])}
-          rowClassName={}
+          
         >
           <Column
             selectionMode='multiple'

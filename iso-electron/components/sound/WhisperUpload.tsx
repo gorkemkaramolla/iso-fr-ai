@@ -46,7 +46,7 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files ? event.target.files[0] : null;
     if (selectedFile && selectedFile.size > 500 * 1024 * 1024) {
-      setError('File size should be less than 500MB');
+      setError('File size should be less than 5000MB');
       return;
     }
     setFile(selectedFile);
@@ -180,7 +180,7 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
                         veya sürükleyip bırakın
                       </p>
                       <p className='text-xs text-indigo-500'>
-                        Ses veya video dosyası (max. 50MB)
+                        Ses veya video dosyası (max. 500MB)
                       </p>
                     </div>
                     <input

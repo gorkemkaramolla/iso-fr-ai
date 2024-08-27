@@ -8,6 +8,7 @@ import { FaFileWord } from 'react-icons/fa';
 import { Ellipsis, Trash2 } from 'lucide-react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
+import ConfirmationDialog from '../ui/confirmation-dialog';
 
 interface ExportButtonsProps {
   data: any;
@@ -152,33 +153,15 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
       </div>
 
       {/* PrimeReact Dialog */}
-      <Dialog
+      <ConfirmationDialog
         visible={isDialogOpen}
-        style={{ width: '350px' }}
-        header='Silme Onayı'
-        modal
-        footer={
-          <div>
-            <Button
-              label='İptal'
-              icon='pi pi-times'
-              onClick={() => setIsDialogOpen(false)}
-              className='p-button-text'
-            />
-            <Button
-              label='Sil'
-              icon='pi pi-check'
-              onClick={confirmDelete}
-              className='p-button-danger'
-            />
-          </div>
-        }
+        title='Silme Onayı'
+        message='Sentezi silmek istediğinizden emin misiniz?'
         onHide={() => setIsDialogOpen(false)}
-      >
-        <div>
-          <p>Sentezi silmek istediğinizden emin misiniz?</p>
-        </div>
-      </Dialog>
+        onConfirm={confirmDelete}
+        confirmLabel='Sil'
+        confirmClassName='p-button-danger'
+      />
     </div>
   );
 };

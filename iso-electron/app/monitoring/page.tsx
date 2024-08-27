@@ -29,10 +29,14 @@ const Dashboard = () => {
   }, [activeComponent]);
 
   const menuItems = [
-    { id: 'log', label: 'Logs', icon: FileText },
-    { id: 'temperature', label: 'Temperature', icon: Thermometer },
-    { id: 'usage', label: 'Usage', icon: Activity },
-    { id: 'container', label: 'Containers', icon: Box },
+    { id: 'log', label: 'Sistem günlükleri', icon: FileText },
+    {
+      id: 'temperature',
+      label: 'Donanım Sıcaklık Değerleri',
+      icon: Thermometer,
+    },
+    { id: 'usage', label: 'Donanım Kullanımı', icon: Activity },
+    { id: 'container', label: 'Container Kullanımı', icon: Box },
   ];
 
   const renderActiveComponent = () => {

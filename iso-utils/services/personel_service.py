@@ -14,6 +14,10 @@ class PersonelService:
         self.db = db
         self.solr_searcher = SolrSearcher(db)
             
+            
+    
+            
+            
     def update_personel(self, personel_id, data, file=None):
         os.makedirs(self.IMAGE_DIRECTORY, exist_ok=True)  # Ensure directory exists
         try:
@@ -54,6 +58,14 @@ class PersonelService:
                 updated_personel['_id'] = str(updated_personel['_id'])  # Convert ObjectId to string
                 try:
                     solr_response = self.solr_searcher.update_record_in_solr(updated_personel)
+                    
+                    # iso_fr_url = f"http://face_recognition_service:5004/update_database_with_id"
+                    # response = requests.post(iso_fr_url, json={{"personnel_id":updated_personel['_id']}} proxies={"http": None, "https": None})
+                    # response.raise_for_status()  # Raise an HTTPError for bad responses
+                    # personnel_record = response.json()
+                    
+                    
+                    
                 except Exception as e:
                     self.logger.error(f"Error updating Solr: {e}")
                     return {"status": "error", "message": "Error updating Solr", "solr_response": str(e)}, 500

@@ -3,22 +3,18 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { Personel } from '@/types';
 import createApi from '@/utils/axios_instance';
-// import RecogPage from '@/components/camera/Recog2/recog-page';
+import { Personel } from '@/types';
 
-// Import the ClientProfile dynamically with no SSR
 const ClientProfile = dynamic(() => import('./profile'), {
   ssr: false,
 });
 
-// Component that uses useSearchParams and handles data fetching
 function ProfileContent() {
   const searchParams = useSearchParams();
   const [profileData, setProfileData] = useState<Personel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const id = searchParams.get('id');
 
   useEffect(() => {
@@ -46,26 +42,17 @@ function ProfileContent() {
     }
   }, [id]);
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  if (!profileData) {
-    return <div>No profile data available.</div>;
-  }
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!profileData) return <div>No profile data available.</div>;
 
   return <ClientProfile profileData={profileData} />;
 }
 
-// Main Page component
 export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className='flex w-full  items-center justify-center'>
+      <div className='flex w-full items-center justify-center'>
         <ProfileContent />
       </div>
     </Suspense>

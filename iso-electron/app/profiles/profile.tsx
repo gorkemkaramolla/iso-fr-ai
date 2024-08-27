@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import createApi from '@/utils/axios_instance';
-import { getCsrfTokenFromCookies } from '@/utils/axios_instance';
+import createApi, { getCsrfTokenFromCookies } from '@/utils/axios_instance';
 import {
   Mail,
   Phone,
@@ -19,7 +18,6 @@ import { useRouter } from 'next/navigation';
 import EnlargedImage from './enlarged-image';
 import InfoSection from './info-section';
 import InfoItem from './info-item';
-// import RecogPage from '@/components/camera/Recog2/recog-page';
 
 interface Props {
   profileData: Personel;
@@ -52,13 +50,13 @@ export default function Profile({ profileData }: Props) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const toast = useRef<Toast>(null);
   const router = useRouter();
-
+  const iso_fr_api = createApi(process.env.NEXT_PUBLIC_FLASK_URL);
   useEffect(() => {
     const fetchPersonel = async () => {
       try {
         const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
-        const response = await api.get(`/personel/${profileData._id}`, {});
-        const data = await response.json(); // Axios handles JSON parsing
+        const response = await api.get(`/personel/${profileData._id}`);
+        const data = await response.json();
         setPersonel(data);
         setEditedPersonel(data);
         setError(null);
@@ -75,19 +73,33 @@ export default function Profile({ profileData }: Props) {
     }
   }, [profileData._id]);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
+  useEffect(() => {
+    router.refresh();
+  }, [isEditing]);
+
+  const handleEdit = () => setIsEditing(true);
 
   const handleSave = async () => {
     try {
-      const jsonData = {
-        ...editedPersonel,
-        image: newImage,
-      };
-      console.log('jsonData', jsonData);
+      const formData = new FormData();
+      if (editedPersonel) {
+        formData.append('name', editedPersonel.name);
+        formData.append('lastname', editedPersonel.lastname);
+        formData.append('title', editedPersonel.title);
+        formData.append('email', editedPersonel.email);
+        formData.append('phone', editedPersonel.phone);
+        formData.append('gsm', editedPersonel.gsm);
+        formData.append('address', editedPersonel.address);
+        formData.append('birth_date', editedPersonel.birth_date);
+        formData.append('iso_phone', editedPersonel.iso_phone);
+        formData.append('iso_phone2', editedPersonel.iso_phone2);
+        formData.append('resume', editedPersonel.resume);
+      }
 
-      // Check if window and localStorage are available
+      if (newImage) {
+        formData.append('image', newImage);
+      }
+
       let accessToken = '';
       if (typeof window !== 'undefined') {
         accessToken = localStorage.getItem('access_token') || '';
@@ -102,11 +114,8 @@ export default function Profile({ profileData }: Props) {
         `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/${profileData._id}`,
         {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...defaultHeaders,
-          },
-          body: JSON.stringify(jsonData),
+          headers: defaultHeaders,
+          body: formData,
         }
       );
 
@@ -115,6 +124,10 @@ export default function Profile({ profileData }: Props) {
       }
 
       const result = await response.json();
+      const fr_db_update = await iso_fr_api.post('update_database_with_id', {
+        personnel_id: profileData._id,
+      });
+      console.log(fr_db_update.json());
 
       setPersonel(editedPersonel);
       setIsEditing(false);
@@ -127,6 +140,14 @@ export default function Profile({ profileData }: Props) {
         detail: 'Profil başarıyla güncellendi',
         life: 3000,
       });
+
+      // Re-fetch data after successful save
+      const updatedResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/${profileData._id}`
+      );
+      const updatedData = await updatedResponse.json();
+      setPersonel(updatedData);
+      setEditedPersonel(updatedData);
     } catch (error) {
       console.error('Error updating profile:', error);
       setError('Profil güncellenemedi. Lütfen daha sonra tekrar deneyiniz.');
@@ -138,6 +159,7 @@ export default function Profile({ profileData }: Props) {
       });
     }
   };
+
   const handleCancel = () => {
     setEditedPersonel(personel);
     setIsEditing(false);
@@ -165,10 +187,9 @@ export default function Profile({ profileData }: Props) {
   if (!personel) return <div className='text-center py-8'>Yükleniyor...</div>;
 
   return (
-    <div className='container mx-auto px-4 py-12 max-w-5xl'>
+    <div className='container mx-auto px-4 py-6 max-w-5xl'>
       <div className='bg-white shadow-lg rounded-xl overflow-hidden'>
         <Toast ref={toast} />
-
         <div className='relative h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500'>
           <div className='absolute inset-0 bg-black opacity-30'></div>
           <div className='absolute bottom-0 left-0 right-0 p-8 text-white'>
@@ -189,9 +210,9 @@ export default function Profile({ profileData }: Props) {
                       previewImage ||
                       `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${personel._id}`
                     }
-                    width={60}
-                    height={60}
-                    className='rounded-full  object-cover shadow-lg ring-4 ring-white'
+                    width={240}
+                    height={240}
+                    className='rounded-full object-cover md:w-64 md:h-64 w-32 h-32 shadow-lg ring-4 ring-white'
                   />
                   <label
                     htmlFor='imageUpload'
@@ -213,7 +234,7 @@ export default function Profile({ profileData }: Props) {
                   src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${personel._id}`}
                   width={240}
                   height={240}
-                  className='rounded-full w-64 h-64  object-cover shadow-lg ring-4 ring-white cursor-pointer hover:opacity-90 transition duration-300'
+                  className='rounded-full md:w-64 md:h-64 w-32 h-32 object-cover shadow-lg ring-4 ring-white cursor-pointer hover:opacity-90 transition duration-300'
                   onClick={() => setEnlargedImage(true)}
                 />
               )}
@@ -256,7 +277,7 @@ export default function Profile({ profileData }: Props) {
                     <h2 className='text-3xl font-light text-gray-800 mb-2'>
                       {personel.name} {personel.lastname}
                     </h2>
-                    <p className='text-xl font-extrabold  text-gray-600'>
+                    <p className='text-xl font-extrabold text-gray-600'>
                       {personel.title}
                     </p>
                   </>
@@ -303,6 +324,43 @@ export default function Profile({ profileData }: Props) {
                 </InfoSection>
 
                 <InfoSection title='Ek Bilgiler'>
+                  <span className='flex justify-between w-full gap-2'>
+                    <InfoItem
+                      icon={<Calendar className='text-indigo-500' />}
+                      label='İş başlangıç tarihi'
+                      isEditing={isEditing}
+                      name='Başlangıç Tarihi'
+                      value={editedPersonel?.birth_date}
+                      onChange={handleInputChange}
+                    />
+                    <InfoItem
+                      icon={<Calendar className='text-indigo-500' />}
+                      label='İş ayrılma tarihi'
+                      isEditing={isEditing}
+                      name='Başlangıç Tarihi'
+                      value={editedPersonel?.birth_date}
+                      onChange={handleInputChange}
+                    />
+                  </span>
+
+                  <span className='flex justify-between w-full gap-2'>
+                    <InfoItem
+                      icon={<Globe className='text-indigo-500' />}
+                      label='ISO Telefon'
+                      isEditing={isEditing}
+                      name='iso_phone'
+                      value={editedPersonel?.iso_phone}
+                      onChange={handleInputChange}
+                    />
+                    <InfoItem
+                      icon={<Globe className='text-indigo-500' />}
+                      label='ISO Telefon 2'
+                      isEditing={isEditing}
+                      name='iso_phone2'
+                      value={editedPersonel?.iso_phone2}
+                      onChange={handleInputChange}
+                    />
+                  </span>
                   <InfoItem
                     icon={<Calendar className='text-indigo-500' />}
                     label='Doğum Tarihi'
@@ -311,43 +369,44 @@ export default function Profile({ profileData }: Props) {
                     value={editedPersonel?.birth_date}
                     onChange={handleInputChange}
                   />
-                  <InfoItem
-                    icon={<Globe className='text-indigo-500' />}
-                    label='ISO Telefon'
-                    isEditing={isEditing}
-                    name='iso_phone'
-                    value={editedPersonel?.iso_phone}
-                    onChange={handleInputChange}
-                  />
-                  <InfoItem
-                    icon={<Globe className='text-indigo-500' />}
-                    label='ISO Telefon 2'
-                    isEditing={isEditing}
-                    name='iso_phone2'
-                    value={editedPersonel?.iso_phone2}
-                    onChange={handleInputChange}
-                  />
                 </InfoSection>
               </div>
-
-              <InfoSection title='Özgeçmiş'>
-                <div className='bg-gray-50 p-6 rounded-lg text-gray-700 leading-relaxed'>
-                  <Briefcase className='inline-block w-6 h-6 mr-3 text-indigo-500' />
-                  {isEditing ? (
-                    <textarea
-                      name='resume'
-                      value={editedPersonel?.resume}
-                      onChange={handleInputChange}
-                      className='w-full p-3 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-light'
-                      rows={6}
-                    />
-                  ) : (
-                    <p className='inline font-light'>{personel.resume}</p>
-                  )}
-                </div>
-              </InfoSection>
             </div>
           </div>
+          <span className='flex w-full gap-2 my-5 justify-center'>
+            <span className='w-1/2 h-full bg-gray-50  flex flex-col'>
+              <span className='text-sm font-bold px-4'>Özgeçmiş</span>
+              <div className='px-4 py-1 rounded-lg w-full text-gray-700 leading-relaxed'>
+                {isEditing ? (
+                  <textarea
+                    name='resume'
+                    value={editedPersonel?.resume}
+                    onChange={handleInputChange}
+                    className='  border  rounded w-full bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-light'
+                    rows={3}
+                  />
+                ) : (
+                  <p className='inline font-light'>{personel.resume}</p>
+                )}
+              </div>
+            </span>
+            <span className='w-1/2 h-full bg-gray-50  rounded-lg  flex flex-col'>
+              <span className='text-sm font-bold px-4'>Detay</span>
+              <div className='px-4 py-1 w-full rounded-lg text-gray-700 leading-relaxed'>
+                {isEditing ? (
+                  <textarea
+                    name='resume'
+                    value={editedPersonel?.resume}
+                    onChange={handleInputChange}
+                    className=' border rounded  bg-white w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 font-light'
+                    rows={3}
+                  />
+                ) : (
+                  <p className='inline font-light'>{personel.resume}</p>
+                )}
+              </div>
+            </span>
+          </span>
 
           <div className='mt-12 flex justify-center space-x-4'>
             {isEditing ? (

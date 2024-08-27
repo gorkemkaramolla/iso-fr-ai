@@ -2,6 +2,12 @@
 
 import { ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
+import { Input, Link, DatePicker } from '@nextui-org/react';
+import {
+  parseDate,
+  CalendarDate,
+  parseDateTime,
+} from '@internationalized/date';
 
 interface InfoItemProps {
   icon: React.ReactNode;
@@ -22,13 +28,20 @@ export default function InfoItem({
   onChange,
   href,
 }: InfoItemProps) {
+  const handleDateChange = (date: CalendarDate) => {
+    const formattedDate = date.toString(); // Convert DateValue to string
+    onChange({
+      target: { name, value: formattedDate },
+    } as ChangeEvent<HTMLInputElement>);
+  };
+
   return (
     <motion.div
-      className='flex items-center text-gray-700'
+      className='flex items-center gap-4 rounded-large'
       animate={
         isEditing
           ? {
-              backgroundColor: ['#ffffff', '#f0f4ff', '#ffffff'],
+              backgroundColor: ['#ffffff', '#eef2ff', '#ffffff'],
               boxShadow: [
                 '0 0 0 rgba(59, 130, 246, 0)',
                 '0 0 6px rgba(59, 130, 246, 0.3)',
@@ -39,22 +52,34 @@ export default function InfoItem({
       }
       transition={{ duration: 0.7, ease: 'easeInOut' }}
     >
-      <div className='mr-2 text-blue-600'>{icon}</div>
+      <div className='text-primary'>{icon}</div>
       <div className='flex-grow'>
-        <p className='font-medium'>{label}</p>
+        <p className='text-small font-medium text-foreground'>{label}</p>
         {isEditing ? (
-          <input
-            name={name}
-            value={value}
-            onChange={onChange}
-            className='text-gray-600 border-b border-gray-300 p-1 w-full bg-transparent focus:outline-none focus:border-blue-500 transition-colors duration-300'
-          />
+          name === 'birth_date' ? (
+            <DatePicker
+              value={value ? parseDate(value) : null} // Convert string to DateValue (CalendarDate)
+              onChange={handleDateChange}
+              label='Select date'
+              className='max-w-xs'
+              variant='bordered'
+            />
+          ) : (
+            <Input
+              name={name}
+              value={value}
+              onChange={onChange}
+              variant='bordered'
+              size='sm'
+              className='max-w-xs'
+            />
+          )
         ) : href ? (
-          <a href={href} className='text-blue-500 hover:underline'>
+          <Link href={href} color='primary' underline='hover'>
             {value}
-          </a>
+          </Link>
         ) : (
-          <p className='text-gray-600'>{value}</p>
+          <p className='text-default-500'>{value}</p>
         )}
       </div>
     </motion.div>

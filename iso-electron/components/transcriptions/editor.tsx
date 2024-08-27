@@ -32,6 +32,9 @@ import { Menu } from 'primereact/menu';
 import ExportButtons from './export-buttons';
 import { Kbd } from '@nextui-org/react';
 import { debounce } from '@/utils/debounce';
+import SingleRenameDialog from './dialog-single';
+import CustomDialog from './dialog-single';
+import ChangeAllNamesDialog from './dialog-multiple';
 
 const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
 
@@ -500,8 +503,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
         <div className='flex md:flex-row self-center flex-row-reverse space-x-2'>
           <div className='dropdown dropdown-end'>
-            <label tabIndex={0} className='btn btn-primary btn-sm'>
-              Konuşmacılar
+            <label tabIndex={0} className='btn btn-primary btn-sm flex gap-2'>
+              <span>Konuşmacılar</span>
             </label>
             <ul
               tabIndex={0}
@@ -628,90 +631,21 @@ const TextEditor: React.FC<TextEditorProps> = ({
         }
       />
 
-      <Dialog
+      <ChangeAllNamesDialog
         visible={showDialog}
-        style={{ width: '50vw' }}
-        header='İsim değişikliği onayı'
-        modal
-        footer={
-          <div>
-            <Button
-              label='İptal'
-              icon='pi pi-times'
-              onClick={() => setShowDialog(false)}
-              className='p-button-text'
-            />
-            <Button
-              label='Onayla'
-              icon='pi pi-check'
-              onClick={confirmChangeSpeakerName}
-              autoFocus
-            />
-          </div>
-        }
+        dialogData={dialogData}
+        setDialogData={setDialogData}
         onHide={() => setShowDialog(false)}
-      >
-        <div>
-          <p>
-            Seçilen
-            <strong>{' ' + dialogData.oldName}</strong> adlı kullanıcıya ait tüm
-            konuşma alt segmentlerini değiştirmek üzeresiniz
-          </p>
-          <InputText
-            value={dialogData.newName}
-            placeholder='Yeni isim'
-            onChange={(e) => {
-              setDialogData({ ...dialogData, newName: e.target.value });
-            }}
-            className='w-full mt-2'
-          />
-        </div>
-      </Dialog>
+        onConfirm={confirmChangeSpeakerName}
+      />
 
-      <Dialog
+      <SingleRenameDialog
         visible={showSingleRenameDialog}
-        style={{ width: '50vw' }}
-        header='Konuşmacı ismi değiştirme'
-        modal
-        footer={
-          <div>
-            <Button
-              label='İptal'
-              icon='pi pi-times'
-              onClick={() => setShowSingleRenameDialog(false)}
-              className='p-button-text'
-            />
-            <Button
-              label='Onayla'
-              icon='pi pi-check'
-              onClick={confirmSingleRename}
-              autoFocus
-            />
-          </div>
-        }
+        singleRenameData={singleRenameData}
+        setSingleRenameData={setSingleRenameData}
         onHide={() => setShowSingleRenameDialog(false)}
-      >
-        <div>
-          <p>
-            <strong>{`&lsquo;${singleRenameData.segmentId}&rsquo;`}</strong>{' '}
-            ID&apos;li Konuşma alt segmentine ait{' '}
-            <strong>{singleRenameData.oldName + ' '}</strong>
-            konuşmacı adını değiştirmek üzeresiniz.
-          </p>
-
-          <InputText
-            value={singleRenameData.newName}
-            placeholder='Yeni isim'
-            onChange={(e) =>
-              setSingleRenameData({
-                ...singleRenameData,
-                newName: e.target.value,
-              })
-            }
-            className='w-full mt-2'
-          />
-        </div>
-      </Dialog>
+        onConfirm={confirmSingleRename}
+      />
     </Card>
   );
 };

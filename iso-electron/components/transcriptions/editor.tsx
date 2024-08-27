@@ -464,6 +464,9 @@ const TextEditor: React.FC<TextEditorProps> = ({
             isTranscriptionNameEditing={isTranscriptionNameEditing}
             setTranscriptionNameEditing={setIsTranscriptionNameEditing}
             data={transcription}
+            showDelete={true}
+            showExport={true}
+            showRename={true}
             fileName='output'
           />
         </div>

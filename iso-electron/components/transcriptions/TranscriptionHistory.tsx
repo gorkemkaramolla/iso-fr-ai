@@ -122,7 +122,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
 
   return (
     <div
-      className='h-full  sticky top-0 border-gray-200  overflow-y-auto'
+      className='h-full  sticky top-0 border-gray-200  min-h-[92vh] overflow-y-auto'
       ref={containerRef}
     >
       {loading ? (
@@ -164,12 +164,16 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                         </p>
                       </span>
                     </Link>
-                    <span onClick={(e) => e.preventDefault()}>
+
+                    <span>
                       <ExportButtons
+                        setTranscriptionNameEditing={() => {}}
+                        isTranscriptionNameEditing={false}
                         data={transcription}
-                        showDelete
-                        showExport
-                        fileName={''}
+                        showDelete={true}
+                        showExport={true}
+                        showRename={true}
+                        fileName='output'
                         handleDeleteTranscription={() =>
                           deleteTranscription(transcription._id)
                         }

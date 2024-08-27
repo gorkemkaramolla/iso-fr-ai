@@ -51,29 +51,38 @@ system_check = Blueprint("system_check", __name__)
 personel_bp = Blueprint("personel_bp", __name__)
 
 ############################## PERSONEL ##############################################
-@personel_bp.route("/personel/last_recog", methods=["GET"])
+@personel_bp.route("/personel/last_recog", methods=["POST"])
 def get_last_recog():
-  
+    # Get start and end parameters from the request body
+    data = request.get_json()
+    start = data.get("start")
+    end = data.get("end")
+
+    if not start or not end:
+        return jsonify({"error": "Start and end parameters are required"}), 400
 
     # Fetch all personnel documents
-    personnels = personel_collection.find()
+    personnels = list(db["Personel"].find())
     print(personnels)
     results = []
     for personnel in personnels:
-        personnel_id = personnel.get("personnel_id")
+        personnel_id = str(personnel.get("_id"))
         if not personnel_id:
             continue
 
-        # Query MongoDB for the last recognized times by personnel_id
-        last_recog = recognition_collection.find_one(
-            {"personnel_id": personnel_id},
+        # Query MongoDB for the last recognized times by personnel_id within the start and end range
+        last_recog = db['logs'].find_one(
+            {
+                "personnel_id": personnel_id,
+                "timestamp": {"$gte": start, "$lte": end}
+            },
             sort=[("timestamp", -1)]
         )
 
         if last_recog:
             # Format the result
             result = {
-                "timestamp": last_recog["timestamp"] ,
+                "timestamp": last_recog["timestamp"],
                 "label": last_recog["label"],
                 "similarity": last_recog["similarity"],
                 "emotion": last_recog["emotion"],

@@ -33,21 +33,20 @@ export default function PersonnelAttendance() {
     const today = now(getLocalTimeZone());
     return {
       start: new ZonedDateTime(today.year, today.month, today.day, "UTC", 0, 0, 0, 0, 0),
-      end: new ZonedDateTime(today.year, today.month, today.day, "UTC", 23, 59, 59, 999),
+      end: new ZonedDateTime(today.year, today.month, today.day, "UTC", 0, 23, 59, 59, 999),
     };
   });
 
   useEffect(() => {
     fetchPersonnelForDateRange(dateRange.start, dateRange.end);
-  }, [dateRange]);
+  }, []);
 
   const fetchPersonnelForDateRange = async (start: ZonedDateTime, end: ZonedDateTime) => {
     setLoading(true);
     try {
-      const startStr = start.toString();
-      const endStr = end.toString();
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_UTILS_URL}/personel?start=${startStr}&end=${endStr}`
+        `${process.env.NEXT_PUBLIC_UTILS_URL}/personel`
       );
       const data = await response.json();
       if (response.ok) {
@@ -68,15 +67,20 @@ export default function PersonnelAttendance() {
   };
 
 
-  const fetchLastRecogs = async () => {
+  const fetchLastRecogs = async (start: ZonedDateTime, end: ZonedDateTime) => {
     setLoading(true);
     try {
+      const startMillis = start.toDate().getTime();
+      const endMillis = end.toDate().getTime();
       const response = await fetch(`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/last_recog`, {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        
+        body: JSON.stringify({
+          start: startMillis,
+          end: endMillis,
+        }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -96,8 +100,8 @@ export default function PersonnelAttendance() {
   
   // Example usage of fetchLastRecogs
   useEffect(() => {
-    fetchLastRecogs();
-  }, []);
+    fetchLastRecogs(dateRange.start, dateRange.end);
+  }, [dateRange]);
   
 
   const handleStatusChange = (personId: string) => {
@@ -178,7 +182,7 @@ export default function PersonnelAttendance() {
       {loading ? (
         <p className="text-center">Loading...</p>
       ) : (
-        <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+        <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-3xl">
           {filteredPersonnel?.map((person) => (
             <div key={person._id} className="flex items-center justify-between p-4 border-b last:border-b-0">
               <User

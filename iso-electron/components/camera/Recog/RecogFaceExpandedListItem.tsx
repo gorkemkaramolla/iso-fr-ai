@@ -2,6 +2,7 @@ import React from 'react';
 import RecogDetailsDialog from './RecogDetailsDialog';
 import { formatLastSeen } from '@/library/camera/utils';
 import { RecogFace } from '@/types';
+import Image from 'next/image';
 interface RecogFaceExpandedListItemProps {
   face: RecogFace;
   index: number;
@@ -24,9 +25,11 @@ const RecogFaceExpandedListItem: React.FC<RecogFaceExpandedListItemProps> = ({
 
   return (
     <div className='m-1 w-16'>
-      <img
+      <Image
         src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${face.image_path}`}
         alt={`Known Face ${index}`}
+        width={60}
+        height={60}
         className='object-cover w-[60px] h-[60px] rounded-sm cursor-pointer'
         onClick={handleClick}
       />

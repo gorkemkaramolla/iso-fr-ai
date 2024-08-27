@@ -61,6 +61,14 @@ const Home: React.FC = () => {
     }
   };
 
+  if (!videos) {
+    return <p>Loading...</p>;
+  }
+
+  if (videos.length === 0) 
+    return <div className='min-h-screen bg-gray-100 p-8 overflow-y-scroll'>
+    <p className='text-center'>Video Kaydı Henüz Yok</p></div>;
+
   return (
     <div className='max-h-screen bg-gray-100 p-8 overflow-y-scroll'>
       <Toast ref={toast} />

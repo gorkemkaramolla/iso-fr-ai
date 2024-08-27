@@ -19,13 +19,16 @@ interface Personnel {
   iso_phone: string;
   iso_phone2: string;
   file_path: string;
+  status?: Status;
+  entry_time?: number;
+  exit_time?: number;
 }
 
 type Status = "Giriş" | "Çıkış" | "Gelmedi";
 
 export default function PersonnelAttendance() {
   const [personnel, setPersonnel] = useState<Personnel[] | null>(null);
-  const [personnelStatus, setPersonnelStatus] = useState<{ [key: string]: Status }>({});
+  // const [personnelStatus, setPersonnelStatus] = useState<{ [key: string]: Status }>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status[]>(["Giriş", "Çıkış", "Gelmedi"]);
@@ -51,11 +54,11 @@ export default function PersonnelAttendance() {
       const data = await response.json();
       if (response.ok) {
         const initialStatus: { [key: string]: Status } = {};
-        data.forEach((person: Personnel) => {
-          initialStatus[person._id] = "Gelmedi";
-        });
+        // data.forEach((person: Personnel) => {
+        //   initialStatus[person._id] = "Gelmedi";
+        // });
         setPersonnel(data);
-        setPersonnelStatus(initialStatus);
+        // setPersonnelStatus(initialStatus);
       } else {
         console.error("Failed to fetch personnel data for date range");
       }
@@ -86,8 +89,17 @@ export default function PersonnelAttendance() {
       if (response.ok) {
         // Process the data as needed
         console.log("Last recognized personnel data:", data);
+  
         // Example: Update state with the fetched data
-        // setLastRecogs(data);
+           setPersonnel(prevPersonnel => {
+          return prevPersonnel!.map(personnel => {
+            const matchedData = data.find((item: any) => item.personnel_id === personnel._id);
+            if (matchedData) {
+              return { ...personnel, status: "Giriş", entry_time: matchedData.timestamp, exit_time: matchedData.timestamp };
+            }
+            return { ...personnel, status: undefined, entry_time: undefined, exit_time: undefined };
+          });
+        });
       } else {
         console.error("Failed to fetch last recognized personnel data");
       }
@@ -100,32 +112,27 @@ export default function PersonnelAttendance() {
   
   // Example usage of fetchLastRecogs
   useEffect(() => {
+    
     fetchLastRecogs(dateRange.start, dateRange.end);
   }, [dateRange]);
   
-
-  const handleStatusChange = (personId: string) => {
-    setPersonnelStatus((prevStatus) => {
-      const currentStatus = prevStatus[personId];
-      const newStatus =
-        currentStatus === "Giriş"
-          ? "Çıkış"
-          : currentStatus === "Çıkış"
-          ? "Gelmedi"
-          : "Giriş";
-      return { ...prevStatus, [personId]: newStatus };
-    });
-  };
 
   const handleStatusFilterChange = (e: MultiSelectChangeEvent) => {
     const newStatusFilter = e.value as Status[];
     setStatusFilter(newStatusFilter.length > 0 ? newStatusFilter : ["Giriş", "Çıkış", "Gelmedi"]);
   };
 
-  const filteredPersonnel = personnel?.filter((person) => {
+   const filteredPersonnel = personnel?.filter((person) => {
     const nameMatch = `${person.name} ${person.lastname}`.toLowerCase().includes(searchTerm.toLowerCase());
-    const statusMatch = statusFilter.includes(personnelStatus[person._id]);
+    const statusMatch = personnel.filter(p => statusFilter.includes(p.status || "Gelmedi")).includes(person);
     return nameMatch && statusMatch;
+  }).sort((a, b) => {
+    const statusPriority = {
+      "Çıkış": 1,
+      "Giriş": 2,
+      "Gelmedi": 3
+    };
+    return (statusPriority[a.status || "Gelmedi"] || 4) - (statusPriority[b.status || "Gelmedi"] || 4);
   });
 
   const statusOptions = [
@@ -139,6 +146,8 @@ export default function PersonnelAttendance() {
       </h1>
 
       <div className="mb-6 flex flex-col md:flex-row gap-4 justify-center items-center">
+        <div className="flex gap-4">
+
         <Input
           type="text"
           placeholder="İsime göre arama..."
@@ -151,7 +160,20 @@ export default function PersonnelAttendance() {
             innerWrapper: "h-[3.5rem]",
             inputWrapper: "h-[3.5rem]",
           }}
-        />
+          />
+          <div className="max-w-[260px]">
+          <MultiSelect
+            value={statusFilter}
+            onChange={handleStatusFilterChange}
+            options={statusOptions}
+            panelHeaderTemplate={() => null}
+            optionLabel=""
+            placeholder="Durum Seçin"
+            className="w-full md:w-20rem border-none rounded-xl bg-[rgb(244,244,245)] shadow-sm h-[3.5rem] items-center flex"
+            
+            />
+        </div>
+            </div>
         <I18nProvider locale="tr-TR">
           <DateRangePicker
             label="Tarih Aralığı"
@@ -165,18 +187,7 @@ export default function PersonnelAttendance() {
             pageBehavior="visible"
           />
         </I18nProvider>
-        <div className="max-w-[260px]">
-          <MultiSelect
-            value={statusFilter}
-            onChange={handleStatusFilterChange}
-            options={statusOptions}
-            panelHeaderTemplate={() => null}
-            optionLabel=""
-            placeholder="Durum Seçin"
-            className="w-full md:w-20rem border-none rounded-xl bg-[rgb(244,244,245)] shadow-sm h-[3.5rem] items-center flex"
-        
-          />
-        </div>
+      
       </div>
 
       {loading ? (
@@ -193,30 +204,36 @@ export default function PersonnelAttendance() {
                 description={person.title}
                 name={`${person.name} ${person.lastname}`}
               />
-              <div className="flex items-center space-x-2 flex-row-reverse gap-2">
-                <Chip
-                  color={
-                    personnelStatus[person._id] === "Giriş"
-                      ? "primary"
-                      : personnelStatus[person._id] === "Çıkış"
-                      ? "default"
-                      : "danger"
-                  }
-                  className={`cursor-pointer ${
-                    personnelStatus[person._id] === "Çıkış" ? "text-black" : "text-white"
-                  } select-none font-black`}
-                  size={"md"}
-                  variant="shadow"
-                  onClick={() => handleStatusChange(person._id)}
-                >
-                  {personnelStatus[person._id]}
-                  {personnelStatus[person._id] !== "Gelmedi" && (
-                    <span className="ml-2 text-xs">
-                      {new Date().toLocaleString("tr-TR")}
-                    </span>
-                  )}
-                </Chip>
-                {personnelStatus[person._id] === "Çıkış" && (
+              <div className="flex items-center gap-2 flex-col md:flex-row">
+                        
+                {person.status === "Çıkış" && (
+                  <>
+                    <Chip
+                      color="primary"
+                      className="text-white select-none font-black"
+                      size={"md"}
+                      variant="shadow"
+                    >
+                      Giriş
+                      <span className="ml-2 text-xs">
+                        {new Date(person!.entry_time!).toLocaleString("tr-TR")}
+                      </span>
+                    </Chip>
+                    <Chip
+                      color="default"
+                      className="text-black select-none font-black"
+                      size={"md"}
+                      variant="shadow"
+                    >
+                      Çıkış
+                      <span className="ml-2 text-xs">
+                        {new Date(person!.exit_time!).toLocaleString("tr-TR")}
+                      </span>
+                    </Chip>
+                  </>
+                )}
+                
+                {person.status === "Giriş" && (
                   <Chip
                     color="primary"
                     className="text-white select-none font-black"
@@ -225,8 +242,19 @@ export default function PersonnelAttendance() {
                   >
                     Giriş
                     <span className="ml-2 text-xs">
-                      {new Date().toLocaleString("tr-TR")}
+                      {new Date(person!.entry_time!).toLocaleString("tr-TR")}
                     </span>
+                  </Chip>
+                )}
+                
+                {person.status === undefined  && (
+                  <Chip
+                    color="danger"
+                    className="text-white select-none font-black"
+                    size={"md"}
+                    variant="shadow"
+                  >
+                    Gelmedi
                   </Chip>
                 )}
               </div>

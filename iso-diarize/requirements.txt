@@ -12,5 +12,5 @@ flask-jwt-extended==4.6.0
 numpy==1.26.4
 pydub==0.25.1
 # eventlet==0.36.1
-onnxruntime==1.17.1
-# onnxruntime-gpu==1.17.1
+# onnxruntime==1.17.1
+onnxruntime-gpu==1.17.1

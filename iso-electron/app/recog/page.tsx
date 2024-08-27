@@ -520,6 +520,8 @@ const RecognizedFacesTable: React.FC = () => {
         placeholder='Select an Emotion'
         className='p-column-filter'
         showClear
+      
+        
       />
     );
   };
@@ -537,7 +539,7 @@ const RecognizedFacesTable: React.FC = () => {
         onChange={(e) => options.filterCallback(e.value, options.index)}
         optionLabel='label'
         placeholder='Select a Gender'
-        className='p-column-filter'
+        className='p-column-filter h-8'
         showClear
       />
     );
@@ -555,6 +557,7 @@ const RecognizedFacesTable: React.FC = () => {
           style={{
             minWidth: '4rem !important',
             maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
         <InputNumber
@@ -564,6 +567,7 @@ const RecognizedFacesTable: React.FC = () => {
           style={{
             minWidth: '4rem !important',
             maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
       </div>
@@ -587,6 +591,7 @@ const RecognizedFacesTable: React.FC = () => {
           style={{
             minWidth: '4rem !important',
             maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
         <InputNumber
@@ -602,6 +607,7 @@ const RecognizedFacesTable: React.FC = () => {
           style={{
             minWidth: '4rem !important',
             maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
       </div>
@@ -612,6 +618,7 @@ const RecognizedFacesTable: React.FC = () => {
     // setSelectedDate(options.value);
     return (
       <CalendarComponent
+      className='h-8'
         minDate={new Date('2024-08-01')}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
@@ -621,21 +628,21 @@ const RecognizedFacesTable: React.FC = () => {
 
   const personBodyTemplate = (rowData: RecognizedFace) => {
     return (
-      <div className='inline-flex text-center'>
+      <div className='inline-flex text-center items-center p-0 m-0'>
         <div
-          className='flex gap-2 items-center justify-center text-center cursor-pointer'
+          className='flex gap-2 items-center justify-center text-center cursor-pointer p-0 m-0'
           onClick={() => router.push(`/profiles/?id=${rowData.personnel_id}`)}
           title={`Personel ${rowData.label} Sayfasına Git`}
         >
           <img
             src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${rowData.personnel_id}`}
             alt=''
-            className='w-[32px] h-[32px] rounded-full shadow-lg'
+            className='w-[20px] h-[20px] rounded-full shadow-lg'
             onError={(e) => {
               e.currentTarget.src = '/inner_circle.png';
             }}
           />
-          <span className='font-bold text-lg'>{rowData.label}</span>
+          <span className='font-bold text-md'>{rowData.label}</span>
         </div>
       </div>
     );
@@ -710,6 +717,7 @@ const RecognizedFacesTable: React.FC = () => {
           onSelectionChange={(
             e: DataTableSelectionCellChangeEvent<RecognizedFace[]>
           ) => setSelectedFaces(e.value as unknown as RecognizedFace[])}
+          rowClassName={}
         >
           <Column
             selectionMode='multiple'
@@ -737,6 +745,8 @@ const RecognizedFacesTable: React.FC = () => {
             body={personBodyTemplate}
             filter
             showFilterMenu={false}
+            className='[&_input]:h-8'
+            
             // editor={(options) => textEditor(options)}
           />
           <Column
@@ -792,7 +802,7 @@ const RecognizedFacesTable: React.FC = () => {
               <img
                 src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
                 alt='Face'
-                style={{ width: '50px', height: '50px', borderRadius: '5px' }}
+                style={{ width: '32px', height: '32px', borderRadius: '5px' }}
               />
             )}
           />

@@ -218,9 +218,9 @@ class Stream:
             x1, y1, x2, y2 = map(int, bbox[:4])
             face_image = frame[y1:y2, x1:x2]
 
-            if not is_known:
-                label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
-                self.database[label] = embedding
+            # if not is_known:
+            #     label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+            #     self.database[label] = embedding
 
             labels.append(label)
             sims.append(sim)
@@ -232,7 +232,9 @@ class Stream:
             emotion = self.emotion_detector.detect_emotion_from_array(face_image)
             emotions.append(emotion)
 
-            self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known)
+            if is_known:
+
+                self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known)
 
         return bboxes, labels, sims, emotions, genders, ages
     

@@ -6,24 +6,29 @@ import { RiFileExcel2Line } from 'react-icons/ri';
 import { BsFiletypeCsv, BsFiletypeJson } from 'react-icons/bs';
 import { FaFileWord } from 'react-icons/fa';
 import { Ellipsis, Trash2 } from 'lucide-react';
-import { Dialog } from 'primereact/dialog';
-import { Button } from 'primereact/button';
 import ConfirmationDialog from '../ui/confirmation-dialog';
 
 interface ExportButtonsProps {
   data: any;
-  isTranscriptionNameEditing: boolean;
-  setTranscriptionNameEditing: React.Dispatch<React.SetStateAction<boolean>>;
-  fileName: string;
-  handleDeleteTranscription: () => void;
+  isTranscriptionNameEditing?: boolean;
+  setTranscriptionNameEditing?: React.Dispatch<React.SetStateAction<boolean>>;
+  fileName?: string;
+  handleDeleteTranscription?: () => void;
+  showDelete?: boolean;
+  showRename?: boolean;
+  showExport?: boolean;
 }
 
 const ExportButtons: React.FC<ExportButtonsProps> = ({
   data,
-  fileName,
+  fileName = 'export',
   isTranscriptionNameEditing,
   setTranscriptionNameEditing,
   handleDeleteTranscription,
+
+  showDelete = false,
+  showRename = false,
+  showExport = false,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -72,11 +77,18 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   };
 
   const handleRename = () => {
-    setTranscriptionNameEditing(!isTranscriptionNameEditing);
+    if (
+      setTranscriptionNameEditing &&
+      isTranscriptionNameEditing !== undefined
+    ) {
+      setTranscriptionNameEditing(!isTranscriptionNameEditing);
+    }
   };
 
   const confirmDelete = () => {
-    handleDeleteTranscription();
+    if (handleDeleteTranscription) {
+      handleDeleteTranscription();
+    }
     setIsDialogOpen(false);
   };
 
@@ -90,78 +102,89 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           tabIndex={0}
           className='menu dropdown-content z-[1] p-2 shadow bg-base-100 rounded-box w-52'
         >
-          <li>
-            <button onClick={handleRename}>
-              {!isTranscriptionNameEditing
-                ? 'Sentez Adını Değiştir'
-                : 'İptal Et'}
-            </button>
-          </li>
-          <li className='bg-red-500 text-white'>
-            <button
-              onClick={() => setIsDialogOpen(true)}
-              className='w-full flex justify-between'
-            >
-              Sentezi Sil
-              <Trash2 size={18} />
-            </button>
-          </li>
-          <li>
-            <details>
-              <summary>Dışarıya Aktar</summary>
-              <ul className='p-2'>
-                <li>
-                  <button
-                    onClick={handleExportExcel}
-                    className='w-full flex justify-between'
-                  >
-                    Excel
-                    <RiFileExcel2Line size={18} />
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={handleExportCSV}
-                    className='w-full flex justify-between'
-                  >
-                    CSV
-                    <BsFiletypeCsv size={18} />
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={handleExportJSON}
-                    className='w-full flex justify-between'
-                  >
-                    JSON
-                    <BsFiletypeJson size={18} />
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={handleExportWord}
-                    className='w-full flex justify-between'
-                  >
-                    Word
-                    <FaFileWord size={18} />
-                  </button>
-                </li>
-              </ul>
-            </details>
-          </li>
+          {showRename &&
+            setTranscriptionNameEditing &&
+            isTranscriptionNameEditing !== undefined && (
+              <li>
+                <button onClick={handleRename}>
+                  {!isTranscriptionNameEditing
+                    ? 'Sentez Adını Değiştir'
+                    : 'İptal Et'}
+                </button>
+              </li>
+            )}
+
+          {showDelete && handleDeleteTranscription && (
+            <li className='bg-red-500 text-white'>
+              <button
+                onClick={() => setIsDialogOpen(true)}
+                className='w-full flex justify-between'
+              >
+                Sentezi Sil
+                <Trash2 size={18} />
+              </button>
+            </li>
+          )}
+          {showExport && (
+            <li>
+              <details>
+                <summary>Dışarıya Aktar</summary>
+                <ul className='p-2'>
+                  <li>
+                    <button
+                      onClick={handleExportExcel}
+                      className='w-full flex justify-between'
+                    >
+                      Excel
+                      <RiFileExcel2Line size={18} />
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleExportCSV}
+                      className='w-full flex justify-between'
+                    >
+                      CSV
+                      <BsFiletypeCsv size={18} />
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleExportJSON}
+                      className='w-full flex justify-between'
+                    >
+                      JSON
+                      <BsFiletypeJson size={18} />
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleExportWord}
+                      className='w-full flex justify-between'
+                    >
+                      Word
+                      <FaFileWord size={18} />
+                    </button>
+                  </li>
+                </ul>
+              </details>
+            </li>
+          )}
         </ul>
       </div>
 
       {/* PrimeReact Dialog */}
-      <ConfirmationDialog
-        visible={isDialogOpen}
-        title='Silme Onayı'
-        message='Sentezi silmek istediğinizden emin misiniz?'
-        onHide={() => setIsDialogOpen(false)}
-        onConfirm={confirmDelete}
-        confirmLabel='Sil'
-        confirmClassName='p-button-danger'
-      />
+      {showDelete && handleDeleteTranscription && (
+        <ConfirmationDialog
+          visible={isDialogOpen}
+          title='Silme Onayı'
+          message='Sentezi silmek istediğinizden emin misiniz?'
+          onHide={() => setIsDialogOpen(false)}
+          onConfirm={confirmDelete}
+          confirmLabel='Sil'
+          confirmClassName='p-button-danger'
+        />
+      )}
     </div>
   );
 };

@@ -45,8 +45,8 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files ? event.target.files[0] : null;
-    if (selectedFile && selectedFile.size > 50 * 1024 * 1024) {
-      setError('File size should be less than 50MB');
+    if (selectedFile && selectedFile.size > 500 * 1024 * 1024) {
+      setError('File size should be less than 500MB');
       return;
     }
     setFile(selectedFile);
@@ -271,10 +271,6 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
                 </Link>
               </div>
               <ul className='divide-y  divide-gray-200'>
-                asd Lorem ipsum, dolor sit amet consectetur adipisicing elit.
-                Commodi labore reiciendis et non, a ullam voluptas ea
-                voluptatum? Iste inventore vel a placeat laboriosam unde aperiam
-                nostrum atque, amet quos!
                 {response.transcription.segments.map((segment, index) => (
                   <li
                     key={index}
@@ -282,7 +278,7 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
                   >
                     <div className='flex items-center space-x-3 text-sm'>
                       <span className='font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded'>
-                        {segment.speaker.toUpperCase()}
+                        {segment.speaker.toString().toUpperCase()}
                       </span>
                       <span className='text-gray-500'>
                         {segment.start.toFixed(1)}s - {segment.end.toFixed(1)}s

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-
+import { X } from 'lucide-react';
 interface EnlargedImageProps {
   src: string;
   alt: string;
@@ -38,9 +38,9 @@ export default function EnlargedImage({
         />
         <button
           onClick={onClose}
-          className='absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2'
+          className='absolute items-center top-2 flex right-2 text-white bg-black bg-opacity-50 rounded-full p-2'
         >
-          Close
+          <X />
         </button>
       </motion.div>
     </motion.div>

@@ -28,6 +28,9 @@ import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
 import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import EnlargedImage from '../profiles/enlarged-image';
+
 interface RecognizedFace {
   _id: {
     $oid: string;
@@ -76,6 +79,8 @@ FilterService.register('custom_similarity', (value, filters) => {
 const RecognizedFacesTable: React.FC = () => {
   const router = useRouter();
   const toast = useRef<Toast>(null);
+  const [enlargedImage, setEnlargedImage] = useState(false);
+
   const [recognizedFaces, setRecognizedFaces] = useState<RecognizedFace[]>([]);
   const [filters, setFilters] = useState<DataTableFilterMeta>(defaultFilters);
   const [globalFilterValue, setGlobalFilterValue] = useState<string>('');
@@ -520,8 +525,6 @@ const RecognizedFacesTable: React.FC = () => {
         placeholder='Select an Emotion'
         className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
         showClear
-      
-        
       />
     );
   };
@@ -618,7 +621,7 @@ const RecognizedFacesTable: React.FC = () => {
     // setSelectedDate(options.value);
     return (
       <CalendarComponent
-      className='h-8'
+        className='h-8'
         minDate={new Date('2024-08-01')}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
@@ -717,7 +720,6 @@ const RecognizedFacesTable: React.FC = () => {
           onSelectionChange={(
             e: DataTableSelectionCellChangeEvent<RecognizedFace[]>
           ) => setSelectedFaces(e.value as unknown as RecognizedFace[])}
-          
         >
           <Column
             selectionMode='multiple'
@@ -746,7 +748,7 @@ const RecognizedFacesTable: React.FC = () => {
             filter
             showFilterMenu={false}
             className='[&_input]:h-8'
-            
+
             // editor={(options) => textEditor(options)}
           />
           <Column
@@ -795,17 +797,38 @@ const RecognizedFacesTable: React.FC = () => {
             filterElement={ageRowFilterTemplate}
             editor={(options) => ageEditor(options)}
           />
-          <Column
-            field='image_path'
-            header='Image'
-            body={(rowData) => (
-              <img
-                src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
-                alt='Face'
-                style={{ width: '32px', height: '32px', borderRadius: '5px' }}
-              />
-            )}
-          />
+
+          {!enlargedImage ? (
+            <Column
+              field='image_path'
+              header='Image'
+              body={(rowData) => (
+                <Image
+                  className='cursor-pointer hover:opacity-80 transition-opacity duration-300'
+                  width={32}
+                  height={32}
+                  src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
+                  onClick={() => setEnlargedImage(true)}
+                  alt={''}
+                />
+              )}
+            />
+          ) : (
+            <Column
+              field='image_path'
+              header='Image'
+              body={(rowData) =>
+                enlargedImage && (
+                  <EnlargedImage
+                    src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
+                    onClose={() => setEnlargedImage(false)}
+                    alt={''}
+                  />
+                )
+              }
+            />
+          )}
+
           <Column
             field=''
             header='Actions'

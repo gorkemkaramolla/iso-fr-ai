@@ -34,7 +34,9 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
 
   const [rightScreen, setRightScreen] = useState<string | null>('history');
   const [rightPanelSize, setRightPanelSize] = useState<number>(25);
-
+  const [transcriptionName, setTranscriptionName] = useState(
+    transcription?.name || ''
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [saveState, setSaveState] = useState<
     'no changes made' | 'needs saving' | 'saved' | 'save failed'
@@ -265,6 +267,8 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
           <Panel defaultSize={75} minSize={60}>
             <div className='p-4 '>
               <TextEditor
+                transcriptionName={transcriptionName}
+                setTranscriptionName={setTranscriptionName}
                 changes={changes}
                 setChanges={setChanges}
                 speakerColors={speakerColors}
@@ -296,7 +300,11 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
 
               {rightScreen === 'history' && (
                 <div ref={transcriptionHistoryRef}>
-                  <TranscriptionHistory activePageId={transcription?._id} />
+                  <TranscriptionHistory
+                    activeTranscriptionName={transcriptionName}
+                    setTranscriptionName={setTranscriptionName}
+                    activePageId={transcription?._id}
+                  />
                 </div>
               )}
             </Panel>

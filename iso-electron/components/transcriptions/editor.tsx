@@ -39,6 +39,8 @@ import ChangeAllNamesDialog from './dialog-multiple';
 const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
 
 interface TextEditorProps {
+  transcriptionName: string;
+  setTranscriptionName: React.Dispatch<React.SetStateAction<string>>;
   transcription: Transcript | null;
   editingRef: RefObject<HTMLTextAreaElement>;
   handleEditName?: (newName: string) => void;
@@ -80,6 +82,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
   speakerColors,
   editingRef,
   changes,
+  transcriptionName,
+  setTranscriptionName,
   handleEditName = () => {},
   handleDeleteSelected = () => {},
   handleSpeakerNameChange = () => {},
@@ -105,9 +109,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
   const [isTranscriptionNameEditing, setIsTranscriptionNameEditing] =
     useState(false);
-  const [transcriptionName, setTranscriptionName] = useState(
-    transcription?.name || ''
-  );
+
   const spanRef = useRef<HTMLSpanElement>(null);
 
   const [segments, setSegments] = useState<Segment[]>(
@@ -491,7 +493,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
               onClick={handleTranscriptionNameChange}
               className='group inline-flex items-center gap-2 p-2 rounded transition-all duration-200 hover:bg-gray-100'
             >
-              <h1 className='text-2xl font-bold break-words whitespace-pre-wrap'>
+              <h1 className='text-2xl font-bold break-words whitespace-pre-wrap max-w-[40vw] overflow-hidden text-ellipsis'>
                 {transcriptionName}
               </h1>
               <div className='opacity-0 cursor-pointer transition-opacity duration-200 group-hover:opacity-100'>

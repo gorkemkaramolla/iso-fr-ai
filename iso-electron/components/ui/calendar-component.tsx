@@ -63,7 +63,7 @@ export default function CalendarComponent({
       />
       <Calendar
         variant='filled'
-        className='  [&_.p-datepicker-trigger]:bg-primary  p-0 m-0 rounded-none!'
+        className='  [&_.p-datepicker-trigger]:bg-primary w-full   p-0 m-0 rounded-none!'
         value={selectedDate}
         onChange={handleDateChange}
         minDate={availableDates[0]}

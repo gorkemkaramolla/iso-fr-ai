@@ -28,6 +28,9 @@ import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
 import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import EnlargedImage from '../profiles/enlarged-image';
+
 interface RecognizedFace {
   _id: {
     $oid: string;
@@ -76,6 +79,8 @@ FilterService.register('custom_similarity', (value, filters) => {
 const RecognizedFacesTable: React.FC = () => {
   const router = useRouter();
   const toast = useRef<Toast>(null);
+  const [enlargedImage, setEnlargedImage] = useState(false);
+
   const [recognizedFaces, setRecognizedFaces] = useState<RecognizedFace[]>([]);
   const [filters, setFilters] = useState<DataTableFilterMeta>(defaultFilters);
   const [globalFilterValue, setGlobalFilterValue] = useState<string>('');
@@ -520,8 +525,6 @@ const RecognizedFacesTable: React.FC = () => {
         placeholder='Select an Emotion'
         className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
         showClear
-      
-        
       />
     );
   };
@@ -618,7 +621,7 @@ const RecognizedFacesTable: React.FC = () => {
     // setSelectedDate(options.value);
     return (
       <CalendarComponent
-      className='h-8'
+        className='h-8'
         minDate={new Date('2024-08-01')}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
@@ -634,7 +637,9 @@ const RecognizedFacesTable: React.FC = () => {
           onClick={() => router.push(`/profiles/?id=${rowData.personnel_id}`)}
           title={`Personel ${rowData.label} Sayfasına Git`}
         >
-          <img
+          <Image
+            width={200}
+            height={200}
             src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${rowData.personnel_id}`}
             alt=''
             className='w-[20px] h-[20px] rounded-full shadow-lg'
@@ -651,10 +656,11 @@ const RecognizedFacesTable: React.FC = () => {
     console.log('option:', option);
     return (
       <div className='flex items-center gap-2'>
-        <img
+        <Image
           alt={option}
           src={process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + option}
-          width='32'
+          width={32}
+          height={32}
           onError={(e) => {
             e.currentTarget.src = '/inner_circle.png';
           }}
@@ -717,7 +723,6 @@ const RecognizedFacesTable: React.FC = () => {
           onSelectionChange={(
             e: DataTableSelectionCellChangeEvent<RecognizedFace[]>
           ) => setSelectedFaces(e.value as unknown as RecognizedFace[])}
-          
         >
           <Column
             selectionMode='multiple'
@@ -725,7 +730,7 @@ const RecognizedFacesTable: React.FC = () => {
           ></Column>
           <Column
             field='timestamp'
-            header='Timestamp'
+            header='Tanıma Tarihi'
             body={(rowData) => formatTimestamp(rowData.timestamp)}
             sortable
             filterPlaceholder='Search by date'
@@ -736,7 +741,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='label'
-            header='Label'
+            header='İsim(Etiket)'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             sortable
@@ -746,12 +751,12 @@ const RecognizedFacesTable: React.FC = () => {
             filter
             showFilterMenu={false}
             className='[&_input]:h-8'
-            
+
             // editor={(options) => textEditor(options)}
           />
           <Column
             field='similarity'
-            header='Similarity'
+            header='Benzerlik Oranı'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             sortable
@@ -762,7 +767,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='emotion'
-            header='Emotion'
+            header='Duygu Durumu'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             sortable
@@ -773,7 +778,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='gender'
-            header='Gender'
+            header='Cinsiyet Tahmini'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             body={(rowData) => formatGender(rowData.gender)}
@@ -785,7 +790,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='age'
-            header='Age'
+            header='Yaş Tahmini'
             filterField='age'
             showFilterMenu={false}
             filterMenuStyle={{ width: '14rem' }}
@@ -795,17 +800,31 @@ const RecognizedFacesTable: React.FC = () => {
             filterElement={ageRowFilterTemplate}
             editor={(options) => ageEditor(options)}
           />
+
           <Column
             field='image_path'
-            header='Image'
+            header='Fotoğraf'
             body={(rowData) => (
-              <img
-                src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
-                alt='Face'
-                style={{ width: '32px', height: '32px', borderRadius: '5px' }}
-              />
+              <div>
+                <Image
+                  className='cursor-pointer hover:opacity-80 transition-opacity duration-300'
+                  width={32}
+                  height={32}
+                  src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
+                  onClick={() => setEnlargedImage(rowData.image_path)}
+                  alt={''}
+                />
+                {enlargedImage === rowData.image_path && (
+                  <EnlargedImage
+                    src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
+                    onClose={() => setEnlargedImage(false)}
+                    alt={''}
+                  />
+                )}
+              </div>
             )}
           />
+
           <Column
             field=''
             header='Actions'

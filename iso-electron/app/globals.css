@@ -269,3 +269,9 @@ th {
   background-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
 }
+.renaming-editable {
+  max-width: 240px; /* Adjust as needed */
+  word-wrap: break-word; /* Break words that are too long */
+  white-space: pre-wrap; /* Maintain spaces and line breaks */
+  overflow-wrap: break-word; /* Break words at the end of lines */
+}

@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import createApi from '@/utils/axios_instance';
@@ -7,16 +8,21 @@ import ChatSideMenuSkeleton from '@/components/ui/transcription-history-skeleton
 import CalendarComponent from '@/components/ui/calendar-component'; // Adjust the import path accordingly
 import { Nullable } from 'primereact/ts-helpers';
 import { Transcript } from '@/types';
-import { EllipsisVertical } from 'lucide-react';
 import ExportButtons from './export-buttons';
 import { deleteTranscription } from '@/utils/transcription/transcription';
+import { set } from 'lodash';
+import { useRouter } from 'next/navigation';
 
 type TranscriptionHistoryProps = {
   activePageId?: string;
+  activeTranscriptionName: string;
+  setTranscriptionName: (name: string) => void;
 };
 
 const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   activePageId,
+  activeTranscriptionName,
+  setTranscriptionName,
 }) => {
   const [transcriptions, setTranscriptions] = useState<Transcript[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -24,8 +30,11 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   const [itemsPerPage, setItemsPerPage] = useState<number>(8);
   const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const pRef = useRef<HTMLParagraphElement | null>(null);
   const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
-
+  const router = useRouter();
   const getTranscriptions = async () => {
     setLoading(true);
     try {
@@ -37,7 +46,6 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
       );
       setTranscriptions(sortedData);
 
-      // Set the latest available date as the default selected date
       if (sortedData.length > 0) {
         setSelectedDate(new Date(sortedData[0].created_at));
       }
@@ -45,6 +53,16 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
       console.error('Transkriptler getirilemedi:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditName = async (new_name: string, transcription_id: string) => {
+    try {
+      await api.put(`transcriptions/${transcription_id}`, {
+        name: new_name,
+      });
+    } catch (error) {
+      console.error('Failed to rename transcription:', error);
     }
   };
 
@@ -56,7 +74,6 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     const calculateItemsPerPage = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth;
-        // Ensure at least 1 item per page
         const newItemsPerPage = Math.max(
           1,
           Math.floor(containerWidth / 100) * 2
@@ -73,7 +90,6 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     };
   }, []);
 
-  // Load active transcription from localStorage and determine the correct page
   useEffect(() => {
     const storedActiveId = localStorage.getItem('activeTranscriptionId');
     if (storedActiveId && transcriptions.length > 0) {
@@ -88,21 +104,18 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     }
   }, [transcriptions, itemsPerPage]);
 
-  // Save the currently active transcription to localStorage whenever it changes
   useEffect(() => {
     if (activePageId) {
       localStorage.setItem('activeTranscriptionId', activePageId);
     }
   }, [activePageId]);
 
-  // Extract unique available dates from transcriptions
   const availableDates = Array.from(
     new Set(
       transcriptions.map((transcription) => new Date(transcription.created_at))
     )
   ).sort((a, b) => a.getTime() - b.getTime());
 
-  // Filter transcriptions based on the selected date
   const filteredTranscriptions = selectedDate
     ? transcriptions.filter(
         (transcription) =>
@@ -117,25 +130,58 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
     indexOfFirstItem,
     indexOfLastItem
   );
-
   const totalPages = Math.ceil(filteredTranscriptions.length / itemsPerPage);
+
+  const handleBlur = (e: React.FocusEvent<HTMLParagraphElement>) => {
+    const newName = e.currentTarget.textContent || '';
+    const transcriptionId = renamingId;
+
+    setIsRenameOpen(false);
+    setRenamingId(null);
+
+    // Update the specific transcription in state
+    setTranscriptions((prevTranscriptions) =>
+      prevTranscriptions.map((transcription) =>
+        transcription._id === transcriptionId
+          ? { ...transcription, name: newName }
+          : transcription
+      )
+    );
+
+    // Update the name of the active transcription if applicable
+    if (activePageId === transcriptionId) {
+      setTranscriptionName(newName);
+    }
+
+    // Handle renaming API call
+    handleEditName(newName, transcriptionId || '');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLParagraphElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      pRef.current?.blur();
+    }
+  };
 
   return (
     <div
-      className='h-full  sticky top-0 border-gray-200  min-h-[92vh] overflow-y-auto'
+      className='h-full sticky top-0 border-gray-200 min-h-[92vh] overflow-y-auto'
       ref={containerRef}
     >
       {loading ? (
         <ChatSideMenuSkeleton />
       ) : (
-        <div className='py-4 px-4'>
-          <h2 className='text-lg font-semibold mb-4 text-gray-700'>Geçmiş</h2>
-          <CalendarComponent
-            localStorageSaveName='transcriptionFilter'
-            availableDates={availableDates}
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-          />
+        <div className='py-4 px-4 '>
+          <div className='w-full  '>
+            <h2 className='text-lg font-semibold mb-4 text-gray-700'>Geçmiş</h2>
+            <CalendarComponent
+              localStorageSaveName='transcriptionFilter'
+              availableDates={availableDates}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+            />
+          </div>
           <ul className='space-y-2 mt-4'>
             {currentItems.length === 0 ? (
               <p className='text-center text-sm text-gray-400'>
@@ -151,11 +197,66 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                     }`}
                   >
-                    <Link href={`/transcriptions?id=${transcription._id}`}>
-                      <span className='flex-grow'>
-                        <p className='text-sm font-medium flex-wrap flex'>
-                          {transcription.name}
+                    <Link
+                      href={`/transcriptions?id=${transcription._id}`}
+                      passHref
+                    >
+                      <span
+                        className='flex-grow renaming-editable'
+                        onClick={(e) => {
+                          if (
+                            isRenameOpen &&
+                            renamingId === transcription._id
+                          ) {
+                            e.preventDefault(); // Prevent link navigation when editing"
+                          }
+                        }}
+                      >
+                        <p
+                          className={`text-sm font-medium content-editable ${
+                            isRenameOpen && renamingId === transcription._id
+                              ? 'bg-white text-black'
+                              : ''
+                          }`}
+                          contentEditable={
+                            isRenameOpen && renamingId === transcription._id
+                          }
+                          suppressContentEditableWarning={true}
+                          ref={(el) => {
+                            if (
+                              el &&
+                              isRenameOpen &&
+                              renamingId === transcription._id
+                            ) {
+                              el.focus();
+                              window.getSelection()?.selectAllChildren(el);
+                            }
+                          }}
+                          onBlur={handleBlur}
+                          onKeyDown={handleKeyDown}
+                          style={{
+                            maxWidth: '200px',
+                            wordWrap: 'break-word',
+                            whiteSpace: 'pre-wrap',
+                          }}
+                        >
+                          {isRenameOpen && renamingId === transcription._id
+                            ? transcription._id === activePageId
+                              ? activeTranscriptionName
+                              : transcription.name
+                            : (transcription._id === activePageId
+                                ? activeTranscriptionName
+                                : transcription.name
+                              ).length > 45
+                            ? `${(transcription._id === activePageId
+                                ? activeTranscriptionName
+                                : transcription.name
+                              ).slice(0, 45)}...`
+                            : transcription._id === activePageId
+                            ? activeTranscriptionName
+                            : transcription.name}
                         </p>
+
                         <p className='text-xs font-medium truncate opacity-75'>
                           {transcription._id}
                         </p>
@@ -167,15 +268,23 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
 
                     <span>
                       <ExportButtons
-                        setTranscriptionNameEditing={() => {}}
-                        isTranscriptionNameEditing={false}
+                        isActivePage={transcription._id === activePageId}
+                        setTranscriptionNameEditing={() => {
+                          setIsRenameOpen(true);
+                          setRenamingId(transcription._id);
+                        }}
+                        isTranscriptionNameEditing={isRenameOpen}
                         data={transcription}
                         showDelete={true}
                         showExport={true}
                         showRename={true}
                         fileName='output'
-                        handleDeleteTranscription={() =>
-                          deleteTranscription(transcription._id)
+                        handleDeleteTranscription={async () =>
+                          await deleteTranscription(transcription._id).then(
+                            () => {
+                              router.push('/');
+                            }
+                          )
                         }
                       />
                     </span>

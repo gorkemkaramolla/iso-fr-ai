@@ -10,6 +10,7 @@ import ConfirmationDialog from '../ui/confirmation-dialog';
 
 interface ExportButtonsProps {
   data: any;
+  isActivePage?: boolean;
   isTranscriptionNameEditing?: boolean;
   setTranscriptionNameEditing?: React.Dispatch<React.SetStateAction<boolean>>;
   fileName?: string;
@@ -21,6 +22,7 @@ interface ExportButtonsProps {
 
 const ExportButtons: React.FC<ExportButtonsProps> = ({
   data,
+  isActivePage,
   fileName = 'export',
   isTranscriptionNameEditing,
   setTranscriptionNameEditing,
@@ -93,10 +95,10 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   };
 
   return (
-    <div>
+    <div className={isActivePage ? '' : 'text-gray-700'}>
       <div className='dropdown dropdown-end'>
         <label tabIndex={0} className='btn btn-ghost btn-circle'>
-          <Ellipsis size={24} />
+          <Ellipsis className='' size={24} />
         </label>
         <ul
           tabIndex={0}
@@ -105,7 +107,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
           {showRename &&
             setTranscriptionNameEditing &&
             isTranscriptionNameEditing !== undefined && (
-              <li>
+              <li className='text-gray-700'>
                 <button onClick={handleRename}>
                   {!isTranscriptionNameEditing
                     ? 'Sentez Adını Değiştir'
@@ -126,7 +128,7 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
             </li>
           )}
           {showExport && (
-            <li>
+            <li className='text-gray-700'>
               <details>
                 <summary>Dışarıya Aktar</summary>
                 <ul className='p-2'>

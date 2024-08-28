@@ -637,7 +637,9 @@ const RecognizedFacesTable: React.FC = () => {
           onClick={() => router.push(`/profiles/?id=${rowData.personnel_id}`)}
           title={`Personel ${rowData.label} Sayfasına Git`}
         >
-          <img
+          <Image
+            width={200}
+            height={200}
             src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${rowData.personnel_id}`}
             alt=''
             className='w-[20px] h-[20px] rounded-full shadow-lg'
@@ -654,10 +656,11 @@ const RecognizedFacesTable: React.FC = () => {
     console.log('option:', option);
     return (
       <div className='flex items-center gap-2'>
-        <img
+        <Image
           alt={option}
           src={process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + option}
-          width='32'
+          width={32}
+          height={32}
           onError={(e) => {
             e.currentTarget.src = '/inner_circle.png';
           }}
@@ -727,7 +730,7 @@ const RecognizedFacesTable: React.FC = () => {
           ></Column>
           <Column
             field='timestamp'
-            header='Timestamp'
+            header='Tanıma Tarihi'
             body={(rowData) => formatTimestamp(rowData.timestamp)}
             sortable
             filterPlaceholder='Search by date'
@@ -738,7 +741,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='label'
-            header='Label'
+            header='İsim(Etiket)'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             sortable
@@ -753,7 +756,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='similarity'
-            header='Similarity'
+            header='Benzerlik Oranı'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             sortable
@@ -764,7 +767,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='emotion'
-            header='Emotion'
+            header='Duygu Durumu'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             sortable
@@ -775,7 +778,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='gender'
-            header='Gender'
+            header='Cinsiyet Tahmini'
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             body={(rowData) => formatGender(rowData.gender)}
@@ -787,7 +790,7 @@ const RecognizedFacesTable: React.FC = () => {
           />
           <Column
             field='age'
-            header='Age'
+            header='Yaş Tahmini'
             filterField='age'
             showFilterMenu={false}
             filterMenuStyle={{ width: '14rem' }}
@@ -798,36 +801,29 @@ const RecognizedFacesTable: React.FC = () => {
             editor={(options) => ageEditor(options)}
           />
 
-          {!enlargedImage ? (
-            <Column
-              field='image_path'
-              header='Image'
-              body={(rowData) => (
+          <Column
+            field='image_path'
+            header='Fotoğraf'
+            body={(rowData) => (
+              <div>
                 <Image
                   className='cursor-pointer hover:opacity-80 transition-opacity duration-300'
                   width={32}
                   height={32}
                   src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
-                  onClick={() => setEnlargedImage(true)}
+                  onClick={() => setEnlargedImage(rowData.image_path)}
                   alt={''}
                 />
-              )}
-            />
-          ) : (
-            <Column
-              field='image_path'
-              header='Image'
-              body={(rowData) =>
-                enlargedImage && (
+                {enlargedImage === rowData.image_path && (
                   <EnlargedImage
                     src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
                     onClose={() => setEnlargedImage(false)}
                     alt={''}
                   />
-                )
-              }
-            />
-          )}
+                )}
+              </div>
+            )}
+          />
 
           <Column
             field=''

@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  User,
-  Calendar,
-  Image,
-} from "lucide-react";
+import { User, Calendar, Image } from "lucide-react";
 import { PiGenderIntersexFill, PiSecurityCameraFill } from "react-icons/pi";
 import { TbFaceId, TbMoodSuprised, TbMoodNeutral } from "react-icons/tb";
 import { FaRegSadTear, FaRegAngry } from "react-icons/fa";
 import { HiOutlineEmojiHappy } from "react-icons/hi";
 import { IoMdSad } from "react-icons/io";
+import EnlargedImage from "@/app/profiles/enlarged-image";
+import { truncateString } from "@/library/camera/utils";
 
 interface RecogData {
   _id: { $oid: string };
@@ -25,6 +23,7 @@ interface RecogData {
 }
 
 const ProfilePage: React.FC = () => {
+  const [enlargedImage, setEnlargedImage] = useState<string | undefined>(undefined);
   const [data, setData] = useState<RecogData[]>([]);
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
@@ -78,7 +77,9 @@ const ProfilePage: React.FC = () => {
       neutral: <TbMoodNeutral className="w-5 h-5" />,
       fear: <IoMdSad className="w-5 h-5" />,
     };
-    return icons[emotion.toLowerCase()] || <TbMoodNeutral className="w-5 h-5" />;
+    return (
+      icons[emotion.toLowerCase()] || <TbMoodNeutral className="w-5 h-5" />
+    );
   };
 
   return (
@@ -86,7 +87,7 @@ const ProfilePage: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 leading-10">
           Son Tanınmalar
-        <hr />
+          <hr />
         </h1>
         {data && data.length > 0 ? (
           data.map((item) => (
@@ -106,17 +107,30 @@ const ProfilePage: React.FC = () => {
                     <div className="flex items-center gap-2 flex-row-reverse">
                       <PiSecurityCameraFill className="w-6 h-6" />
                       <span className="text-gray-700 truncate">
-                        {new URL(item?.camera!).hostname}
+                        {item.camera ? new URL(item.camera).hostname : "Yerel Kamera"}
                       </span>
                     </div>
                   </li>
                   <li className="flex items-center">
                     {/* <Image className="w-6 h-6 text-blue-500" /> */}
                     <img
-                src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${item.image_path}`}
-                alt='Face'
-                style={{ width: '500px', height: '250px', borderRadius: '5px' }}
-              />
+                      src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${item.image_path}`}
+                      alt="Face"
+                      style={{
+                        width: "500px",
+                        height: "250px",
+                        borderRadius: "5px",
+                      }}
+                      onClick={() => setEnlargedImage(item.image_path)}
+                    />
+                    {enlargedImage === item.image_path && (
+                      <EnlargedImage
+                        alt="Face"
+                        onClose={() => setEnlargedImage(undefined)}
+                        src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${item.image_path}`}
+                      />
+                    )}
+
                     {/* <span className="text-gray-700 truncate">
                       {item.image_path}
                     </span> */}
@@ -134,10 +148,10 @@ const ProfilePage: React.FC = () => {
                   <li className="flex items-center">
                     <span
                       className={`px-2 py-1 rounded-full text-sm font-semibold inline-flex gap-2 ${getEmotionColor(
-                          item.emotion
-                        )}`}
-                        >
-                        {getEmotionIcon(item.emotion)}
+                        item.emotion
+                      )}`}
+                    >
+                      {getEmotionIcon(item.emotion)}
                       {item.emotion}
                     </span>
                   </li>
@@ -146,7 +160,11 @@ const ProfilePage: React.FC = () => {
                     <span className="text-gray-700"> Yaş ~ {item.age}</span>
                   </li>
                   <li className="flex items-center">
-                    <PiGenderIntersexFill className={`w-6 h-6 ${item.gender === 1 ? "text-blue-500" : "text-rose-500"}`} />
+                    <PiGenderIntersexFill
+                      className={`w-6 h-6 ${
+                        item.gender === 1 ? "text-blue-500" : "text-rose-500"
+                      }`}
+                    />
                     <span className="text-gray-700">
                       {item.gender === 1 ? "Erkek" : "Kadın"}
                     </span>
@@ -167,7 +185,6 @@ const ProfilePage: React.FC = () => {
 };
 
 export default ProfilePage;
-
 
 // import React, { useEffect, useState } from "react";
 // import { useSearchParams } from "next/navigation";
@@ -276,7 +293,7 @@ export default ProfilePage;
 //                       {item.image_path}
 //                     </span>
 //                   </li>
-               
+
 //                 </ul>
 //               </div>
 //               <div className="bg-gray-50 px-6 py-4">

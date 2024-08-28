@@ -1,13 +1,13 @@
 import os
 from flask import Flask, Blueprint, request, jsonify, abort, send_from_directory
-from pymongo import MongoClient
+from pymongo import DESCENDING, MongoClient
 from services.system_monitoring import SystemMonitoring
 from services.personel_service import PersonelService
 from services.solr_search import SolrSearcher  # Ensure this is correctly imported
 from logger import configure_logging
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required
-from bson import ObjectId
+from bson import ObjectId, json_util
 from werkzeug.utils import secure_filename
 from config import XMLConfig
 
@@ -51,39 +51,34 @@ system_check = Blueprint("system_check", __name__)
 personel_bp = Blueprint("personel_bp", __name__)
 
 ############################## PERSONEL ##############################################
-@personel_bp.route("/personel/last_recog", methods=["POST"])
-def get_last_recog():
-    # Get start and end parameters from the request body
-    data = request.get_json()
-    personnel_id = str(data.get("id"))
-
-   
-    if not personnel_id:
+@personel_bp.route("/personel_last_recog/<id>", methods=["POST"])
+def get_last_recog(id):
+    # Validate personnel_id
+    if not id:
         return jsonify({"status": "error", "message": "Personnel ID is required"}), 400
 
-    # Query MongoDB for the last recognized times by personnel_id within the start and end range
-    last_recog = db['logs'].find_one(
-        {
-            "personnel_id": personnel_id,
-        },
-        sort=[("timestamp", -1)]
-    )
-    result = {}
-    if last_recog:
-        # Format the result
-        result = {
-            "timestamp": last_recog["timestamp"],
-            "label": last_recog["label"],
-            "similarity": last_recog["similarity"],
-            "emotion": last_recog["emotion"],
-            "gender": last_recog["gender"],
-            "age": last_recog["age"],
-            "image_path": last_recog["image_path"],
-            "personnel_id": last_recog["personnel_id"],
-            "camera": last_recog["camera"]
-        }
-    return jsonify(result), 200
+    if not ObjectId.is_valid(id):
+        return jsonify({"status": "error", "message": "'last_recog' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string"}), 400
 
+    try:
+        # Query MongoDB for the last recognized times by personnel_id, sorted by timestamp in descending order
+        last_recog = db['logs'].find(
+            {"personnel_id": id}
+        ).sort("timestamp", DESCENDING)
+
+        # Retrieve the first document from the cursor
+        last_recog_data = list(last_recog)  # Convert cursor to list to access elements
+        print(last_recog_data)
+        # Check if data is found
+        if not last_recog_data:
+            return jsonify({"status": "error", "message": "No recognition data found for the given Personnel ID"}), 404
+
+        return json_util.dumps(last_recog_data), 200
+
+    except Exception as e:
+        # Log the error for further investigation
+        print(f"An error occurred: {e}")
+        return jsonify({"status": "error", "message": "An internal server error occurred"}), 500
 
 @personel_bp.route("/personel", methods=["POST"])
 def add_personel():

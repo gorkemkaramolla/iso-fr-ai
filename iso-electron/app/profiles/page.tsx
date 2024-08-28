@@ -53,7 +53,7 @@ function ProfileContent() {
 export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className='flex w-full items-center justify-center'>
+      <div className='flex w-full items-start justify-center'>
         <ProfileContent />
         <RecogList/>
       </div>

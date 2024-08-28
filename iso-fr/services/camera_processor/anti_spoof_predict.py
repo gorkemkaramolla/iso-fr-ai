@@ -1,15 +1,12 @@
-## ------------- SCRFD Detection Model -------------
-
+# ----------------- Anti-Spoofing Prediction -SCRFD -2 -----------------
 import os
 import cv2
-import math
 import torch
 import numpy as np
 import torch.nn.functional as F
 from services.camera_processor.MiniFASNet import MiniFASNetV1, MiniFASNetV2, MiniFASNetV1SE, MiniFASNetV2SE
 import services.camera_processor.transform as trans
 from services.camera_processor.utility import get_kernel, parse_model_name
-from services.camera_processor.scrfd import SCRFD  # Make sure to import your SCRFD class
 
 MODEL_MAPPING = {
     'MiniFASNetV1': MiniFASNetV1,
@@ -17,17 +14,34 @@ MODEL_MAPPING = {
     'MiniFASNetV1SE': MiniFASNetV1SE,
     'MiniFASNetV2SE': MiniFASNetV2SE
 }
+import onnxruntime
+import os
+import numpy as np
+import cv2
+from services.camera_processor.scrfd import SCRFD  # Assuming SCRFD is implemented in scrfd.py
 
-
-class AntiSpoofPredict:
-    def __init__(self, anti_spoof_model_path, scrfd_model_path):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+class Detection:
+    def __init__(self, scrfd_model_path):
         # Initialize SCRFD with the given model path
         self.detector = SCRFD(model_file=scrfd_model_path)
-        self.detector.prepare(ctx_id=0)  # Use CUDA (ctx_id=0), set to -1 for CPU
-        self.anti_spoof_model_path = anti_spoof_model_path
-        self.model: MiniFASNetV2 = None
-        self._load_model(self.anti_spoof_model_path)
+        self.detector.prepare(0)  # Use CUDA (ctx_id=0), set to -1 for CPU
+        self.detector_confidence = 0.6
+
+    def get_bbox(self, img):
+        # Use SCRFD to detect faces and return the bounding box
+        bboxes, _ = self.detector.detect(img, input_size=(640, 640), thresh=self.detector_confidence)
+        if len(bboxes) == 0:
+            return None
+        
+        # Convert SCRFD bounding box format to (x, y, width, height)
+        bbox = bboxes[0]  # Take the first detected face
+        return [int(bbox[0]), int(bbox[1]), int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1])]
+
+class AntiSpoofPredict(Detection):
+    def __init__(self, device_id, scrfd_model_path):
+        # Initialize the Detection class with SCRFD
+        super(AntiSpoofPredict, self).__init__(scrfd_model_path)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _load_model(self, model_path):
         # Define and load the MiniFASNet model
@@ -41,31 +55,91 @@ class AntiSpoofPredict:
         if 'module.' in list(state_dict.keys())[0]:
             state_dict = {k[7:]: v for k, v in state_dict.items()}
         self.model.load_state_dict(state_dict)
-        self.model.eval()
 
-       
-
-    def get_bbox(self, img):
-        # Use SCRFD to detect faces and return the bounding box
-        bboxes, _ = self.detector.detect(img, input_size=(640, 640), thresh=0.5)
-        if len(bboxes) == 0:
-            return None
-        # Convert SCRFD bounding box format to (x, y, width, height)
-        bbox = bboxes[0]
-        return [int(bbox[0]), int(bbox[1]), int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1])]
-
-    def predict(self, img):
+    def predict(self, img, model_path):
         # Preprocess and predict using the MiniFASNet model
         test_transform = trans.Compose([
             trans.ToTensor(),
         ])
-                # Initialize MiniFASNet model
-      
         img = test_transform(img).unsqueeze(0).to(self.device)
+        self._load_model(model_path)
+        self.model.eval()
         with torch.no_grad():
             result = self.model.forward(img)
             result = F.softmax(result).cpu().numpy()
         return result
+
+
+
+
+# ## ------------- SCRFD Detection Model -------------
+
+# import os
+# import cv2
+# import math
+# import torch
+# import numpy as np
+# import torch.nn.functional as F
+# from MiniFASNet import MiniFASNetV1, MiniFASNetV2, MiniFASNetV1SE, MiniFASNetV2SE
+# import transform as trans
+# from utility import get_kernel, parse_model_name
+# from scrfd import SCRFD  # Make sure to import your SCRFD class
+
+# MODEL_MAPPING = {
+#     'MiniFASNetV1': MiniFASNetV1,
+#     'MiniFASNetV2': MiniFASNetV2,
+#     'MiniFASNetV1SE': MiniFASNetV1SE,
+#     'MiniFASNetV2SE': MiniFASNetV2SE
+# }
+
+
+# class AntiSpoofPredict:
+#     def __init__(self, anti_spoof_model_path, scrfd_model_path):
+#         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#         # Initialize SCRFD with the given model path
+#         self.detector = SCRFD(model_file=scrfd_model_path)
+#         self.detector.prepare(ctx_id=0)  # Use CUDA (ctx_id=0), set to -1 for CPU
+#         self.anti_spoof_model_path = anti_spoof_model_path
+#         self.model: MiniFASNetV2 = None
+#         self._load_model(self.anti_spoof_model_path)
+
+#     def _load_model(self, model_path):
+#         # Define and load the MiniFASNet model
+#         model_name = os.path.basename(model_path)
+#         h_input, w_input, model_type, _ = parse_model_name(model_name)
+#         self.kernel_size = get_kernel(h_input, w_input)
+#         self.model = MODEL_MAPPING[model_type](conv6_kernel=self.kernel_size).to(self.device)
+
+#         # Load model weights
+#         state_dict = torch.load(model_path, map_location=self.device)
+#         if 'module.' in list(state_dict.keys())[0]:
+#             state_dict = {k[7:]: v for k, v in state_dict.items()}
+#         self.model.load_state_dict(state_dict)
+#         self.model.eval()
+
+       
+
+#     def get_bbox(self, img):
+#         # Use SCRFD to detect faces and return the bounding box
+#         bboxes, _ = self.detector.detect(img, input_size=(640, 640), thresh=0.5)
+#         if len(bboxes) == 0:
+#             return None
+#         # Convert SCRFD bounding box format to (x, y, width, height)
+#         bbox = bboxes[0]
+#         return [int(bbox[0]), int(bbox[1]), int(bbox[2] - bbox[0]), int(bbox[3] - bbox[1])]
+
+#     def predict(self, img):
+#         # Preprocess and predict using the MiniFASNet model
+#         test_transform = trans.Compose([
+#             trans.ToTensor(),
+#         ])
+#                 # Initialize MiniFASNet model
+      
+#         img = test_transform(img).unsqueeze(0).to(self.device)
+#         with torch.no_grad():
+#             result = self.model.forward(img)
+#             result = F.softmax(result).cpu().numpy()
+#         return result
 
 
 
@@ -98,8 +172,8 @@ class AntiSpoofPredict:
 
 # class Detection:
 #     def __init__(self):
-#         caffemodel = os.path.abspath("../models/detection_model/Widerface-RetinaFace.caffemodel")
-#         deploy = os.path.abspath("../models/detection_model/deploy.prototxt")
+#         caffemodel = os.path.abspath("./iso-fr/services/models/detection_model/Widerface-RetinaFace.caffemodel")
+#         deploy = os.path.abspath("./iso-fr/services/models/detection_model/deploy.prototxt")
         
 #         if not os.path.exists(caffemodel):
 #             raise FileNotFoundError(f"Caffe model file not found: {caffemodel}")

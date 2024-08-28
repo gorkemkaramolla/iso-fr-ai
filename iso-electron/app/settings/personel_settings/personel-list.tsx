@@ -111,8 +111,8 @@
 //         accept: async () => {
 //           try {
 //             const response = await fetch(
-//               `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/${rowData._id}`,
-//               { method: 'DELETE' }
+//              `${process.env.NEXT_PUBLIC_UTILS_URL}/personel/${rowData._id}`,
+//              { method: 'DELETE' }
 //             );
 //             if (response.ok) {
 //               toastRef.current?.show({
@@ -514,7 +514,7 @@ export default function App() {
         >
           Yeni Personel Ekle
         </Button>
-        {selectedKeys !== 'all' && selectedKeys?.size > 0 && (
+        {(selectedKeys === 'all' || selectedKeys.size > 0) && (
           <Button color='danger' onPress={confirmDelete}>
             Seçilenleri Sil
             <Trash2 className='w-5' />
@@ -583,7 +583,13 @@ export default function App() {
         sortDescriptor={sortDescriptor}
         topContent={topContent}
         topContentPlacement='outside'
-        onSelectionChange={setSelectedKeys}
+        onSelectionChange={(keys) => {
+          if (keys === 'all') {
+            setSelectedKeys(new Set(filteredItems.map((item) => item._id)));
+          } else {
+            setSelectedKeys(keys);
+          }
+        }}
         onSortChange={setSortDescriptor}
       >
         <TableHeader

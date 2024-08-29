@@ -12,7 +12,7 @@ import WaveAudio from '@/components/sound/wave-audio';
 import useStore from '@/library/store';
 import { FaAngleUp } from 'react-icons/fa';
 import TextEditor from './editor';
-import { Changes, Segment, Transcript } from '@/types';
+import { Change, Segment, Transcript } from '@/types';
 import createApi from '@/utils/axios_instance';
 import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
 import { FaGripVertical } from 'react-icons/fa6';
@@ -27,9 +27,10 @@ interface Props {
 const Transcription: React.FC<Props> = ({ transcription }) => {
   const router = useRouter();
   const transcriptionHistoryRef = useRef<HTMLDivElement>(null);
-  const [changes, setChanges] = useState<Changes[]>([]);
+  const [changes, setChanges] = useState<Change[]>([]);
 
   const currentTime = useStore((state) => state.currentTime);
+  const setCurrentTime = useStore((state) => state.setCurrentTime);
   const transcriptionRef = useRef<HTMLDivElement>(null);
 
   const [rightScreen, setRightScreen] = useState<string | null>('history');
@@ -48,15 +49,15 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   const [skipAnimation, setSkipAnimation] = useState(true);
   const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
 
-  useEffect(() => {
-    // Populate the changes array based on transcription segments
-    const initialChanges = transcription.segments.map((segment) => ({
-      segmentId: segment.id,
-      initialText: segment.text,
-      currentText: segment.text,
-    }));
-    setChanges(initialChanges);
-  }, [transcription]);
+  // useEffect(() => {
+  //   // Populate the changes array based on transcription segments
+  //   const initialChanges = transcription.segments.map((segment) => ({
+  //     segmentId: segment.id,
+  //     initialText: segment.text,
+  //     currentText: segment.text,
+  //   }));
+  //   setChanges(initialChanges);
+  // }, [transcription]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -73,44 +74,41 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   }, []);
 
   useEffect(() => {
+    // if (saveState === 'saved') {
+    //   // Gather all changes into arrays
+    //   const segmentIds: string[] = [];
+    //   const oldTexts: string[] = [];
+    //   const newTexts: string[] = [];
+    //   changes.forEach((change) => {
+    //     const oldText = transcription.segments.find(
+    //       (segment: Segment) => segment.id === change.segmentId
+    //     )?.text;
+
+    //     if (oldText) {
+    //       segmentIds.push(change.segmentId);
+    //       oldTexts.push(oldText);
+    //       newTexts.push(change.currentText);
+    //     }
+    //   });
+    //   console.log(segmentIds, oldTexts, newTexts);
+    //   // If there are valid changes, handle them in bulk
+    //   if (segmentIds.length > 0) {
+    //     handleBulkTranscribedTextChange(segmentIds, oldTexts, newTexts);
+    //   }
+    // }
+
     if (saveState === 'saved') {
-      // Gather all changes into arrays
-      const segmentIds: string[] = [];
-      const oldTexts: string[] = [];
-      const newTexts: string[] = [];
-
-      changes.forEach((change) => {
-        const oldText = transcription.segments.find(
-          (segment: Segment) => segment.id === change.segmentId
-        )?.text;
-
-        if (oldText) {
-          segmentIds.push(change.segmentId);
-          oldTexts.push(oldText);
-          newTexts.push(change.currentText);
-        }
-      });
-
-      // If there are valid changes, handle them in bulk
-      if (segmentIds.length > 0) {
-        handleBulkTranscribedTextChange(segmentIds, oldTexts, newTexts);
-      }
+      handleBulkTranscribedTextChange(changes);
     }
   }, [saveState]);
 
-  const handleBulkTranscribedTextChange = async (
-    segmentIds: string[],
-    oldTexts: string[],
-    newTexts: string[]
-  ) => {
+  const handleBulkTranscribedTextChange = async (changes: Change[]) => {
     setSaveState('needs saving');
     try {
       const response = await api.post(
         `/rename_transcribed_text/${transcription._id}`,
         {
-          old_texts: oldTexts,
-          new_text: newTexts[0], // Assuming all changes have the same new text; otherwise, adjust this logic
-          segment_ids: segmentIds,
+          changes: changes,
         }
       );
 
@@ -273,6 +271,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
                 setChanges={setChanges}
                 speakerColors={speakerColors}
                 currentTime={currentTime}
+                setCurrentTime={setCurrentTime}
                 transcription={transcription}
                 editingRef={editingRef}
                 handleEditName={handleEditTranscriptionName}

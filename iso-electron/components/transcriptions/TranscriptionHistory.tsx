@@ -5,21 +5,20 @@ import Link from 'next/link';
 import createApi from '@/utils/axios_instance';
 import { formatDate } from '@/utils/formatDate';
 import ChatSideMenuSkeleton from '@/components/ui/transcription-history-skeleton';
-import CalendarComponent from '@/components/ui/calendar-component'; // Adjust the import path accordingly
+import CalendarComponent from '@/components/ui/calendar-component';
 import { Nullable } from 'primereact/ts-helpers';
 import { Transcript } from '@/types';
 import ExportButtons from './export-buttons';
 import { deleteTranscription } from '@/utils/transcription/transcription';
-import { set } from 'lodash';
 import { useRouter } from 'next/navigation';
 
 type TranscriptionHistoryProps = {
   activePageId?: string;
-  activeTranscriptionName: string;
-  setTranscriptionName: (name: string) => void;
+  activeTranscriptionName?: string; // Made optional
+  setTranscriptionName?: (name: string) => void; // Made optional
 };
 
-const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
+const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
   activePageId,
   activeTranscriptionName,
   setTranscriptionName,
@@ -35,11 +34,12 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   const pRef = useRef<HTMLParagraphElement | null>(null);
   const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
   const router = useRouter();
+
   const getTranscriptions = async () => {
     setLoading(true);
     try {
-      const storedResponses = await api.get('/transcriptions/', {});
-      const data: Transcript[] = await storedResponses.json();
+      const response = await api.get('/transcriptions/');
+      const data: Transcript[] = await response.json(); // Changed to response.data for Axios
       const sortedData = data.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -50,7 +50,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
         setSelectedDate(new Date(sortedData[0].created_at));
       }
     } catch (error) {
-      console.error('Transkriptler getirilemedi:', error);
+      console.error('Failed to fetch transcriptions:', error);
     } finally {
       setLoading(false);
     }
@@ -58,9 +58,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
 
   const handleEditName = async (new_name: string, transcription_id: string) => {
     try {
-      await api.put(`transcriptions/${transcription_id}`, {
-        name: new_name,
-      });
+      await api.put(`transcriptions/${transcription_id}`, { name: new_name });
     } catch (error) {
       console.error('Failed to rename transcription:', error);
     }
@@ -148,12 +146,11 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
       )
     );
 
-    // Update the name of the active transcription if applicable
-    if (activePageId === transcriptionId) {
+    // Update the name of the active transcription if applicable and setTranscriptionName is provided
+    if (activePageId === transcriptionId && setTranscriptionName) {
       setTranscriptionName(newName);
     }
 
-    // Handle renaming API call
     handleEditName(newName, transcriptionId || '');
   };
 
@@ -172,9 +169,11 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
       {loading ? (
         <ChatSideMenuSkeleton />
       ) : (
-        <div className='py-4 px-4 '>
-          <div className='w-full  '>
-            <h2 className='text-lg font-semibold mb-4 text-gray-700'>Geçmiş</h2>
+        <div className='py-4 px-4'>
+          <div className='w-full'>
+            <h2 className='text-lg font-semibold mb-4 text-gray-700'>
+              History
+            </h2>
             <CalendarComponent
               localStorageSaveName='transcriptionFilter'
               availableDates={availableDates}
@@ -185,7 +184,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
           <ul className='space-y-2 mt-4'>
             {currentItems.length === 0 ? (
               <p className='text-center text-sm text-gray-400'>
-                Henüz kayıt yok.
+                No records found.
               </p>
             ) : (
               currentItems.map((transcription) => (
@@ -208,7 +207,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                             isRenameOpen &&
                             renamingId === transcription._id
                           ) {
-                            e.preventDefault(); // Prevent link navigation when editing"
+                            e.preventDefault(); // Prevent link navigation when editing
                           }
                         }}
                       >
@@ -241,19 +240,17 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                           }}
                         >
                           {isRenameOpen && renamingId === transcription._id
-                            ? transcription._id === activePageId
-                              ? activeTranscriptionName
-                              : transcription.name
+                            ? activeTranscriptionName || transcription.name
                             : (transcription._id === activePageId
-                                ? activeTranscriptionName
+                                ? activeTranscriptionName || transcription.name
                                 : transcription.name
                               ).length > 45
                             ? `${(transcription._id === activePageId
-                                ? activeTranscriptionName
+                                ? activeTranscriptionName || transcription.name
                                 : transcription.name
                               ).slice(0, 45)}...`
                             : transcription._id === activePageId
-                            ? activeTranscriptionName
+                            ? activeTranscriptionName || transcription.name
                             : transcription.name}
                         </p>
 
@@ -300,7 +297,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                 disabled={currentPage === 1}
                 className='disabled:text-gray-400'
               >
-                Önceki
+                Previous
               </button>
               <span>
                 {currentPage} / {totalPages}
@@ -312,7 +309,7 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
                 disabled={currentPage === totalPages}
                 className='disabled:text-gray-400'
               >
-                Sonraki
+                Next
               </button>
             </div>
           )}
@@ -322,4 +319,4 @@ const ChatSideMenu: React.FC<TranscriptionHistoryProps> = ({
   );
 };
 
-export default ChatSideMenu;
+export default TranscriptionHistory;

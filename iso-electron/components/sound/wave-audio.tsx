@@ -32,16 +32,16 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
   isVisible,
   onHidden,
   viewMode,
-  skipAnimation = false, // Default to false
+  skipAnimation = false,
 }) => {
   const waveAudioRef = useRef<WaveSurfer | null>(null);
   const audioContainerRef = useRef<HTMLDivElement>(null);
   const timelineContainerRef = useRef<HTMLDivElement>(null);
-  const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const setStoreCurrentTime = useStore((state) => state.setCurrentTime);
-  const api = useMemo(() => createApi(process.env.NEXT_PUBLIC_DIARIZE_URL), []); // Create API instance with the base URL
+  const currentTime = useStore((state) => state.currentTime);
+  const api = useMemo(() => createApi(process.env.NEXT_PUBLIC_DIARIZE_URL), []);
 
   const customTimelinePlugin = useMemo(
     () =>
@@ -57,6 +57,8 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
 
   const handlePlayPause = () => {
     if (waveAudioRef.current) {
+      // Set the current time before playing
+      waveAudioRef.current.setTime(currentTime);
       waveAudioRef.current.playPause();
       setIsPlaying(waveAudioRef.current.isPlaying());
     }
@@ -83,15 +85,13 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
           let blobUrl: string;
 
           if (viewMode === 0 && audio_name) {
-            // Load audio from file picker
-            blobUrl = audio_name; // The file picker provides a blob URL directly
+            blobUrl = audio_name;
           } else if (viewMode === 1 && transcript_id) {
-            // Fetch audio from backend
             const response = await api.get(`/stream-audio/${transcript_id}`);
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const blob = await response.blob(); // Convert the response to a blob
+            const blob = await response.blob();
             blobUrl = URL.createObjectURL(blob);
           } else {
             throw new Error('Invalid viewMode or missing identifiers');
@@ -139,49 +139,48 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             if (!isMounted) return;
 
             const current = waveform.getCurrentTime();
-            setCurrentTime(current);
-            setStoreCurrentTime(current);
+            setStoreCurrentTime(current); // Use setStoreCurrentTime
 
             if (onTimeUpdate) {
-              onTimeUpdate(current); // Pass current time to parent
+              onTimeUpdate(current);
             }
           });
 
           waveform.on('seeking', (currentTime) => {
             if (!isMounted) return;
 
-            setCurrentTime(currentTime);
-            setStoreCurrentTime(currentTime);
+            // setStoreCurrentTime(currentTime); // Use setStoreCurrentTime
 
-            if (onTimeUpdate) {
-              onTimeUpdate(currentTime); // Pass current time to parent
-            }
+            // if (onTimeUpdate) {
+            //   onTimeUpdate(currentTime);
+            // }
           });
 
           waveform.on('interaction', (newTime) => {
             if (!isMounted) return;
 
-            setCurrentTime(newTime);
-            setStoreCurrentTime(newTime);
+            setStoreCurrentTime(newTime); // Use setStoreCurrentTime
 
             if (onTimeUpdate) {
-              onTimeUpdate(newTime); // Pass current time to parent
+              onTimeUpdate(newTime);
             }
           });
 
           waveform.on('play', () => {
+            if (onTimeUpdate) {
+              onTimeUpdate(currentTime);
+            }
             if (isMounted) setIsPlaying(true);
           });
 
           waveform.on('pause', () => {
-            console.log('paused');
             if (isMounted) setIsPlaying(false);
           });
 
           return () => {
             waveform.destroy();
             if (viewMode === 1) {
-              URL.revokeObjectURL(blobUrl); // Revoke object URL if fetched
+              URL.revokeObjectURL(blobUrl);
             }
           };
         } catch (error) {
@@ -209,7 +208,7 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     onTimeUpdate,
     api,
     speakerColors,
-    viewMode, // Ensure it re-loads on viewMode change
+    viewMode,
   ]);
 
   const formatTime = (seconds: number) => {
@@ -218,9 +217,13 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  if (viewMode === 0)
-    return (
-      <div className='flex  flex-col w-full py-4 mx-auto space-y-2'>
+  return (
+    <div
+      className={`flex flex-col w-full py-4 mx-auto space-y-2 ${
+        viewMode === 0 ? '' : 'px-12'
+      }`}
+    >
+      {viewMode === 0 ? (
         <div className='flex items-center space-x-4'>
           <div className='flex-grow'>
             <div ref={audioContainerRef} className='w-full h-16'></div>
@@ -255,68 +258,59 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             </div>
           </div>
         </div>
-      </div>
-    );
-  else
-    return (
-      <motion.div
-        initial={skipAnimation ? { y: 0 } : { y: 100, opacity: 0 }} // Skip animation if flag is set
-        animate={{ y: isVisible ? 0 : 100, opacity: 1 }} // Animate into view or out of view
-        exit={{ y: 100 }} // Move out of view when exiting
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-        onAnimationComplete={() => !isVisible && onHidden?.()} // Callback when animation completes
-        className='flex flex-col w-full    mx-auto space-y-2
-        
-        
-        '
-      >
-        <div className='flex items-center relative space-x-4 px-12 w-full py-4 rounded-xl glass-effect'>
-          <button
-            onClick={handleHidePlayer}
-            className='absolute left-5 bg-primary text-white p-1 cursor-pointer text-xl rounded-full'
-          >
-            <FaAngleDown />
-          </button>
-
-          <div className='flex-grow'>
-            <div ref={audioContainerRef} className='w-full'></div>
-            <div ref={timelineContainerRef} className='w-full'></div>
-          </div>
-
-          <div className='flex flex-col items-center space-y-2'>
-            <div className='text-indigo-800 font-medium text-sm'>
-              {formatTime(currentTime)} / {formatTime(duration)}
+      ) : (
+        <motion.div
+          initial={skipAnimation ? { y: 0 } : { y: 100, opacity: 0 }}
+          animate={{ y: isVisible ? 0 : 100, opacity: 1 }}
+          exit={{ y: 100 }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
+          onAnimationComplete={() => !isVisible && onHidden?.()}
+          className='flex flex-col w-full space-y-2'
+        >
+          <div className='flex items-center relative space-x-4 w-full py-4 rounded-xl glass-effect'>
+            <button
+              onClick={handleHidePlayer}
+              className='absolute left-5 bg-primary text-white p-1 cursor-pointer text-xl rounded-full'
+            >
+              <FaAngleDown />
+            </button>
+            <div className='flex-grow'>
+              <div ref={audioContainerRef} className='w-full'></div>
+              <div ref={timelineContainerRef} className='w-full'></div>
             </div>
-
-            <div className='flex items-center space-x-2'>
-              <button
-                onClick={handleSkipBackward}
-                className='text-indigo-600 hover:text-indigo-800 transition-colors'
-                aria-label='Skip Backward'
-              >
-                <FiSkipBack size={20} />
-              </button>
-
-              <button
-                onClick={handlePlayPause}
-                className='bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-colors'
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? <FiPause size={20} /> : <FiPlay size={20} />}
-              </button>
-
-              <button
-                onClick={handleSkipForward}
-                className='text-indigo-600 hover:text-indigo-800 transition-colors'
-                aria-label='Skip Forward'
-              >
-                <FiSkipForward size={20} />
-              </button>
+            <div className='flex flex-col items-center space-y-2'>
+              <div className='text-indigo-800 font-medium text-sm'>
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </div>
+              <div className='flex items-center space-x-2'>
+                <button
+                  onClick={handleSkipBackward}
+                  className='text-indigo-600 hover:text-indigo-800 transition-colors'
+                  aria-label='Skip Backward'
+                >
+                  <FiSkipBack size={20} />
+                </button>
+                <button
+                  onClick={handlePlayPause}
+                  className='bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-colors'
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? <FiPause size={20} /> : <FiPlay size={20} />}
+                </button>
+                <button
+                  onClick={handleSkipForward}
+                  className='text-indigo-600 hover:text-indigo-800 transition-colors'
+                  aria-label='Skip Forward'
+                >
+                  <FiSkipForward size={20} />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </motion.div>
-    );
+        </motion.div>
+      )}
+    </div>
+  );
 };
 
 export default WaveAudio;

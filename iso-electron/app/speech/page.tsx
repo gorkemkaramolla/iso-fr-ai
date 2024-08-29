@@ -1,22 +1,21 @@
 'use client';
-import WhisperUpload from '@/components/sound/WhisperUpload';
-import TranscriptionHistory from '@/components/transcriptions/TranscriptionHistory';
+
 import React, { useEffect, useState } from 'react';
 import { PanelGroup, PanelResizeHandle, Panel } from 'react-resizable-panels';
+import WhisperUpload from '@/components/sound/WhisperUpload';
+import TranscriptionHistory from '@/components/transcriptions/TranscriptionHistory';
 import useStore from '@/library/store';
 import { GripVertical } from 'lucide-react';
 import createApi from '@/utils/axios_instance';
 
-interface Props {}
-
-const Speech: React.FC<Props> = () => {
+const Speech: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const checkProcessIsRunning = async () => {
     try {
       const api = createApi(`${process.env.NEXT_PUBLIC_DIARIZE_URL}`);
       const response = await api.get('/check-process/');
-      const data = await response.json();
+      const data = await response.json(); // Adjust based on Axios response
       setIsProcessing(data.processing); // Update this line to access the 'processing' field
       console.log(data);
     } catch (error) {
@@ -46,8 +45,8 @@ const Speech: React.FC<Props> = () => {
             </div>
           </PanelResizeHandle>
           <Panel defaultSize={25} minSize={20} className='z-0 md:block hidden'>
-            <TranscriptionHistory />
-            <span className=' left-0'></span>
+            {/* If no activeTranscriptionName and setTranscriptionName are needed, you can omit them */}
+            <TranscriptionHistory activePageId='someActivePageId' />
           </Panel>
         </PanelGroup>
       </div>

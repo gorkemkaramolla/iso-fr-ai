@@ -357,18 +357,14 @@ def rename_segments_route(transcription_id):
 @jwt_required()
 def rename_transcribed_text_route(transcription_id):
     data = request.json
-    old_texts = data.get("old_texts")
-    new_text = data.get("new_text")
-    segment_ids = data.get("segment_ids")
+    changes = data.get("changes")
 
-    if segment_ids:
-        result = diarization_processor.rename_selected_texts(
-            transcription_id, old_texts, new_text, segment_ids
+    if changes:
+        result = diarization_processor.rename_transcribed_text(
+            transcription_id, changes
         )
     else:
-        result = diarization_processor.rename_transcribed_text(
-            transcription_id, old_texts, new_text
-        )
+        return jsonify({"status": "no changes made"}), 204
 
     if result["status"] == "success":
         return jsonify(result), 200

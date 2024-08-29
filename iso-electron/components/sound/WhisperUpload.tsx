@@ -41,7 +41,6 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
-  const access_token = useStore((state) => state.accessToken);
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files ? event.target.files[0] : null;

@@ -24,7 +24,7 @@ interface ApiResponse {
   transcription_id: String;
 }
 
-interface Changes {
+interface Change {
   segmentId: string;
   initialText: string;
   currentText: string;

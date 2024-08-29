@@ -46,28 +46,6 @@ class SpeakerDiarizationProcessor:
         else:
             return {"status": "no changes made"}
 
-    # def rename_transcribed_text(self, transcription_id, old_texts, new_text):
-    #     collection = self.mongo_db["transcripts"]
-
-    #     # Update transcribed text within segments and the full_text
-    #     update_result = collection.update_many(
-    #         {
-    #             "_id": ObjectId(transcription_id),
-    #             "segments.text": {"$in": old_texts}
-    #         },
-    #         {
-    #             "$set": {
-    #                 "segments.$[].text": new_text,
-    #                 "text": self.replace_text_in_full_text(collection, transcription_id, old_texts, new_text)
-    #             }
-    #         }
-    #     )
-
-    #     if update_result.modified_count > 0:
-    #         return {"status": "success"}
-    #     else:
-    #         return {"status": "no changes made"}
-
     def rename_selected_segments(
         self, transcription_id, old_names, new_name, segment_ids
     ):
@@ -94,35 +72,32 @@ class SpeakerDiarizationProcessor:
         else:
             return {"status": "no changes made"}
 
-    def rename_transcribed_text(
-        self, transcription_id, old_texts, new_text, segment_ids
-    ):
+    def rename_transcribed_text(self, transcription_id, changes):
         collection = self.mongo_db["transcripts"]
+        updates = 0
 
-        # Convert segment_ids to integers
-        segment_ids = [int(segment_id) for segment_id in segment_ids]
+        for change in changes:
+            segment_id = int(change["segmentId"])
+            current_text = change["currentText"]
 
-        # Update transcribed text within segments and the full_text
-        update_result = collection.update_many(
-            {
-                "_id": ObjectId(transcription_id),
-                "segments.id": {"$in": segment_ids},
-                "segments.text": {"$in": old_texts},
-            },
-            {
-                "$set": {
-                    "segments.$[elem].text": new_text,
-                    "text": self.replace_text_in_full_text(
-                        collection, transcription_id, old_texts, new_text
-                    ),
-                }
-            },
-            array_filters=[
-                {"elem.id": {"$in": segment_ids}, "elem.text": {"$in": old_texts}}
-            ],
-        )
+            # Update the specific segment's text field based on the segment ID
+            update_result = collection.update_one(
+                {"_id": ObjectId(transcription_id), "segments.id": segment_id},
+                {"$set": {"segments.$.text": current_text}},
+            )
 
-        if update_result.modified_count > 0:
+            # Check if the segment was updated successfully
+            self.logger.info(
+                f"Update result: Matched {update_result.matched_count}, Modified {update_result.modified_count} for Segment ID {segment_id}"
+            )
+
+            updates += update_result.modified_count
+
+        # Log the total number of segments updated
+        self.logger.info(f"Total segments updated: {updates}")
+
+        # Return the appropriate response based on the updates made
+        if updates > 0:
             return {"status": "success"}
         else:
             return {"status": "no changes made"}

@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
-import { Changes, Segment, Transcript } from '@/types';
+import { Change, Segment, Transcript } from '@/types';
 import { Ellipsis } from 'lucide-react';
 import { Menu } from 'primereact/menu';
 import ExportButtons from './export-buttons';
@@ -44,6 +44,7 @@ interface TextEditorProps {
   transcription: Transcript | null;
   editingRef: RefObject<HTMLTextAreaElement>;
   handleEditName?: (newName: string) => void;
+  // handleColorChange?: (speaker: string, color: string) => void;
   handleDeleteTranscription?: () => void;
   handleDeleteSelected?: (segmentId: string) => void;
   handleSpeakerNameChange?: (
@@ -59,9 +60,10 @@ interface TextEditorProps {
   transcriptionRef: RefObject<HTMLDivElement>;
   isEditing: boolean;
   currentTime: number;
-  speakerColors: Record<string, string>;
-  setChanges: React.Dispatch<React.SetStateAction<Changes[]>>;
-  changes: Changes[];
+  setCurrentTime: (currentTime: number) => void;
+  // speakerColors: Record<string, string>;
+  setChanges: React.Dispatch<React.SetStateAction<Change[]>>;
+  changes: Change[];
   saveState: 'no changes made' | 'needs saving' | 'saved' | 'save failed';
   setSaveState: React.Dispatch<
     React.SetStateAction<
@@ -79,8 +81,9 @@ interface MenuState {
 const TextEditor: React.FC<TextEditorProps> = ({
   transcription,
   setChanges,
-  speakerColors,
+  // speakerColors,
   editingRef,
+  // handleColorChange,
   changes,
   transcriptionName,
   setTranscriptionName,
@@ -91,6 +94,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   transcriptionRef,
   handleDeleteTranscription = () => {},
   currentTime,
+  setCurrentTime,
   saveState,
   setSaveState,
 }) => {
@@ -109,13 +113,25 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
   const [isTranscriptionNameEditing, setIsTranscriptionNameEditing] =
     useState(false);
-
+  const [activeSegment, setActiveSegment] = useState<string | null>(null);
   const spanRef = useRef<HTMLSpanElement>(null);
 
   const [segments, setSegments] = useState<Segment[]>(
     transcription?.segments || []
   );
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
+  const [speakerColors, setSpeakerColors] = useState<Record<string, string>>(
+    () => {
+      // Initialize from localStorage
+      const storedColors = localStorage.getItem('speakerColors');
+      return storedColors ? JSON.parse(storedColors) : {};
+    }
+  );
+  useEffect(() => {
+    // Save to localStorage whenever speakerColors change
+    localStorage.setItem('speakerColors', JSON.stringify(speakerColors));
+  }, [speakerColors]);
+
   const [showDialog, setShowDialog] = useState(false);
   const [showSingleRenameDialog, setShowSingleRenameDialog] = useState(false);
   const [dialogData, setDialogData] = useState<{
@@ -136,15 +152,15 @@ const TextEditor: React.FC<TextEditorProps> = ({
     updateUniqueSpeakers(transcription?.segments || []);
   }, [transcription]);
 
-  useEffect(() => {
-    setChanges(
-      segments.map((segment) => ({
-        segmentId: segment.id,
-        initialText: segment.text,
-        currentText: segment.text,
-      }))
-    );
-  }, [segments]);
+  // useEffect(() => {
+  //   setChanges(
+  //     segments.map((segment) => ({
+  //       segmentId: segment.id,
+  //       initialText: segment.text,
+  //       currentText: segment.text,
+  //     }))
+  //   );
+  // }, [segments]);
 
   useEffect(() => {
     localStorage.setItem('viewMode', viewMode);
@@ -155,6 +171,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
       new Set(segments.map((segment) => segment.speaker))
     );
     setUniqueSpeakers(speakers);
+  };
+  const handleColorChange = (speaker: string, color: string) => {
+    setSpeakerColors((prevColors) => ({
+      ...prevColors,
+      [speaker]: color,
+    }));
+    setSaveState('needs saving');
   };
 
   const handleNameChange = useCallback(
@@ -192,22 +215,50 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   const handleFocusSegment = useCallback((segmentId: string) => {
     const segmentText = segmentRefs.current[segmentId]?.innerText || '';
-    setChanges((prevChanges: Changes[]) => [
-      ...prevChanges,
-      { segmentId, initialText: segmentText, currentText: segmentText },
-    ]);
+    setChanges((prevChanges: Change[]) => {
+      const existingIndex = prevChanges.findIndex(
+        (change) => change.segmentId === segmentId
+      );
+      if (existingIndex !== -1) {
+        // Update the existing change only if the current text is different from the initial text
+        const updatedChanges = [...prevChanges];
+        if (updatedChanges[existingIndex].initialText !== segmentText) {
+          updatedChanges[existingIndex].currentText = segmentText;
+        }
+        return updatedChanges;
+      }
+      // Add a new change if not found
+      return [
+        ...prevChanges,
+        { segmentId, initialText: segmentText, currentText: segmentText },
+      ];
+    });
   }, []);
 
   const handleInputSegment = useCallback(
     (segmentId: string) => {
       const currentText = segmentRefs.current[segmentId]?.innerText || '';
-      setChanges((prevChanges: Changes[]) =>
-        prevChanges.map((change) =>
-          change.segmentId === segmentId ? { ...change, currentText } : change
-        )
-      );
+      setChanges((prevChanges: Change[]) => {
+        const existingIndex = prevChanges.findIndex(
+          (change) => change.segmentId === segmentId
+        );
+        if (existingIndex !== -1) {
+          // Update the existing change
+          const updatedChanges = [...prevChanges];
+          updatedChanges[existingIndex].currentText = currentText;
+          return updatedChanges;
+        }
+
+        // If no existing change, add a new one
+        return [
+          ...prevChanges,
+          { segmentId, initialText: currentText, currentText: currentText },
+        ];
+      });
+
+      // Check for differences to set the save state correctly
       const initialText =
-        changes.find((change: Changes) => change.segmentId === segmentId)
+        changes.find((change: Change) => change.segmentId === segmentId)
           ?.initialText || '';
 
       if (currentText !== initialText) {
@@ -246,12 +297,15 @@ const TextEditor: React.FC<TextEditorProps> = ({
   }, [saveChanges]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      saveChanges();
-    }, 30000);
+    console.log(changes);
+  }, [changes]);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     saveChanges();
+  //   }, 30000);
 
-    return () => clearInterval(interval);
-  }, [saveChanges]);
+  //   return () => clearInterval(interval);
+  // }, [saveChanges]);
 
   const handleSpeakerClick = (speaker: string) => {
     setDialogData({ oldName: speaker, newName: '' });
@@ -363,6 +417,11 @@ const TextEditor: React.FC<TextEditorProps> = ({
     updateUniqueSpeakers(updatedSegments);
     setSaveState('needs saving');
   };
+  useEffect(() => {
+    if (activeSegment) {
+      setCurrentTime(segments.find((s) => s.id === activeSegment)?.start || 0);
+    }
+  }, [activeSegment, segments]);
 
   const handleEditSegment = useCallback(() => {
     if (menuState.segmentId) {
@@ -517,10 +576,36 @@ const TextEditor: React.FC<TextEditorProps> = ({
             >
               {uniqueSpeakers.map((speaker) => (
                 <li key={speaker}>
-                  <a onClick={() => handleSpeakerClick(speaker)}>
-                    <User size={16} />
-                    {speaker}
-                  </a>
+                  <button
+                    onClick={(e) => {
+                      if (
+                        (e.target as HTMLElement).tagName.toLowerCase() !==
+                        'input'
+                      ) {
+                        handleSpeakerClick(speaker);
+                      }
+                    }}
+                    className='flex items-center justify-between'
+                  >
+                    <div className='flex items-center'>
+                      <User size={16} />
+                      <span className='ml-2'>{speaker}</span>
+                    </div>
+                    <input
+                      type='color'
+                      value={
+                        JSON.parse(
+                          localStorage.getItem('speakerColors') || '{}'
+                        )[speaker] ||
+                        speakerColors[speaker] ||
+                        '#000000'
+                      }
+                      onChange={(e) =>
+                        handleColorChange?.(speaker, e.target.value)
+                      }
+                      className='w-6 h-6 border-none cursor-pointer'
+                    />
+                  </button>
                 </li>
               ))}
             </ul>
@@ -557,7 +642,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
           {segments.map((segment, index) => {
             const isHighlighted =
               currentTime >= segment.start && currentTime <= segment.end;
-            const isHovered = hoveredSegmentId === segment.id;
+
+            // const isHovered = hoveredSegmentId === segment.id;
 
             return (
               <motion.div
@@ -576,21 +662,29 @@ const TextEditor: React.FC<TextEditorProps> = ({
                 <span
                   className={`badge ${
                     menuState.segmentId === segment.id
-                      ? 'bg-neutral text-white'
-                      : 'hover:bg-neutral hover:text-white'
-                  } transition-all duration-200 ease-in-out badge-sm badge-outline cursor-pointer mr-1`}
+                      ? 'bg-primary text-white'
+                      : 'hover:bg-primary hover:text-white'
+                  } transition-all duration-200 ease-in-out badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded`}
                   onClick={(e) => showSegmentMenu(e, segment.id)}
                   onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
                   onMouseLeave={handleBadgeMouseLeave}
                 >
-                  {segment.speaker}
+                  Konuşmacı : {segment.speaker}
                 </span>
                 <span
-                  className='badge badge-sm badge-outline cursor-pointer mr-1'
+                  className={` ${
+                    activeSegment === segment.id
+                      ? 'bg-primary text-white'
+                      : 'hover:bg-primary hover:text-white'
+                  } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600 bg-indigo-100 px-2 py-2 rounded`}
                   onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
                   onMouseLeave={handleBadgeMouseLeave}
+                  onClick={() => {
+                    setCurrentTime(segment.start);
+                    setActiveSegment(segment.id);
+                  }}
                 >
-                  {segment.start.toFixed(2)}s
+                  Başlangıç : {segment.start.toFixed(2)}s
                 </span>
                 <span
                   ref={(el) => {
@@ -598,9 +692,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   }}
                   contentEditable
                   style={{
-                    backgroundColor: isHovered
-                      ? 'rgba(191, 255, 0, 0.2)'
-                      : isHighlighted
+                    backgroundColor: isHighlighted
                       ? speakerColors[segment.speaker]
                       : 'transparent',
                   }}
@@ -609,6 +701,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
     ${viewMode === 'list' ? 'block mt-1' : 'inline'}
     focus:outline-none focus:bg-red-50 rounded-xl 
     p-1 transition-colors duration-200
+    
   `}
                   onFocus={() => handleFocusSegment(segment.id)}
                   onInput={() => handleInputSegment(segment.id)}

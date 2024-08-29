@@ -104,28 +104,7 @@ const SecurityDashboard: React.FC = () => {
       ],
     });
     const formatDate = (timestamp: number) => {
-      const date = new Date(timestamp);
-      return `${date.toLocaleString('default', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      })} (${timestamp})`;
-    };
-
-    const formatDateString = (timestamp: number) => {
-      const date = new Date(timestamp);
-      return date.toLocaleString('tr_TR', {
-        year: '2-digit',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-      });
+      return new Date(timestamp).toLocaleString("tr-TR");
     };
 
     const topDetections = Object.values(

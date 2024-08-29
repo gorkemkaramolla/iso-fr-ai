@@ -24,6 +24,7 @@ class XMLConfig:
         self.SUPPORTS_CREDENTIALS = auth_config.find('cors').get('supports_credentials').lower() == 'true'
 
         # Initialize service-specific attributes with default values
+        self.ANTI_SPOOF= False
         self.FLASK_PORT = None
         self.FLASK_HOST = None
         self.FLASK_DEBUG = False
@@ -56,6 +57,7 @@ class XMLConfig:
 
                 # Specific to face_recognition_service
                 if service_name == 'face_recognition_service':
+                    self.ANTI_SPOOF = service_config.get('anti_spoof', 'false').lower() == 'true'
                     self.VIDEO_FOLDER = self._safe_find_text(service_config, 'video_folder')
                     self.BASE_RECOG_DIR = self._safe_find_text(service_config, 'base_recog_dir')
                     self.FACE_IMAGES_PATH = self._safe_find_text(service_config, 'face_images_path')

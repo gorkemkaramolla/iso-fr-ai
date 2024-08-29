@@ -270,7 +270,7 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
                   Düzenlemek için tıkla
                 </Link>
               </div>
-              <ul className='divide-y  divide-gray-200'>
+              <ul className='divide-y overflow-y-scroll divide-gray-200'>
                 {response.transcription.segments.map((segment, index) => (
                   <li
                     key={index}

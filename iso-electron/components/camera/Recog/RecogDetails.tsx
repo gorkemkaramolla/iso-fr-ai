@@ -31,10 +31,10 @@ const RecogDetails: React.FC<RecogDetailsProps> = ({ selectedFace }) => {
           />
           <InfoItem label='Benzerlik' value={selectedFace.similarity} />
           <InfoItem label='Duygu' value={selectedFace.emotion} />
-          <InfoItem
+          {/* <InfoItem
             label='Cinsiyet'
             value={selectedFace.gender == 1 ? 'Erkek' : 'Kadın'}
-          />
+          /> */}
           <InfoItem label='Yaş' value={selectedFace.age} />
           <InfoItem label='Fotoğraf Adresi' value={selectedFace.image_path} />
         </div>

@@ -60,7 +60,7 @@ logs_collection = db[xml_config.LOGGING_COLLECTION if xml_config.LOGGING_COLLECT
 camera_collection = db[xml_config.CAMERA_COLLECTION if xml_config.CAMERA_COLLECTION else 'cameras']
 
 # Create instances
-stream_instance = Stream(device= xml_config.DEVICE if xml_config.DEVICE else 'cpu')
+stream_instance = Stream(device= xml_config.DEVICE if xml_config.DEVICE else 'cpu', anti_spoof=xml_config.ANTI_SPOOF)
 logger = configure_logging()
 
 # Setup Blueprint
@@ -136,6 +136,7 @@ def update_camera_url(label):
 def stream(stream_id):
     is_recording = request.args.get("is_recording") == "true"
     camera = request.args.get("camera")
+    camera_name = request.args.get("cameraName")
     quality = request.args.get("streamProfile")
 
     print(f"------------- Route-Camera: {camera}")
@@ -159,6 +160,7 @@ def stream(stream_id):
         stream_instance.recog_face_ip_cam(
             stream_id,
             camera=new_camera_url,
+            camera_name=camera_name,
             is_recording=is_recording,
         ),
         mimetype="multipart/x-mixed-replace; boundary=frame",
@@ -201,6 +203,7 @@ def on_leave(data):
 def handle_video_frames(data):
     room = data['room']
     frames_data = data['frames']
+    camera_name = data['cameraName']
     is_recording = data['isRecording']
 
     processed_frames = []
@@ -223,7 +226,7 @@ def handle_video_frames(data):
         nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        processed_image = stream_instance.recog_face_local_cam(img, is_recording)
+        processed_image = stream_instance.recog_face_local_cam(img, camera_name, is_recording)
         processed_frames.append(processed_image)
 
     emit('processed_frames', {'frames': processed_frames}, room=room)

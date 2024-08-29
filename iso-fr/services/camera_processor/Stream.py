@@ -31,7 +31,7 @@ os.environ.pop('ALL_PROXY', None)
 # from flask import jsonify
 # import requests
 class Stream:
-    def __init__(self, device: str = "cuda") -> None:
+    def __init__(self, device: str = "cuda", anti_spoof: bool = False) -> None:
         self.device = torch.device(device)
         onnxruntime.set_default_logger_severity(3)  # 3: INFO, 2: WARNING, 1: ERROR
         onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models/buffalo_l"))
@@ -44,7 +44,7 @@ class Stream:
         
         # Face Recognition
         self.last_recognitions: Dict[str, datetime.datetime] = {}
-        self.similarity_threshold: float = 0.45
+        self.similarity_threshold: float = 0.35
         face_rec_model = os.path.join(onnx_models_dir, "w600k_r50.onnx")
         self.face_recognizer = ArcFaceONNX(face_rec_model)
         self.face_recognizer.prepare(0 if device == "cuda" else -1)
@@ -60,9 +60,11 @@ class Stream:
 
         # Anti-Spoofing
         # anti_spoofing_model_path="../models/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
-        self.anti_spoofing_model_path = "/app/services/models/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
-        self.anti_spoof_predictor = AntiSpoofPredict(self.anti_spoofing_model_path, face_detector_model)
-        self.image_cropper = CropImage()
+        self.anti_spoof = anti_spoof
+        if self.anti_spoof:
+            self.anti_spoofing_model_path = "/app/services/models/anti_spoof_models/"
+            self.anti_spoof_predictor = AntiSpoofPredict(self.anti_spoofing_model_path, face_detector_model)
+            self.image_cropper = CropImage()
         # MongoDB
         client = MongoClient(os.getenv("MONGO_DB_URI"))
         self.db = client["isoai"]
@@ -316,7 +318,7 @@ class Stream:
             print(f"No image found for {new_name} with extensions {extensions}")
 
     def _save_and_log_face(
-        self, face_image: np.ndarray | None,  label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool, camera: str = None, personnel_id: str = None
+        self, face_image: np.ndarray | None,  label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool, camera_name: str = None, personnel_id: str = None
     ) -> str:
         if face_image is None:
             print("Error: The face image is empty and cannot be saved.")
@@ -364,7 +366,7 @@ class Stream:
             "gender": gender,
             "age": age,
             "image_path": file_path,
-            "camera": camera,
+            "camera": camera_name,
             "personnel_id": personnel_id
         }
 
@@ -374,14 +376,15 @@ class Stream:
 
         return file_path
     def _get_attributes(
-        self, frame: np.ndarray, camera: str = None
+        self, frame: np.ndarray, camera_name: str = None, spoofing: bool = False
     ) -> Tuple[
         List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
     ]:
         if frame is None or len(frame.shape) < 2:
             return [], [], [], [], [], []
 
-        bboxes, kpss = self.face_detector.detect(frame, input_size=(640, 640), max_num=49, thresh=0.75)
+        # Detect faces using SCRFD
+        bboxes, kpss = self.face_detector.detect(frame, input_size=(640, 640), max_num=49, thresh=0.7)
         if len(bboxes) == 0:
             return [], [], [], [], [], []
 
@@ -390,21 +393,17 @@ class Stream:
         for idx, kps in enumerate(kpss):
             bbox = bboxes[idx]
             x1, y1, x2, y2 = map(int, bbox[:4])
-            face_image = frame[y1:y2, x1:x2]
 
             # Perform anti-spoofing check
-            spoofing_label, spoofing_score = self._perform_anti_spoofing_check(frame, bbox)
-            # if spoofing_label == 0:  # Fake face detected, draw red border
-            #     color = (0, 0, 255)  # Red color in BGR
-            # else:  # Real face detected, draw green border
-            #     color = (0, 255, 0)  # Green color in BGR
+            if self.anti_spoof:
+                processed_frame, spoofing_label, spoofing_score, _ = self._perform_anti_spoofing_check(frame, bbox)
 
-            # # Draw the border around the face
-            # cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-
-            # If the face is fake, skip further processing
-            if spoofing_label == 0:
-                continue
+                # If the face is detected as fake, continue to the next detected face
+                if spoofing_label != 1 or spoofing_score < 0.5:
+                    # print(f"Fake face detected with score: {spoofing_score:.2f}, skipping further processing.")
+                    # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Draw red box
+                    frame = processed_frame
+                    continue
 
             # Perform face recognition
             embedding = self.face_recognizer.get(frame, kps)
@@ -413,6 +412,8 @@ class Stream:
             label = "Unknown"
             is_known = False
             personnel_id = None
+
+            # Match the face embedding with the database
             for id, db_embedding in self.database.items():
                 dist = np.linalg.norm(db_embedding - embedding)
                 if dist < min_dist:
@@ -438,24 +439,104 @@ class Stream:
                     label = best_match
                     is_known = False
 
-            # if not is_known:
-            #     label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
-            #     personnel_id = None
-            #     self.database[label] = embedding
-
+            # Append the results to the lists
             labels.append(label)
             sims.append(sim)
 
+            # Get gender and age
             gender, age = self.gender_age_detector.get(frame, face=bbox)
             ages.append(age)
             genders.append("M" if gender == 1 else "F")
 
+            # Detect emotion
+            # face_image = frame[y1:y2, x1:x2]
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Green color with thickness 2
+            # cv2.putText(frame, f"{label} ({sim:.2f})", (x1, y1 - 5), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0))
+            face_image = frame
+
             emotion = self.emotion_detector.detect_emotion_from_array(face_image)
             emotions.append(emotion)
 
-            self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera, personnel_id)
+            # Save and log the recognized face
+            self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera_name, personnel_id)
 
         return bboxes, labels, sims, emotions, genders, ages
+
+    # def _get_attributes(
+    #     self, frame: np.ndarray, camera: str = None
+    # ) -> Tuple[
+    #     List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
+    # ]:
+    #     if frame is None or len(frame.shape) < 2:
+    #         return [], [], [], [], [], []
+
+    #     bboxes, kpss = self.face_detector.detect(frame, input_size=(640, 640), max_num=49, thresh=0.75)
+    #     if len(bboxes) == 0:
+    #         return [], [], [], [], [], []
+
+    #     labels, sims, emotions, ages, genders = [], [], [], [], []
+
+    #     for idx, kps in enumerate(kpss):
+    #         bbox = bboxes[idx]
+    #         x1, y1, x2, y2 = map(int, bbox[:4])
+    #         face_image = frame[y1:y2, x1:x2]
+
+    #         # Perform anti-spoofing check
+    #         spoofing_label, spoofing_score = self._perform_anti_spoofing_check(frame, bbox)
+
+    #         if spoofing_label != 1:  # Fake face detected, skip this face
+    #             continue
+
+    #         # Perform face recognition
+    #         embedding = self.face_recognizer.get(frame, kps)
+    #         min_dist = float("inf")
+    #         best_match = None
+    #         label = "Unknown"
+    #         is_known = False
+    #         personnel_id = None
+    #         for id, db_embedding in self.database.items():
+    #             dist = np.linalg.norm(db_embedding - embedding)
+    #             if dist < min_dist:
+    #                 min_dist = dist
+    #                 best_match = id
+
+    #         sim = self.face_recognizer.compute_sim(embedding, self.database.get(best_match, np.zeros_like(embedding)))
+    #         if sim >= self.similarity_threshold:
+    #             try:
+    #                 personnel_id = best_match
+    #                 url = f"http://utils_service:5004/personel/{personnel_id}"
+    #                 response = requests.get(url, proxies={"http": None, "https": None})
+    #                 response.raise_for_status()
+    #                 person = response.json()
+    #                 if person and "name" in person and "lastname" in person:
+    #                     label = f"{person['name']} {person['lastname']}"
+    #                     is_known = True
+    #                 else:
+    #                     label = best_match
+    #                     is_known = False
+    #             except requests.exceptions.RequestException as e:
+    #                 print(f"An error occurred while fetching personnel details: {e}")
+    #                 label = best_match
+    #                 is_known = False
+
+    #         # if not is_known:
+    #         #     label = f"x-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    #         #     personnel_id = None
+    #         #     self.database[label] = embedding
+
+    #         labels.append(label)
+    #         sims.append(sim)
+
+    #         gender, age = self.gender_age_detector.get(frame, face=bbox)
+    #         ages.append(age)
+    #         genders.append("M" if gender == 1 else "F")
+
+    #         emotion = self.emotion_detector.detect_emotion_from_array(face_image)
+    #         emotions.append(emotion)
+
+    #         self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera, personnel_id)
+
+    #     return bboxes, labels, sims, emotions, genders, ages
 
     # def _get_attributes(
     #     self, frame: np.ndarray, camera: str = None
@@ -532,32 +613,94 @@ class Stream:
 
     #     return bboxes, labels, sims, emotions, genders, ages
 
-
     def _perform_anti_spoofing_check(self, frame, bbox):
-        # Crop face image using the bbox
+        # Extract coordinates from the bounding box
         x1, y1, x2, y2 = map(int, bbox[:4])
         face_image = frame[y1:y2, x1:x2]
 
-        # Prepare the input for the anti-spoofing model
-        h_input, w_input, model_type, scale = parse_model_name(os.path.basename(self.anti_spoofing_model_path))
-        param = {
-            "org_img": frame,
-            "bbox": bbox,
-            "scale": scale,
-            "out_w": w_input,
-            "out_h": h_input,
-            "crop": True,
-        }
-        if scale is None:
-            param["crop"] = False
-        img = self.image_cropper.crop(**param)
+        # Check if no face detected in the cropped area
+        if face_image is None or face_image.size == 0:
+            print("No face detected.")
+            return frame, None, None, 0
 
-        # Perform prediction using the anti-spoofing model
-        prediction = self.anti_spoof_predictor.predict(img)
+        prediction = np.zeros((1, 3))
+        test_speed = 0
+
+        # Iterate through each anti-spoofing model in the directory
+        model_dir = os.path.dirname(self.anti_spoofing_model_path)
+        for model_name in os.listdir(model_dir):
+            model_path = os.path.join(model_dir, model_name)
+            h_input, w_input, model_type, scale = parse_model_name(model_name)
+            param = {
+                "org_img": frame,
+                "bbox": bbox,
+                "scale": scale,
+                "out_w": w_input,
+                "out_h": h_input,
+                "crop": True,
+            }
+            if scale is None:
+                param["crop"] = False
+            
+            # Crop the face image using the specified parameters
+            img = self.image_cropper.crop(**param)
+            
+            # Start the timer and run the prediction
+            start = time.time()
+            prediction += self.anti_spoof_predictor.predict(img, model_path)
+            test_speed += time.time() - start
+
+        # Determine the label and score from the accumulated predictions
         label = np.argmax(prediction)
-        value = prediction[0][label]
+        value = prediction[0][label] / 2  # Adjust score if necessary
+        
+        # Set text and color based on prediction results
+        if label == 1:
+            result_text = None
+            color = (0, 255, 0)
+        else:
+            result_text = "F-Score: {:.2f}".format(value)
+            color = (0, 0, 255)  # Red for fake face
 
-        return label, value  # label = 1: real, label = 0: fake
+        # Draw the bounding box and label on the frame
+        # cv2.rectangle(
+        #     frame,
+        #     (x1, y1),
+        #     (x2, y2),
+        #     color, 2)
+        cv2.putText(
+            frame,
+            result_text,
+            (x1, y1 - 5),
+            cv2.FONT_HERSHEY_COMPLEX, 0.5 * frame.shape[0] / 1024, color)
+
+        return frame, label, value, test_speed
+
+    # def _perform_anti_spoofing_check(self, frame, bbox):
+    #     # Crop face image using the bbox
+    #     x1, y1, x2, y2 = map(int, bbox[:4])
+    #     face_image = frame[y1:y2, x1:x2]
+
+    #     # Prepare the input for the anti-spoofing model
+    #     h_input, w_input, model_type, scale = parse_model_name(os.path.basename(self.anti_spoofing_model_path))
+    #     param = {
+    #         "org_img": frame,
+    #         "bbox": bbox,
+    #         "scale": scale,
+    #         "out_w": w_input,
+    #         "out_h": h_input,
+    #         "crop": True,
+    #     }
+    #     if scale is None:
+    #         param["crop"] = False
+    #     img = self.image_cropper.crop(**param)
+
+    #     # Perform prediction using the anti-spoofing model
+    #     prediction = self.anti_spoof_predictor.predict(img)
+    #     label = np.argmax(prediction)
+    #     value = prediction[0][label]
+
+    #     return label, value  # label = 1: real, label = 0: fake
 
     # def _get_attributes(
     #     self, frame: np.ndarray, camera: str = None
@@ -638,7 +781,7 @@ class Stream:
 
     #     return bboxes, labels, sims, emotions, genders, ages
     
-    def recog_face_ip_cam(self, stream_id, camera: str, is_recording=False):
+    def recog_face_ip_cam(self, stream_id, camera: str, camera_name: str, is_recording=False):
         self.stop_flag.clear()
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
         if camera is None:
@@ -668,7 +811,7 @@ class Stream:
                     logging.error("Error initializing video writer")
                     break
             for bbox, label, sim, emotion, gender, age in zip(
-                            *self._get_attributes(frame, camera)
+                            *self._get_attributes(frame, camera_name)
                         ):
                             x1, y1, x2, y2 = map(int, bbox[:4])
                             if label == "Unknown":
@@ -700,7 +843,7 @@ class Stream:
             writer.release()
         logging.info("Finished generate function")
 
-    def recog_face_local_cam(self, frame: np.ndarray, is_recording: bool = False) -> str:
+    def recog_face_local_cam(self, frame: np.ndarray, camera_name: str, is_recording: bool = False) -> str:
         self.stop_flag.clear()
         logging.info("Processing frame")
 
@@ -716,7 +859,7 @@ class Stream:
                 logging.error("Error initializing video writer")
                 return ""
 
-        for bbox, label, sim, emotion, gender, age in zip(*self._get_attributes(frame)):
+        for bbox, label, sim, emotion, gender, age in zip(*self._get_attributes(frame, camera_name)):
             x1, y1, x2, y2 = map(int, bbox[:4])
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
             text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"

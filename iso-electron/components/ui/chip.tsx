@@ -7,8 +7,7 @@ type LogField =
   | 'source'
   | 'id'
   | 'container_name'
-  | 'container_id'
-  | 'date_formatted';
+  | 'container_id';
 
 const initialLogFields: LogField[] = [
   'date',
@@ -17,7 +16,6 @@ const initialLogFields: LogField[] = [
   'id',
   'container_name',
   'container_id',
-  'date_formatted',
 ];
 
 interface FilterChipProps {

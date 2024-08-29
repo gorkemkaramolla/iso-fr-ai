@@ -33,6 +33,11 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
     'container_name',
     'container_id',
   ]);
+  const [dateFilter, setDateFilter] = useState<{
+    start?: number;
+    end?: number;
+    singleDate?: string;
+  }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
 
@@ -97,70 +102,77 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
 
   const api = createApi(process.env.NEXT_PUBLIC_UTILS_URL);
 
-  const performDateFilter = useCallback(
-    async (dateRange: { start: number; end: number }) => {
+  const performSearchWithFilter = useCallback(
+    async (
+      query: string,
+      dateFilter: { start?: number; end?: number; singleDate?: string }
+    ) => {
+      setIsSearching(true);
       try {
-        const queryString = qs.stringify({
-          start_date: dateRange.start,
-          end_date: dateRange.end,
+        // Combine search query and date filter parameters
+        const queryParams = {
+          query: query || undefined,
+          fields: activeFilters,
+          ...(dateFilter.singleDate && {
+            single_datetime: dateFilter.singleDate,
+          }),
+          ...(dateFilter.start && { start_date: dateFilter.start }),
+          ...(dateFilter.end && { end_date: dateFilter.end }),
+        };
+
+        // Create query string from parameters
+        const queryString = qs.stringify(queryParams, {
+          arrayFormat: 'repeat',
         });
         console.log(queryString);
 
-        const response = await api.get(`/filter_logs?${queryString}`);
+        // Send request to the API with the combined query string
+        const response = await api.get(
+          `/search_logs_with_filter?${queryString}`
+        );
         const data = await response.json();
 
-        setEditorContent(JSON.stringify(data, null, 2));
+        // Filter the logs based on active filters
+        const filteredLogs = data.filter((log: any) =>
+          activeFilters.every((filter) => log.hasOwnProperty(filter))
+        );
+
+        // Update editor content and trigger visual search
+        setEditorContent(JSON.stringify(filteredLogs, null, 2));
+        setTimeout(() => triggerSearch(query), 1000);
       } catch (error) {
-        console.error('Error filtering logs:', error);
-        setEditorContent('Error filtering logs');
+        console.error('Error searching logs:', error);
+        setEditorContent('Error searching logs');
+      } finally {
+        setIsSearching(false);
       }
     },
-    []
+    [activeFilters, api]
   );
 
-  const performSearch = async (query: string) => {
-    setIsSearching(true);
-    try {
-      const queryString = qs.stringify(
-        {
-          query: query,
-          fields: activeFilters,
-        },
-        { arrayFormat: 'repeat' }
-      );
-
-      const response = await api.get(`search_logs?${queryString}`);
-      const data = await response.json();
-
-      const filteredLogs = data.filter((log: any) =>
-        activeFilters.every((filter) => log.hasOwnProperty(filter))
-      );
-      setEditorContent(JSON.stringify(filteredLogs, null, 2));
-      setTimeout(() => triggerSearch(query), 1000);
-    } catch (error) {
-      console.error('Error searching logs:', error);
-      setEditorContent('Error searching logs');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const debouncedSearch = useCallback(debounce(performSearch, 300), [
+  const debouncedSearch = useCallback(debounce(performSearchWithFilter, 300), [
     activeFilters,
+    dateFilter,
   ]);
 
   useEffect(() => {
-    debouncedSearch(searchQuery);
+    debouncedSearch(searchQuery, dateFilter);
     return () => debouncedSearch.cancel();
-  }, [searchQuery, debouncedSearch]);
+  }, [searchQuery, dateFilter, debouncedSearch]);
 
   const handleFilterChange = (filters: LogField[]) => {
     setActiveFilters(filters);
-    debouncedSearch(searchQuery);
+    debouncedSearch(searchQuery, dateFilter);
   };
 
   const handleDateRangeChange = (dateRange: { start: number; end: number }) => {
-    performDateFilter(dateRange);
+    setDateFilter(dateRange);
+    debouncedSearch(searchQuery, dateRange);
+  };
+
+  const handleDateChange = (date: string) => {
+    setDateFilter({ singleDate: date });
+    debouncedSearch(searchQuery, { singleDate: date });
   };
 
   return (
@@ -169,7 +181,10 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
         <div className='text-white p-4 flex justify-between items-center'>
           <h2 className='text-xl font-semibold'>System Logs</h2>
 
-          <NextDateRangePicker onDateRangeChange={handleDateRangeChange} />
+          <NextDateRangePicker
+            onDateChange={handleDateChange}
+            onDateRangeChange={handleDateRangeChange}
+          />
 
           <div className='flex items-center space-x-2'>
             <input

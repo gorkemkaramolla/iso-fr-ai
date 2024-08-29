@@ -5,16 +5,20 @@ import { now, getLocalTimeZone } from '@internationalized/date';
 
 interface NextDateRangePickerProps {
   onDateRangeChange: (dateRange: { start: number; end: number }) => void;
+  onDateChange?: (date: string) => void;
 }
 
 const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
   onDateRangeChange,
+  onDateChange,
 }) => {
   const [dateRange, setDateRange] = useState<
     RangeValue<ZonedDateTime> | undefined
   >(undefined);
+  const [selectedDate, setSelectedDate] = useState<ZonedDateTime | undefined>(
+    undefined
+  );
   const [isRange, setIsRange] = useState(false);
-
   const hasMounted = useRef(false);
 
   useEffect(() => {
@@ -23,7 +27,6 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
       if (storedDateRange) {
         const parsedDateRange = JSON.parse(storedDateRange);
 
-        // Create a time zone-aware string
         const startIsoString = new Date(parsedDateRange.start)
           .toISOString()
           .replace('Z', '[UTC]');
@@ -53,7 +56,7 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
     }
   }, [onDateRangeChange]);
 
-  function handleDateChange(value: RangeValue<ZonedDateTime>) {
+  function handleDateRangeChange(value: RangeValue<ZonedDateTime>) {
     if (value.start && value.end) {
       setDateRange(value);
 
@@ -68,6 +71,20 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
     }
   }
 
+  function handleSingleDateChange(value: ZonedDateTime | null) {
+    if (value) {
+      setSelectedDate(value);
+
+      if (typeof window !== 'undefined') {
+        const date = value.toDate().getTime();
+        localStorage.setItem('selectedDate', JSON.stringify(date));
+        if (onDateChange) {
+          onDateChange(date.toString());
+        }
+      }
+    }
+  }
+
   return (
     <div className='w-full max-w-xl flex flex-col-reverse gap-4'>
       {!isRange ? (
@@ -76,7 +93,10 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
           hideTimeZone
           hourCycle={24}
           showMonthAndYearPickers
+          granularity='day' // This restricts the picker to only allow date selection
           defaultValue={now(getLocalTimeZone())}
+          value={selectedDate}
+          onChange={handleSingleDateChange}
         />
       ) : (
         <DateRangePicker
@@ -85,7 +105,7 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
           hourCycle={24}
           visibleMonths={2}
           value={dateRange}
-          onChange={handleDateChange}
+          onChange={handleDateRangeChange}
         />
       )}
       <span

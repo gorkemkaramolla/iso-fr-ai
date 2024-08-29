@@ -104,7 +104,8 @@ const VideoStream: React.FC = () => {
           ? ''
           : `${BASE_URL}/stream/${newId}?camera=${encodeURIComponent(
               selectedCamera?.url || ''
-            )}&streamProfile=${encodeURIComponent(
+            )}&cameraName=${encodeURIComponent(camera.label)}
+            &streamProfile=${encodeURIComponent(
               Object.keys(Quality)[0]
             )}&is_recording=${encodeURIComponent(false)}`,
 

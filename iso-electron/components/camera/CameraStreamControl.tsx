@@ -58,7 +58,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isLoading: false,
               isPlaying: true,
               isRecording: true,
-              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(true)}`
+              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(true)}`
 
             }
           : camera
@@ -121,7 +121,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isPlaying: true,
               isRecording: false,
               isClose: false,
-               streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
+               streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
             }
           : camera
       )
@@ -166,7 +166,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
           ? {
               ...camera,
               selectedQuality: selectedQuality,
-              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
+              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
 
             }
           : camera

@@ -83,12 +83,9 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 ">
+    <div className="p-2">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 leading-10">
-          Son Tanınmalar
-          <hr />
-        </h1>
+  
         {data && data.length > 0 ? (
           data.map((item) => (
             <div
@@ -106,8 +103,8 @@ const ProfilePage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 flex-row-reverse">
                       <PiSecurityCameraFill className="w-6 h-6" />
-                      <span className="text-gray-700 truncate">
-                        {item.camera ? new URL(item.camera).hostname : "Yerel Kamera"}
+                      <span className="text-gray-700">
+                        {truncateString(item.camera.trim(), 20)}
                       </span>
                     </div>
                   </li>
@@ -120,6 +117,7 @@ const ProfilePage: React.FC = () => {
                         width: "500px",
                         height: "250px",
                         borderRadius: "5px",
+                        cursor: "pointer",
                       }}
                       onClick={() => setEnlargedImage(item.image_path)}
                     />
@@ -130,10 +128,6 @@ const ProfilePage: React.FC = () => {
                         src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${item.image_path}`}
                       />
                     )}
-
-                    {/* <span className="text-gray-700 truncate">
-                      {item.image_path}
-                    </span> */}
                   </li>
                 </ul>
               </div>

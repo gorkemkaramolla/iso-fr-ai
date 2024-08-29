@@ -31,7 +31,7 @@ os.environ.pop('ALL_PROXY', None)
 # from flask import jsonify
 # import requests
 class Stream:
-    def __init__(self, device: str = "cuda") -> None:
+    def __init__(self, device: str = "cuda", anti_spoof: bool = False) -> None:
         self.device = torch.device(device)
         onnxruntime.set_default_logger_severity(3)  # 3: INFO, 2: WARNING, 1: ERROR
         onnx_models_dir = os.path.abspath(os.path.join(__file__, "../../models/buffalo_l"))
@@ -60,9 +60,11 @@ class Stream:
 
         # Anti-Spoofing
         # anti_spoofing_model_path="../models/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
-        self.anti_spoofing_model_path = "/app/services/models/anti_spoof_models/"
-        self.anti_spoof_predictor = AntiSpoofPredict(self.anti_spoofing_model_path, face_detector_model)
-        self.image_cropper = CropImage()
+        self.anti_spoof = anti_spoof
+        if self.anti_spoof:
+            self.anti_spoofing_model_path = "/app/services/models/anti_spoof_models/"
+            self.anti_spoof_predictor = AntiSpoofPredict(self.anti_spoofing_model_path, face_detector_model)
+            self.image_cropper = CropImage()
         # MongoDB
         client = MongoClient(os.getenv("MONGO_DB_URI"))
         self.db = client["isoai"]
@@ -316,7 +318,7 @@ class Stream:
             print(f"No image found for {new_name} with extensions {extensions}")
 
     def _save_and_log_face(
-        self, face_image: np.ndarray | None,  label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool, camera: str = None, personnel_id: str = None
+        self, face_image: np.ndarray | None,  label: str, similarity: float, emotion: str, gender: str, age: int, is_known: bool, camera_name: str = None, personnel_id: str = None
     ) -> str:
         if face_image is None:
             print("Error: The face image is empty and cannot be saved.")
@@ -364,7 +366,7 @@ class Stream:
             "gender": gender,
             "age": age,
             "image_path": file_path,
-            "camera": camera,
+            "camera": camera_name,
             "personnel_id": personnel_id
         }
 
@@ -374,7 +376,7 @@ class Stream:
 
         return file_path
     def _get_attributes(
-        self, frame: np.ndarray, camera: str = None
+        self, frame: np.ndarray, camera_name: str = None, spoofing: bool = False
     ) -> Tuple[
         List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
     ]:
@@ -393,14 +395,15 @@ class Stream:
             x1, y1, x2, y2 = map(int, bbox[:4])
 
             # Perform anti-spoofing check
-            processed_frame, spoofing_label, spoofing_score, _ = self._perform_anti_spoofing_check(frame, bbox)
+            if self.anti_spoof:
+                processed_frame, spoofing_label, spoofing_score, _ = self._perform_anti_spoofing_check(frame, bbox)
 
-            # If the face is detected as fake, continue to the next detected face
-            if spoofing_label != 1 or spoofing_score < 0.5:
-                # print(f"Fake face detected with score: {spoofing_score:.2f}, skipping further processing.")
-                # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Draw red box
-                frame = processed_frame
-                continue
+                # If the face is detected as fake, continue to the next detected face
+                if spoofing_label != 1 or spoofing_score < 0.5:
+                    # print(f"Fake face detected with score: {spoofing_score:.2f}, skipping further processing.")
+                    # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Draw red box
+                    frame = processed_frame
+                    continue
 
             # Perform face recognition
             embedding = self.face_recognizer.get(frame, kps)
@@ -455,7 +458,7 @@ class Stream:
             emotions.append(emotion)
 
             # Save and log the recognized face
-            self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera, personnel_id)
+            self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera_name, personnel_id)
 
         return bboxes, labels, sims, emotions, genders, ages
 
@@ -778,7 +781,7 @@ class Stream:
 
     #     return bboxes, labels, sims, emotions, genders, ages
     
-    def recog_face_ip_cam(self, stream_id, camera: str, is_recording=False):
+    def recog_face_ip_cam(self, stream_id, camera: str, camera_name: str, is_recording=False):
         self.stop_flag.clear()
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
         if camera is None:
@@ -808,7 +811,7 @@ class Stream:
                     logging.error("Error initializing video writer")
                     break
             for bbox, label, sim, emotion, gender, age in zip(
-                            *self._get_attributes(frame, camera)
+                            *self._get_attributes(frame, camera_name)
                         ):
                             x1, y1, x2, y2 = map(int, bbox[:4])
                             if label == "Unknown":
@@ -840,7 +843,7 @@ class Stream:
             writer.release()
         logging.info("Finished generate function")
 
-    def recog_face_local_cam(self, frame: np.ndarray, is_recording: bool = False) -> str:
+    def recog_face_local_cam(self, frame: np.ndarray, camera_name: str, is_recording: bool = False) -> str:
         self.stop_flag.clear()
         logging.info("Processing frame")
 
@@ -856,7 +859,7 @@ class Stream:
                 logging.error("Error initializing video writer")
                 return ""
 
-        for bbox, label, sim, emotion, gender, age in zip(*self._get_attributes(frame)):
+        for bbox, label, sim, emotion, gender, age in zip(*self._get_attributes(frame, camera_name)):
             x1, y1, x2, y2 = map(int, bbox[:4])
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
             text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"

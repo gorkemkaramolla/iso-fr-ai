@@ -37,7 +37,7 @@ const Speech: React.FC<Props> = () => {
           className='w-full h-full flex'
           direction='horizontal'
         >
-          <Panel defaultSize={75} minSize={30}>
+          <Panel style={{overflowY:"scroll"}} defaultSize={75} minSize={30}>
             <WhisperUpload isProcessing={isProcessing} />
           </Panel>
           <PanelResizeHandle className='w-1 z-0 cursor-col-resize border-l-2 border-gray-100 relative md:flex hidden'>
@@ -46,7 +46,7 @@ const Speech: React.FC<Props> = () => {
             </div>
           </PanelResizeHandle>
           <Panel defaultSize={25} minSize={20} className='z-0 md:block hidden'>
-            <TranscriptionHistory />
+            <TranscriptionHistory  />
             <span className=' left-0'></span>
           </Panel>
         </PanelGroup>

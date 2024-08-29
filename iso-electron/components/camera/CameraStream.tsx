@@ -24,6 +24,7 @@ interface CameraStreamProps {
 const CameraStream: React.FC<CameraStreamProps> = ({
   id,
   streamSrc,
+  selectedCamera,
   isPlaying,
   setCameraStreams,
   isLocalCamera,
@@ -130,6 +131,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
           socket.current?.emit('video_frames', {
             room: `camera-${id}`,
             frames: [frame],
+            cameraName: selectedCamera?.label,
             isRecording,
           });
         }, 100);

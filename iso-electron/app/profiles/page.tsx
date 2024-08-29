@@ -55,7 +55,13 @@ export default function Page() {
     <Suspense fallback={<div>Loading...</div>}>
       <div className='flex w-full items-start justify-center flex-col lg:flex-row'>
         <ProfileContent />
+        <div className=' h-[90vh] overflow-scroll pr-10' >
+        <h1 className="text-3xl font-bold text-center my-6 text-gray-800 leading-10">
+          Son Tanınmalar
+          <hr />
+        </h1>
         <RecogList/>
+        </div>
       </div>
     </Suspense>
   );

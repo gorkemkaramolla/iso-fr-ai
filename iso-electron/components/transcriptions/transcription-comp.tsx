@@ -168,13 +168,24 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
     }
   };
 
+  // Define a palette of colors to choose from
+  const colorPalette = [
+    '#FF5733', // Red
+    '#33FF57', // Green
+    '#3357FF', // Blue
+    '#FF33A1', // Pink
+    '#33FFF3', // Cyan
+    '#FFA533', // Orange
+    '#A533FF', // Purple
+    '#33A1FF', // Light Blue
+    '#FF3333', // Another Red variant
+    '#33FFAA', // Mint
+  ];
+
+  // Function to generate a random color from the palette
   const generateRandomColor = (): string => {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return `${color}33`;
+    const randomIndex = Math.floor(Math.random() * colorPalette.length);
+    return `${colorPalette[randomIndex]}33`; // Add alpha value for transparency
   };
 
   const handleEditTranscriptionName = async (new_name: string) => {
@@ -269,7 +280,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
                 setTranscriptionName={setTranscriptionName}
                 changes={changes}
                 setChanges={setChanges}
-                speakerColors={speakerColors}
+                // speakerColors={speakerColors}
                 currentTime={currentTime}
                 setCurrentTime={setCurrentTime}
                 transcription={transcription}

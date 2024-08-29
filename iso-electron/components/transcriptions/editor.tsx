@@ -44,6 +44,7 @@ interface TextEditorProps {
   transcription: Transcript | null;
   editingRef: RefObject<HTMLTextAreaElement>;
   handleEditName?: (newName: string) => void;
+  // handleColorChange?: (speaker: string, color: string) => void;
   handleDeleteTranscription?: () => void;
   handleDeleteSelected?: (segmentId: string) => void;
   handleSpeakerNameChange?: (
@@ -60,7 +61,7 @@ interface TextEditorProps {
   isEditing: boolean;
   currentTime: number;
   setCurrentTime: (currentTime: number) => void;
-  speakerColors: Record<string, string>;
+  // speakerColors: Record<string, string>;
   setChanges: React.Dispatch<React.SetStateAction<Change[]>>;
   changes: Change[];
   saveState: 'no changes made' | 'needs saving' | 'saved' | 'save failed';
@@ -80,8 +81,9 @@ interface MenuState {
 const TextEditor: React.FC<TextEditorProps> = ({
   transcription,
   setChanges,
-  speakerColors,
+  // speakerColors,
   editingRef,
+  // handleColorChange,
   changes,
   transcriptionName,
   setTranscriptionName,
@@ -118,6 +120,18 @@ const TextEditor: React.FC<TextEditorProps> = ({
     transcription?.segments || []
   );
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
+  const [speakerColors, setSpeakerColors] = useState<Record<string, string>>(
+    () => {
+      // Initialize from localStorage
+      const storedColors = localStorage.getItem('speakerColors');
+      return storedColors ? JSON.parse(storedColors) : {};
+    }
+  );
+  useEffect(() => {
+    // Save to localStorage whenever speakerColors change
+    localStorage.setItem('speakerColors', JSON.stringify(speakerColors));
+  }, [speakerColors]);
+
   const [showDialog, setShowDialog] = useState(false);
   const [showSingleRenameDialog, setShowSingleRenameDialog] = useState(false);
   const [dialogData, setDialogData] = useState<{
@@ -157,6 +171,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
       new Set(segments.map((segment) => segment.speaker))
     );
     setUniqueSpeakers(speakers);
+  };
+  const handleColorChange = (speaker: string, color: string) => {
+    setSpeakerColors((prevColors) => ({
+      ...prevColors,
+      [speaker]: color,
+    }));
+    setSaveState('needs saving');
   };
 
   const handleNameChange = useCallback(
@@ -555,10 +576,36 @@ const TextEditor: React.FC<TextEditorProps> = ({
             >
               {uniqueSpeakers.map((speaker) => (
                 <li key={speaker}>
-                  <a onClick={() => handleSpeakerClick(speaker)}>
-                    <User size={16} />
-                    {speaker}
-                  </a>
+                  <button
+                    onClick={(e) => {
+                      if (
+                        (e.target as HTMLElement).tagName.toLowerCase() !==
+                        'input'
+                      ) {
+                        handleSpeakerClick(speaker);
+                      }
+                    }}
+                    className='flex items-center justify-between'
+                  >
+                    <div className='flex items-center'>
+                      <User size={16} />
+                      <span className='ml-2'>{speaker}</span>
+                    </div>
+                    <input
+                      type='color'
+                      value={
+                        JSON.parse(
+                          localStorage.getItem('speakerColors') || '{}'
+                        )[speaker] ||
+                        speakerColors[speaker] ||
+                        '#000000'
+                      }
+                      onChange={(e) =>
+                        handleColorChange?.(speaker, e.target.value)
+                      }
+                      className='w-6 h-6 border-none cursor-pointer'
+                    />
+                  </button>
                 </li>
               ))}
             </ul>

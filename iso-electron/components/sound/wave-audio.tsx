@@ -120,15 +120,28 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             if (!isMounted) return;
 
             setDuration(waveform.getDuration());
+            // Get speaker colors from localStorage
+            const storedSpeakerColors = localStorage.getItem('speakerColors');
+            const parsedSpeakerColors = storedSpeakerColors
+              ? JSON.parse(storedSpeakerColors)
+              : {};
 
             segments &&
               segments.forEach((segment: Segment) => {
+                let speakerColor = 'rgba(0,0,0,0.1)';
+                if (parsedSpeakerColors[segment.speaker]) {
+                  const hexColor = parsedSpeakerColors[segment.speaker];
+                  const r = parseInt(hexColor.slice(1, 3), 16);
+                  const g = parseInt(hexColor.slice(3, 5), 16);
+                  const b = parseInt(hexColor.slice(5, 7), 16);
+                  speakerColor = `rgba(${r}, ${g}, ${b}, 0.1)`;
+                } else if (speakerColors?.[segment.speaker]) {
+                  speakerColor = speakerColors[segment.speaker];
+                }
                 regionsPlugin.addRegion({
                   start: segment.start,
                   end: segment.end,
-                  color: speakerColors
-                    ? speakerColors[segment.speaker]
-                    : 'rgba(0,0,0,0.1)',
+                  color: speakerColor,
                   resize: false,
                   drag: false,
                 });

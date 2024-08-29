@@ -69,13 +69,21 @@ camera_bp = Blueprint("camera_bp", __name__)
 ######################### CAMERA ROUTES ###############################################
 
 # Video Records
-VIDEO_FOLDER = xml_config.VIDEO_FOLDER if xml_config.VIDEO_FOLDER else './records'
+VIDEO_FOLDER = xml_config.VIDEO_FOLDER if xml_config.VIDEO_FOLDER else 'records'
 
 @camera_bp.route('/videos/<filename>')
 def get_video(filename):
     file_path = os.path.join(VIDEO_FOLDER, filename)
+    
     if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=False)
+        if "_converted" in file_path:
+            print(file_path)
+            return send_file(file_path, as_attachment=False)
+        else:
+            repaired_file_path = stream_instance.repair_last_record(file_path)
+            print(repaired_file_path)
+
+            return send_file(repaired_file_path, as_attachment=False)
     else:
         abort(404, description="Resource not found")
 
@@ -84,6 +92,19 @@ def list_videos():
     files = os.listdir(VIDEO_FOLDER)
     videos = [{'filename': file, 'title': file} for file in files if file.endswith('.mp4')]
     return jsonify(videos)
+
+@camera_bp.route('/videos/<filename>', methods=['DELETE'])
+def delete_video(filename):
+    file_path = os.path.join(VIDEO_FOLDER, filename)
+    
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+            return jsonify({'message': f'{filename} has been deleted.'}), 200
+        except Exception as e:
+            abort(500, description=f"An error occurred while deleting the file: {str(e)}")
+    else:
+        abort(404, description="Resource not found")
 
 @camera_bp.route("/camera-url", methods=["POST"])
 # @jwt_required()

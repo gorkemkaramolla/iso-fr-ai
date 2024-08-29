@@ -838,6 +838,7 @@ class Stream:
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
             )
+
         cap.release()
         if writer:
             writer.release()
@@ -920,3 +921,19 @@ class Stream:
             subprocess.run(command, capture_output=True, text=True)
     
             return output_file
+        
+    def repair_last_record(self, filename: str):
+        # records_folder = './records'
+        # files = [os.path.join(records_folder, f) for f in os.listdir(records_folder) if os.path.isfile(os.path.join(records_folder, f))]
+        # filename = max(files, key=os.path.getctime)
+
+        # Define output file path
+        output_file = filename.replace(".mp4", "_converted.mp4")
+
+        # Execute ffmpeg command to convert video
+        command = ["ffmpeg", "-i", filename, "-vcodec", "h264", "-acodec", "aac", output_file]
+
+        # Run the command
+        subprocess.run(command, capture_output=True, text=True)
+
+        return output_file

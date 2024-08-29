@@ -21,7 +21,7 @@
             <temp_directory>temp</temp_directory>
             <device>cuda</device>
             <anti_spoof>false</anti_spoof>
-            <video_folder>./records</video_folder> <!-- New addition -->
+            <video_folder>records</video_folder> <!-- New addition -->
             <base_recog_dir>recog</base_recog_dir> <!-- New addition -->
             <face_images_path>./face-images</face_images_path> <!-- New addition -->
             <stream_quality_mapping> <!-- Stream Quality Mapping Configuration -->

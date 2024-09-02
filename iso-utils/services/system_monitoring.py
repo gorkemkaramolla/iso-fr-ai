@@ -12,9 +12,10 @@ import docker
 from docker.errors import DockerException
 import logging
 
+
 class SystemMonitoring:
     def __init__(self):
-    
+
         self.logger = configure_logging()
         self.socketio = socketio
         self.client = self.initialize_docker_client()
@@ -22,7 +23,9 @@ class SystemMonitoring:
             thread = Thread(target=self.send_system_info)
             thread.start()
         else:
-            self.logger.error("Failed to initialize Docker client. Monitoring not started.")
+            self.logger.error(
+                "Failed to initialize Docker client. Monitoring not started."
+            )
 
     def initialize_docker_client(self):
         try:
@@ -36,45 +39,67 @@ class SystemMonitoring:
 
     def get_cpu_temp_linux(self):
         try:
-            result = subprocess.run(['sensors'], stdout=subprocess.PIPE, text=True)
+            result = subprocess.run(["sensors"], stdout=subprocess.PIPE, text=True)
+            if result.returncode != 0:
+                self.logger.error("sensors command failed")
+                return "N/A"
+
             output = result.stdout
             core_temps = {}
-            matches = re.findall(r'Core\s+\d+:\s+\+([\d.]+)°C', output)
+            matches = re.findall(r"Core\s+\d+:\s+\+([\d.]+)°C", output)
             if matches:
-                core_temps = {f"Core {i}": float(temp) for i, temp in enumerate(matches)}
+                core_temps = {
+                    f"Core {i}": float(temp) for i, temp in enumerate(matches)
+                }
                 avg_temp = sum(core_temps.values()) / len(core_temps)
                 return avg_temp
             else:
-                return 'N/A'
+                self.logger.warning("No temperature data found in sensors output")
+                return "N/A"
         except Exception as e:
-            return 'N/A'
+            self.logger.error(f"Failed to retrieve CPU temperature: {e}")
+            return "N/A"
 
     def get_cpu_temp(self):
-        if platform.system() == 'Linux':
+        if platform.system() == "Linux":
             return self.get_cpu_temp_linux()
-        elif platform.system() == 'Windows':
+        elif platform.system() == "Windows":
             return self.get_cpu_temp_windows()
         else:
-            return 'N/A'
+            return "N/A"
 
     def get_gpu_stats(self):
         try:
-            result = subprocess.run(['nvidia-smi', '-q', '-x'], capture_output=True, text=True)
+            result = subprocess.run(
+                ["nvidia-smi", "-q", "-x"], capture_output=True, text=True
+            )
+            if result.returncode != 0:
+                self.logger.error("nvidia-smi command failed")
+                return "N/A", "N/A", "N/A"
+
             gpu_info = result.stdout
             gpu_data = xmltodict.parse(gpu_info)
-            gpu_temp = gpu_data['nvidia_smi_log']['gpu']['temperature']['gpu_temp']
-            gpu_usage = gpu_data['nvidia_smi_log']['gpu']['utilization']['gpu_util']
-            gpu_memory_total = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['total']
-            gpu_memory_used = gpu_data['nvidia_smi_log']['gpu']['fb_memory_usage']['used']
+            gpu_temp = gpu_data["nvidia_smi_log"]["gpu"]["temperature"]["gpu_temp"]
+            gpu_usage = gpu_data["nvidia_smi_log"]["gpu"]["utilization"]["gpu_util"]
+            gpu_memory_total = gpu_data["nvidia_smi_log"]["gpu"]["fb_memory_usage"][
+                "total"
+            ]
+            gpu_memory_used = gpu_data["nvidia_smi_log"]["gpu"]["fb_memory_usage"][
+                "used"
+            ]
             gpu_memory_usage = f"{gpu_memory_used} MiB / {gpu_memory_total} MiB"
             return gpu_temp, gpu_usage, gpu_memory_usage
         except Exception as e:
-            return 'N/A', 'N/A', 'N/A'
+            self.logger.error(f"Failed to retrieve GPU stats: {e}")
+            return "N/A", "N/A", "N/A"
 
     def calculate_cpu_percent(self, cpu_stats, precpu_stats):
-        cpu_delta = cpu_stats['cpu_usage']['total_usage'] - precpu_stats['cpu_usage']['total_usage']
-        system_delta = cpu_stats['system_cpu_usage'] - precpu_stats['system_cpu_usage']
-        number_cpus = cpu_stats['online_cpus']
+        cpu_delta = (
+            cpu_stats["cpu_usage"]["total_usage"]
+            - precpu_stats["cpu_usage"]["total_usage"]
+        )
+        system_delta = cpu_stats["system_cpu_usage"] - precpu_stats["system_cpu_usage"]
+        number_cpus = cpu_stats["online_cpus"]
 
         if system_delta > 0 and cpu_delta > 0:
             cpu_percent = (cpu_delta / system_delta) * number_cpus * 100.0
@@ -93,21 +118,25 @@ class SystemMonitoring:
             for container in containers:
                 try:
                     stats = container.stats(stream=False)
-                    cpu_stats = stats['cpu_stats']
-                    precpu_stats = stats['precpu_stats']
+                    cpu_stats = stats["cpu_stats"]
+                    precpu_stats = stats["precpu_stats"]
                     cpu_percent = self.calculate_cpu_percent(cpu_stats, precpu_stats)
                     total_cpu_percent += cpu_percent
                     container_stats[container.name] = {
-                        'cpu_usage': f"{cpu_percent:.2f}%",
-                        'memory_usage': stats['memory_stats']['usage'] / (1024 ** 2),  # Convert bytes to MB
-                        'memory_limit': stats['memory_stats']['limit'] / (1024 ** 2),  # Convert bytes to MB
-                        'network_io': stats['networks'],
-                        'block_io': stats['blkio_stats']['io_service_bytes_recursive']
+                        "cpu_usage": f"{cpu_percent:.2f}%",
+                        "memory_usage": stats["memory_stats"]["usage"]
+                        / (1024**2),  # Convert bytes to MB
+                        "memory_limit": stats["memory_stats"]["limit"]
+                        / (1024**2),  # Convert bytes to MB
+                        "network_io": stats["networks"],
+                        "block_io": stats["blkio_stats"]["io_service_bytes_recursive"],
                     }
                 except KeyError as ke:
                     self.logger.error(f"KeyError for container {container.name}: {ke}")
                 except Exception as e:
-                    self.logger.error(f"Error retrieving stats for container {container.name}: {e}")
+                    self.logger.error(
+                        f"Error retrieving stats for container {container.name}: {e}"
+                    )
         except Exception as e:
             self.logger.error(f"Failed to get container stats: {e}")
         return container_stats, total_cpu_percent
@@ -117,26 +146,28 @@ class SystemMonitoring:
         cpu_usage = psutil.cpu_percent(interval=1)
         gpu_temp, gpu_usage, gpu_memory_usage = self.get_gpu_stats()
         memory = psutil.virtual_memory()
-        memory_usage = f"{memory.used // (1024 ** 3)}GB / {memory.total // (1024 ** 3)}GB"
+        memory_usage = (
+            f"{memory.used // (1024 ** 3)}GB / {memory.total // (1024 ** 3)}GB"
+        )
         container_stats, total_cpu_percent = self.get_container_stats()
-        
+
         system_info = {
-            'host_cpu_usage': f'{cpu_usage}%',
-            'host_gpu_usage': gpu_usage,
-            'host_gpu_temp': gpu_temp,
-            'host_cpu_temp': cpu_temp,
-            'host_memory_usage': memory_usage,
-            'total_container_cpu_usage': f'{total_cpu_percent:.2f}%',
-            'total_container_cpus': psutil.cpu_count(logical=True),
-            'container_info': [
+            "host_cpu_usage": f"{cpu_usage}%",
+            "host_gpu_usage": gpu_usage,
+            "host_gpu_temp": gpu_temp,
+            "host_cpu_temp": cpu_temp,
+            "host_memory_usage": memory_usage,
+            "total_container_cpu_usage": f"{total_cpu_percent:.2f}%",
+            "total_container_cpus": psutil.cpu_count(logical=True),
+            "container_info": [
                 {
-                    'container': name,
-                    'cpu': stats['cpu_usage'],
-                    'memory': f"{stats['memory_usage']:.2f}MB",
-                    'gpu': 'N/A'
+                    "container": name,
+                    "cpu": stats["cpu_usage"],
+                    "memory": f"{stats['memory_usage']:.2f}MB",
+                    "gpu": "N/A",
                 }
                 for name, stats in container_stats.items()
-            ]
+            ],
         }
         return system_info
 
@@ -144,7 +175,7 @@ class SystemMonitoring:
         while True:
             try:
                 system_info = self.get_system_info()
-                self.socketio.emit('system_info', system_info)
+                self.socketio.emit("system_info", system_info)
                 time.sleep(2)
             except Exception as e:
                 self.logger.error(f"Error during system monitoring: {e}")

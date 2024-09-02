@@ -56,7 +56,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
   useEffect(() => {
     setFilteredGroups(
       groupedRecogFaces.filter((group) =>
-        group.name.toLowerCase().includes(searchQuery.toLowerCase())
+        group?.name?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     );
   }, [searchQuery, groupedRecogFaces]);

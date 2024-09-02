@@ -9,7 +9,8 @@ import bson.json_util
 from flask import Flask, Blueprint, request, jsonify, Response, send_file, abort
 import flask.json.provider as provider
 from pymongo import DESCENDING, MongoClient
-from services.camera_processor.Stream import Stream
+# from services.camera_processor.Stream import Stream
+from services.camera_processor.StreamR import Stream
 from logger import configure_logging
 from flask_cors import CORS
 from flask_jwt_extended import jwt_required, JWTManager
@@ -55,13 +56,14 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_time
 
 # Setup MongoDB using configuration
 client = MongoClient(mongo_config.MONGO_DB_URI)
+print(f"MongoDB URI: {mongo_config.MONGO_DB_URI}")
 db = client[mongo_config.MONGO_DB_NAME]
 logs_collection = db[xml_config.LOGGING_COLLECTION if xml_config.LOGGING_COLLECTION else 'logs']
 camera_collection = db[xml_config.CAMERA_COLLECTION if xml_config.CAMERA_COLLECTION else 'cameras']
 
 # Create instances
 stream_instance = Stream(device= xml_config.DEVICE if xml_config.DEVICE else 'cpu', anti_spoof=xml_config.ANTI_SPOOF)
-logger = configure_logging()
+# logger = configure_logging()
 
 # Setup Blueprint
 camera_bp = Blueprint("camera_bp", __name__)

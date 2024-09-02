@@ -10,7 +10,7 @@ from logger import configure_logging
 import docker
 from docker.errors import DockerException
 import logging
-import shutil
+import os
 
 
 class SystemMonitoring:
@@ -18,6 +18,7 @@ class SystemMonitoring:
         self.logger = configure_logging()
         self.socketio = socketio
         self.client = self.initialize_docker_client()
+
         if self.client:
             thread = Thread(target=self.send_system_info)
             thread.start()
@@ -37,9 +38,9 @@ class SystemMonitoring:
             return None
 
     def get_cpu_temp_linux(self):
-        sensors_path = shutil.which("sensors")
-        if not sensors_path:
-            self.logger.error("sensors command not found in PATH")
+        sensors_path = "/host/usr/bin/sensors"  # Use the mounted host path
+        if not os.path.exists(sensors_path):
+            self.logger.error("sensors command not found in the mounted host path")
             return "N/A"
 
         try:
@@ -73,9 +74,9 @@ class SystemMonitoring:
             return "N/A"
 
     def get_gpu_stats(self):
-        nvidia_smi_path = shutil.which("nvidia-smi")
-        if not nvidia_smi_path:
-            self.logger.error("nvidia-smi command not found in PATH")
+        nvidia_smi_path = "/host/usr/bin/nvidia-smi"  # Use the mounted host path
+        if not os.path.exists(nvidia_smi_path):
+            self.logger.error("nvidia-smi command not found in the mounted host path")
             return "N/A", "N/A", "N/A"
 
         try:
@@ -90,12 +91,8 @@ class SystemMonitoring:
             gpu_data = xmltodict.parse(gpu_info)
             gpu_temp = gpu_data["nvidia_smi_log"]["gpu"]["temperature"]["gpu_temp"]
             gpu_usage = gpu_data["nvidia_smi_log"]["gpu"]["utilization"]["gpu_util"]
-            gpu_memory_total = gpu_data["nvidia_smi_log"]["gpu"]["fb_memory_usage"][
-                "total"
-            ]
-            gpu_memory_used = gpu_data["nvidia_smi_log"]["gpu"]["fb_memory_usage"][
-                "used"
-            ]
+            gpu_memory_total = gpu_data["nvidia_smi_log"]["gpu"]["fb_memory_usage"]["total"]
+            gpu_memory_used = gpu_data["nvidia_smi_log"]["gpu"]["fb_memory_usage"]["used"]
             gpu_memory_usage = f"{gpu_memory_used} MiB / {gpu_memory_total} MiB"
             return gpu_temp, gpu_usage, gpu_memory_usage
         except Exception as e:

@@ -7,15 +7,14 @@ import xmltodict
 import time
 from threading import Thread
 from logger import configure_logging
-import json
 import docker
 from docker.errors import DockerException
 import logging
+import shutil
 
 
 class SystemMonitoring:
     def __init__(self):
-
         self.logger = configure_logging()
         self.socketio = socketio
         self.client = self.initialize_docker_client()
@@ -38,8 +37,13 @@ class SystemMonitoring:
             return None
 
     def get_cpu_temp_linux(self):
+        sensors_path = shutil.which("sensors")
+        if not sensors_path:
+            self.logger.error("sensors command not found in PATH")
+            return "N/A"
+
         try:
-            result = subprocess.run(["sensors"], stdout=subprocess.PIPE, text=True)
+            result = subprocess.run([sensors_path], stdout=subprocess.PIPE, text=True)
             if result.returncode != 0:
                 self.logger.error("sensors command failed")
                 return "N/A"
@@ -52,7 +56,7 @@ class SystemMonitoring:
                     f"Core {i}": float(temp) for i, temp in enumerate(matches)
                 }
                 avg_temp = sum(core_temps.values()) / len(core_temps)
-                return avg_temp
+                return f"{avg_temp:.2f}"  # Return as a string for consistency
             else:
                 self.logger.warning("No temperature data found in sensors output")
                 return "N/A"
@@ -69,9 +73,14 @@ class SystemMonitoring:
             return "N/A"
 
     def get_gpu_stats(self):
+        nvidia_smi_path = shutil.which("nvidia-smi")
+        if not nvidia_smi_path:
+            self.logger.error("nvidia-smi command not found in PATH")
+            return "N/A", "N/A", "N/A"
+
         try:
             result = subprocess.run(
-                ["nvidia-smi", "-q", "-x"], capture_output=True, text=True
+                [nvidia_smi_path, "-q", "-x"], capture_output=True, text=True
             )
             if result.returncode != 0:
                 self.logger.error("nvidia-smi command failed")

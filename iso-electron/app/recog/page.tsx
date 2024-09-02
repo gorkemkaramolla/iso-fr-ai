@@ -90,7 +90,7 @@ const RecognizedFacesTable: React.FC = () => {
   );
   const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(() => {
     if (typeof window !== 'undefined') {
-      const storedDate = localStorage.getItem('selectedDate');
+      const storedDate = localStorage.getItem('selectedDateRecog');
       return storedDate ? new Date(storedDate) : null;
     }
     return null;
@@ -102,7 +102,7 @@ const RecognizedFacesTable: React.FC = () => {
 
   useEffect(() => {
     if (selectedDate) {
-      localStorage.setItem('selectedDate', selectedDate?.toISOString());
+      localStorage.setItem('selectedDateRecog', selectedDate?.toISOString());
     }
     // console.log('selec tedDate:', selectedDate);
     const fetchRecogFaces = async () => {

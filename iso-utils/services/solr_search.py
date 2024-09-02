@@ -356,14 +356,15 @@ class SolrSearcher:
         fields=None,  # Allow fields to be passed dynamically
     ):
         try:
-            # Use provided fields or default to ['log'] if not specified
-            if not fields:
-                fields = ["log"]
+            # Ensure fields is a list even if it's passed multiple times in the query
+            if not isinstance(fields, list):
+                fields = [fields] if fields else ["log"]
 
             # Prepare search query using only the provided fields
-            # Ensure the search is strictly field-specific
+            print(fields)
             if query:
-                field_query = " OR ".join([f"{field}:{query}" for field in fields])
+                # Use wildcards to enable partial matches
+                field_query = " OR ".join([f"{field}:*{query}*" for field in fields])
             else:
                 field_query = "*:*"
 

@@ -220,7 +220,6 @@ def search():
     return jsonify(results), status_code
 
 
-# Combined search and filter route
 @solr_search_bp.route("/search_logs_with_filter", methods=["GET"])
 def search_logs_with_filter_route():
     # Get query and date filter parameters from the request
@@ -229,13 +228,18 @@ def search_logs_with_filter_route():
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
 
+    # Get fields as a list from the request
+    fields = request.args.getlist("fields")
+
     # Call the combined search and filter function
     results, status_code = searcher.search_logs_with_filter(
         query=query,
         single_datetime=single_datetime,
         start_date=start_date,
         end_date=end_date,
+        fields=fields,
     )
+
     return jsonify(results), status_code
 
 

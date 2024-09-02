@@ -142,7 +142,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
         setTimeout(() => triggerSearch(query), 1000);
       } catch (error) {
         console.error('Error searching logs:', error);
-        setEditorContent('Error searching logs');
+        setEditorContent('Filtrelerle eşleşen herhangi bir log bulunamadı.');
       } finally {
         setIsSearching(false);
       }
@@ -179,7 +179,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
     <div className='bg-gray-900 shadow-lg rounded-lg overflow-hidden'>
       <div ref={containerRef} className='flex flex-col h-full'>
         <div className='text-white p-4 flex justify-between items-center'>
-          <h2 className='text-xl font-semibold'>System Logs</h2>
+          <h2 className='text-xl font-semibold'>Sistem Logları</h2>
 
           <NextDateRangePicker
             onDateChange={handleDateChange}
@@ -191,7 +191,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
               type='search'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder='Search logs...'
+              placeholder='Logları Ara'
               className='px-2 py-1 rounded text-black w-64'
             />
             <button

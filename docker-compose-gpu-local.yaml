@@ -131,7 +131,7 @@ services:
   utils_service:
     build:
       context: ./iso-utils
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-gpu
     ports:
       - '5004:5004'
     env_file:
@@ -142,6 +142,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config.xml:/app/config.xml
       - ./config.py:/app/config.py
+      - /usr/bin:/host/usr/bin  # Mount the host's /usr/bin directory
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     networks:
       - isoai-network
     logging:
@@ -153,6 +161,16 @@ services:
       - mongo
       - solr
       - fluentbit
+volumes:
+  mongo_data:
+  solr_data:
+  face_recognition_data:
+  personel_images:
+  large_v3_data:
+
+networks:
+  isoai-network:
+    driver: bridge
 
   # nextjs_service:
   #   build:
@@ -176,16 +194,7 @@ services:
   #     - solr
   #     - fluentbit
 
-volumes:
-  mongo_data:
-  solr_data:
-  face_recognition_data:
-  personel_images:
-  large_v3_data:
 
-networks:
-  isoai-network:
-    driver: bridge
 # version: '3.8'
 
 # services:

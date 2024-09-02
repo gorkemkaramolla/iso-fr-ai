@@ -23,7 +23,7 @@ export default function TemparatureGraphs({
           <h3 className='text-lg font-medium mb-2'>Ekran kartı Sıcaklığı</h3>
 
           {host_cpu_temp !== 'N/A'
-            ? 'Ekran Kartı Sıcaklığı: ' + host_cpu_temp + '°C'
+            ? 'Ekran Kartı Sıcaklığı: ' + host_gpu_temp + '°C'
             : 'Ekran Kartı Sıcaklığı: Bilgi Yok'}
         </div>
       </div>

@@ -589,7 +589,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   >
                     <div className='flex items-center'>
                       <User size={16} />
-                      <span className='ml-2'>{speaker}</span>
+                      <span className={`ml-2`}>{speaker}</span>
                     </div>
                     <input
                       type='color'
@@ -642,7 +642,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
           {segments.map((segment, index) => {
             const isHighlighted =
               currentTime >= segment.start && currentTime <= segment.end;
-
+            console.log(isHighlighted);
             // const isHovered = hoveredSegmentId === segment.id;
 
             return (
@@ -668,8 +668,10 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   onClick={(e) => showSegmentMenu(e, segment.id)}
                   onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
                   onMouseLeave={handleBadgeMouseLeave}
+                  // style={{ backgroundColor: speakerColors[segment.speaker] }}
                 >
-                  Konuşmacı : {segment.speaker}
+                  {viewMode === 'list' ? 'Konuşmacı : ' : ''}
+                  {segment.speaker}
                 </span>
                 <span
                   className={` ${
@@ -684,8 +686,27 @@ const TextEditor: React.FC<TextEditorProps> = ({
                     setActiveSegment(segment.id);
                   }}
                 >
-                  Başlangıç : {segment.start.toFixed(2)}s
+                  {viewMode === 'list' ? 'Başlangıç : ' : ''}
+                  {segment.start.toFixed(2)}s
                 </span>
+                {viewMode === 'list' && (
+                  <span
+                    className={` ${
+                      activeSegment === segment.id
+                        ? 'bg-primary text-white'
+                        : 'hover:bg-primary hover:text-white'
+                    } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600 bg-indigo-100 px-2 py-2 rounded`}
+                    onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
+                    onMouseLeave={handleBadgeMouseLeave}
+                    onClick={() => {
+                      setCurrentTime(segment.start);
+                      setActiveSegment(segment.id);
+                    }}
+                  >
+                    {viewMode === 'list' ? 'Bitiş : ' : ''}
+                    {segment.end.toFixed(2)}s
+                  </span>
+                )}
                 <span
                   ref={(el) => {
                     segmentRefs.current[segment.id] = el as HTMLSpanElement;
@@ -693,18 +714,32 @@ const TextEditor: React.FC<TextEditorProps> = ({
                   contentEditable
                   style={{
                     backgroundColor: isHighlighted
-                      ? speakerColors[segment.speaker]
+                      ? `${speakerColors[segment.speaker]}20`
                       : 'transparent',
+                    transition: 'background-color 0.3s ease',
                   }}
                   suppressContentEditableWarning
                   className={`
-    ${viewMode === 'list' ? 'block mt-1' : 'inline'}
-    focus:outline-none focus:bg-red-50 rounded-xl 
-    p-1 transition-colors duration-200
-    
-  `}
-                  onFocus={() => handleFocusSegment(segment.id)}
+        ${viewMode === 'list' ? 'block mt-1' : 'inline'}
+        focus:outline-none rounded-xl 
+        p-1 transition-colors duration-200
+      `}
+                  onFocus={(e) => {
+                    handleFocusSegment(segment.id);
+                    const range = document.createRange();
+                    range.selectNodeContents(e.target);
+                    const selection = window.getSelection();
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                  }}
                   onInput={() => handleInputSegment(segment.id)}
+                  onClick={(e) => {
+                    const range = document.createRange();
+                    range.selectNodeContents(e.currentTarget as Node);
+                    const selection = window.getSelection();
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                  }}
                 >
                   {segment.text}
                 </span>

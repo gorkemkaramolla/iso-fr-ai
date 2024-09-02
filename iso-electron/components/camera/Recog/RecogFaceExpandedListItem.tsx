@@ -3,6 +3,7 @@ import RecogDetailsDialog from './RecogDetailsDialog';
 import { formatLastSeen } from '@/library/camera/utils';
 import { RecogFace } from '@/types';
 import Image from 'next/image';
+import { useDisclosure } from '@nextui-org/react';
 interface RecogFaceExpandedListItemProps {
   face: RecogFace;
   index: number;
@@ -16,11 +17,10 @@ const RecogFaceExpandedListItem: React.FC<RecogFaceExpandedListItemProps> = ({
   setSelectedFace,
   selectedFace,
 }) => {
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const handleClick = () => {
     setSelectedFace(face);
-    (
-      document.getElementById(`modal-${index}`) as HTMLDialogElement
-    )?.showModal();
+    onOpen();
   };
 
   return (
@@ -30,13 +30,17 @@ const RecogFaceExpandedListItem: React.FC<RecogFaceExpandedListItemProps> = ({
         alt={`Known Face ${index}`}
         width={60}
         height={60}
-        className='object-cover w-[60px] h-[60px] rounded-sm cursor-pointer'
+        className='object-cover w-[60px] h-[60px] rounded-md cursor-pointer'
         onClick={handleClick}
       />
       <div className='text-xs text-balance font-light'>
         {formatLastSeen(face.timestamp)}
       </div>
-      <RecogDetailsDialog index={index} selectedFace={selectedFace} />
+      <RecogDetailsDialog
+        selectedFace={selectedFace}
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+      />
     </div>
   );
 };

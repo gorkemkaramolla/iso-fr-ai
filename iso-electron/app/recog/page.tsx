@@ -1,36 +1,36 @@
-"use client";
-import React, { useState, useEffect, useRef } from "react";
-import { InputText } from "primereact/inputtext";
-import { FilterMatchMode, FilterService } from "primereact/api";
-import { InputIcon } from "primereact/inputicon";
-import { IconField } from "primereact/iconfield";
+'use client';
+import React, { useState, useEffect, useRef } from 'react';
+import { InputText } from 'primereact/inputtext';
+import { FilterMatchMode, FilterService } from 'primereact/api';
+import { InputIcon } from 'primereact/inputicon';
+import { IconField } from 'primereact/iconfield';
 import {
   DataTable,
   DataTableFilterMeta,
   DataTableRowEditCompleteEvent,
   DataTableSelectionCellChangeEvent,
-} from "primereact/datatable";
+} from 'primereact/datatable';
 import {
   Column,
   ColumnFilterElementTemplateOptions,
   ColumnEditorOptions,
-} from "primereact/column";
-import { Dropdown, DropdownChangeEvent } from "primereact/dropdown";
-import { Calendar } from "primereact/calendar";
-import { InputNumber, InputNumberChangeEvent } from "primereact/inputnumber";
-import CalendarComponent from "@/components/camera/Calendar";
-import { Nullable } from "primereact/ts-helpers";
-import { getRecogFaces } from "@/services/camera/service";
-import { Menu } from "primereact/menu";
-import { Ripple } from "primereact/ripple";
-import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
-import { Toast } from "primereact/toast";
-import { Button } from "primereact/button";
-import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import EnlargedImage from "../profiles/enlarged-image";
-import { TrashIcon } from "lucide-react";
+} from 'primereact/column';
+import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
+import { Calendar } from 'primereact/calendar';
+import { InputNumber, InputNumberChangeEvent } from 'primereact/inputnumber';
+import CalendarComponent from '@/components/camera/Calendar';
+import { Nullable } from 'primereact/ts-helpers';
+import { getRecogFaces } from '@/services/camera/service';
+import { Menu } from 'primereact/menu';
+import { Ripple } from 'primereact/ripple';
+import { MultiSelect, MultiSelectChangeEvent } from 'primereact/multiselect';
+import { Toast } from 'primereact/toast';
+import { Button } from 'primereact/button';
+import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import EnlargedImage from '../profiles/enlarged-image';
+import { TrashIcon } from 'lucide-react';
 
 interface RecognizedFace {
   _id: {
@@ -61,7 +61,7 @@ const defaultFilters: DataTableFilterMeta = {
 };
 
 // The rule argument should be a string in the format "custom_[field]".
-FilterService.register("custom_age", (value, filters) => {
+FilterService.register('custom_age', (value, filters) => {
   const [from, to] = filters ?? [null, null];
   if (from === null && to === null) return true;
   if (from !== null && to === null) return from <= value;
@@ -69,7 +69,7 @@ FilterService.register("custom_age", (value, filters) => {
   return from <= value && value <= to;
 });
 // The rule argument should be a string in the format "custom_[field]".
-FilterService.register("custom_similarity", (value, filters) => {
+FilterService.register('custom_similarity', (value, filters) => {
   const [from, to] = filters ?? [null, null];
   if (from === null && to === null) return true;
   if (from !== null && to === null) return from <= value;
@@ -84,13 +84,13 @@ const RecognizedFacesTable: React.FC = () => {
 
   const [recognizedFaces, setRecognizedFaces] = useState<RecognizedFace[]>([]);
   const [filters, setFilters] = useState<DataTableFilterMeta>(defaultFilters);
-  const [globalFilterValue, setGlobalFilterValue] = useState<string>("");
+  const [globalFilterValue, setGlobalFilterValue] = useState<string>('');
   const [selectedFaces, setSelectedFaces] = useState<RecognizedFace[] | null>(
     null
   );
   const [selectedDate, setSelectedDate] = useState<Nullable<Date>>(() => {
-    if (typeof window !== "undefined") {
-      const storedDate = localStorage.getItem("selectedDate");
+    if (typeof window !== 'undefined') {
+      const storedDate = localStorage.getItem('selectedDate');
       return storedDate ? new Date(storedDate) : null;
     }
     return null;
@@ -102,7 +102,7 @@ const RecognizedFacesTable: React.FC = () => {
 
   useEffect(() => {
     if (selectedDate) {
-      localStorage.setItem("selectedDate", selectedDate?.toISOString());
+      localStorage.setItem('selectedDate', selectedDate?.toISOString());
     }
     // console.log('selec tedDate:', selectedDate);
     const fetchRecogFaces = async () => {
@@ -122,25 +122,25 @@ const RecognizedFacesTable: React.FC = () => {
         setPersons(uniqueLabels);
         // setLoading(false);
       } catch (error) {
-        console.error("Error fetching recognized face data:", error);
+        console.error('Error fetching recognized face data:', error);
       }
     };
     fetchRecogFaces();
   }, [selectedDate, setRecognizedFaces]);
 
   const formatTimestamp = (value: number) => {
-    return new Date(value).toLocaleString("tr-TR");
+    return new Date(value).toLocaleString('tr-TR');
   };
 
   const formatGender = (value: number) => {
-    return value === 1 ? "Male" : "Female";
+    return value === 1 ? 'Male' : 'Female';
   };
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     let _filters: DataTableFilterMeta = { ...filters };
     //@ts-ignore
-    _filters["global"].value = value;
+    _filters['global'].value = value;
 
     setFilters(_filters);
     setGlobalFilterValue(value);
@@ -150,13 +150,13 @@ const RecognizedFacesTable: React.FC = () => {
     dt.current?.exportCSV({ selectionOnly });
   };
   const cols: ColumnMeta[] = [
-    { field: "timestamp", header: "Timestamp" },
-    { field: "label", header: "Label" },
-    { field: "similarity", header: "Similarity" },
-    { field: "emotion", header: "Emotion" },
-    { field: "gender", header: "Gender" },
-    { field: "age", header: "Age" },
-    { field: "image_path", header: "Image" },
+    { field: 'timestamp', header: 'Timestamp' },
+    { field: 'label', header: 'Label' },
+    { field: 'similarity', header: 'Similarity' },
+    { field: 'emotion', header: 'Emotion' },
+    { field: 'gender', header: 'Gender' },
+    { field: 'age', header: 'Age' },
+    { field: 'image_path', header: 'Image' },
   ];
   const exportColumns = cols.map((col) => ({
     title: col.header,
@@ -164,41 +164,41 @@ const RecognizedFacesTable: React.FC = () => {
   }));
 
   const exportPdf = () => {
-    import("jspdf").then((jsPDF) => {
-      import("jspdf-autotable").then(() => {
-        const doc = new jsPDF.default("portrait", "px", "a4") as any;
+    import('jspdf').then((jsPDF) => {
+      import('jspdf-autotable').then(() => {
+        const doc = new jsPDF.default('portrait', 'px', 'a4') as any;
 
         doc.autoTable(exportColumns, recognizedFaces);
-        doc.save("tanınan_yuzler.pdf");
+        doc.save('tanınan_yuzler.pdf');
       });
     });
   };
   const exportExcel = () => {
-    import("xlsx").then((xlsx) => {
+    import('xlsx').then((xlsx) => {
       const worksheet = xlsx.utils.json_to_sheet(recognizedFaces);
-      const workbook = { Sheets: { data: worksheet }, SheetNames: ["data"] };
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
       const excelBuffer = xlsx.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
+        bookType: 'xlsx',
+        type: 'array',
       });
 
-      saveAsExcelFile(excelBuffer, "tanınan_yuzler");
+      saveAsExcelFile(excelBuffer, 'tanınan_yuzler');
     });
   };
 
-  const saveAsExcelFile = (buffer: any, fileName = "tanınan_yuzler_excel") => {
-    import("file-saver").then((module) => {
+  const saveAsExcelFile = (buffer: any, fileName = 'tanınan_yuzler_excel') => {
+    import('file-saver').then((module) => {
       if (module && module.default) {
         const EXCEL_TYPE =
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
-        const EXCEL_EXTENSION = ".xlsx";
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        const EXCEL_EXTENSION = '.xlsx';
         const data = new Blob([buffer], {
           type: EXCEL_TYPE,
         });
 
         module.default.saveAs(
           data,
-          fileName + "_export_" + new Date().getTime() + EXCEL_EXTENSION
+          fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION
         );
       }
     });
@@ -206,18 +206,18 @@ const RecognizedFacesTable: React.FC = () => {
 
   const exportItems = [
     {
-      label: "CSV",
-      icon: "pi pi-file",
+      label: 'CSV',
+      icon: 'pi pi-file',
       command: () => exportCSV(false),
     },
     {
-      label: "Excel",
-      icon: "pi pi-file-excel",
+      label: 'Excel',
+      icon: 'pi pi-file-excel',
       command: () => exportExcel(),
     },
     {
-      label: "PDF",
-      icon: "pi pi-file-pdf",
+      label: 'PDF',
+      icon: 'pi pi-file-pdf',
       command: () => exportPdf(),
     },
   ];
@@ -230,21 +230,21 @@ const RecognizedFacesTable: React.FC = () => {
 
   const showUndoToast = () => {
     toast.current?.show({
-      severity: "info",
-      summary: "Deletion Initiated",
-      detail: "Items will be deleted. Click Undo to cancel.",
+      severity: 'info',
+      summary: 'Deletion Initiated',
+      detail: 'Items will be deleted. Click Undo to cancel.',
       life: 4000,
       content: (
-        <div className="mb-2 w-full flex-1">
-          <span className="font-bold">
+        <div className='mb-2 w-full flex-1'>
+          <span className='font-bold'>
             {selectedFaces?.length} item(s) will be deleted.
           </span>
-          <div className="flex flex-1 pt-4">
+          <div className='flex flex-1 pt-4'>
             <Button
-              type="button"
-              label="Undo"
-              severity="info"
-              className="p-button-sm"
+              type='button'
+              label='Undo'
+              severity='info'
+              className='p-button-sm'
               onClick={undoDeletion}
             />
           </div>
@@ -268,18 +268,18 @@ const RecognizedFacesTable: React.FC = () => {
       deleteTimeoutId = null;
     }
     toast.current?.show({
-      severity: "info",
-      summary: "Deletion Cancelled",
-      detail: "The items were not deleted.",
+      severity: 'info',
+      summary: 'Deletion Cancelled',
+      detail: 'The items were not deleted.',
       life: 1500,
     });
   };
 
   const reject = () => {
     toast.current?.show({
-      severity: "warn",
-      summary: "Rejected",
-      detail: "You have rejected",
+      severity: 'warn',
+      summary: 'Rejected',
+      detail: 'You have rejected',
       life: 1500,
     });
   };
@@ -287,10 +287,10 @@ const RecognizedFacesTable: React.FC = () => {
   const confirmDelete = async (event: any) => {
     confirmPopup({
       target: event.currentTarget,
-      message: "Bu kayıtları silmek istediğinizden emin misiniz?",
-      icon: "pi pi-info-circle",
-      defaultFocus: "reject",
-      acceptClassName: "p-button-danger",
+      message: 'Bu kayıtları silmek istediğinizden emin misiniz?',
+      icon: 'pi pi-info-circle',
+      defaultFocus: 'reject',
+      acceptClassName: 'p-button-danger',
       accept,
       reject,
     });
@@ -298,9 +298,9 @@ const RecognizedFacesTable: React.FC = () => {
 
   const renderHeader = () => {
     return (
-      <div className="flex justify-between w-full items-center px-2 py-0 m-0">
+      <div className='flex justify-between w-full items-center px-2 py-0 m-0'>
         <div></div>
-        <div className="text-2xl nunito-700 ">Tanınan Yüzler</div>
+        <div className='text-2xl nunito-700 '>Tanınan Yüzler</div>
 
         {/* <div className='flex items-center gap-4'>
           <IconField iconPosition='left'>
@@ -313,16 +313,16 @@ const RecognizedFacesTable: React.FC = () => {
             />
           </IconField>
         </div> */}
-        <div className="flex items-center">
+        <div className='flex items-center'>
           <div
-            style={{ fontSize: "1.5rem" }}
-            className="pi pi-file-export text-blue-500 p-4 p-ripple rounded-lg ml-4"
+            style={{ fontSize: '1.5rem' }}
+            className='pi pi-file-export text-blue-500 p-4 p-ripple rounded-lg ml-4'
             onClick={(event) => exportItemsMenu?.current?.toggle(event)}
-            title="Dışarı Aktar"
+            title='Dışarı Aktar'
           >
             <Ripple
               pt={{
-                root: { style: { background: "rgba(156, 39, 176, 0.3)" } },
+                root: { style: { background: 'rgba(156, 39, 176, 0.3)' } },
               }}
             />
           </div>
@@ -335,29 +335,29 @@ const RecognizedFacesTable: React.FC = () => {
     return (
       <>
         {selectedFaces && selectedFaces?.length > 0 && (
-          <div className="flex items-center gap-4">
+          <div className='flex items-center gap-4'>
             <button
               onClick={confirmDelete}
-              className="btn btn-sm btn-error rounded-xl"
-              title="Seçilenleri Sil"
+              className='btn btn-sm btn-error rounded-xl'
+              title='Seçilenleri Sil'
             >
               <TrashIcon size={16} />
               <span>Sil</span>
               {selectedFaces?.length > 0 && (
-                <span className="px-1.5 py-0.5 bg-white text-red-500 text-xs font-semibold rounded-full">
+                <span className='px-1.5 py-0.5 bg-white text-red-500 text-xs font-semibold rounded-full'>
                   {selectedFaces?.length}
                 </span>
               )}
             </button>
             <div
-              style={{ fontSize: "1.2rem" }}
-              className="pi pi-file-export text-blue-500 p-2 p-ripple rounded-lg"
+              style={{ fontSize: '1.2rem' }}
+              className='pi pi-file-export text-blue-500 p-2 p-ripple rounded-lg'
               onClick={(event) => exportItemsMenu?.current?.toggle(event)}
-              title="Dışarı Aktar"
+              title='Dışarı Aktar'
             >
               <Ripple
                 pt={{
-                  root: { style: { background: "rgba(156, 39, 176, 0.3)" } },
+                  root: { style: { background: 'rgba(156, 39, 176, 0.3)' } },
                 }}
               />
             </div>
@@ -380,9 +380,9 @@ const RecognizedFacesTable: React.FC = () => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_FLASK_URL}/recog/${id}`,
         {
-          method: "PUT",
+          method: 'PUT',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify(dataToSend),
         }
@@ -394,23 +394,23 @@ const RecognizedFacesTable: React.FC = () => {
 
       const result = await response.json();
 
-      if (result.message === "Log updated successfully") {
+      if (result.message === 'Log updated successfully') {
         setRecognizedFaces(_recognizedFaces);
         toast.current?.show({
-          severity: "success",
-          summary: "Update Successful",
-          detail: "The document has been updated successfully.",
+          severity: 'success',
+          summary: 'Update Successful',
+          detail: 'The document has been updated successfully.',
           life: 3000,
         });
       } else {
-        throw new Error("Update failed");
+        throw new Error('Update failed');
       }
     } catch (error) {
-      console.error("Error updating document:", error);
+      console.error('Error updating document:', error);
       toast.current?.show({
-        severity: "error",
-        summary: "Update Failed",
-        detail: "There was an error updating the document. Please try again.",
+        severity: 'error',
+        summary: 'Update Failed',
+        detail: 'There was an error updating the document. Please try again.',
         life: 3000,
       });
     }
@@ -418,7 +418,7 @@ const RecognizedFacesTable: React.FC = () => {
   const textEditor = (options: ColumnEditorOptions) => {
     return (
       <InputText
-        type="text"
+        type='text'
         value={options.value}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           options.editorCallback!(e.target.value)
@@ -432,7 +432,7 @@ const RecognizedFacesTable: React.FC = () => {
       await Promise.all(
         selectedFaces.map((face) =>
           fetch(`${process.env.NEXT_PUBLIC_FLASK_URL}/recog/${face._id.$oid}`, {
-            method: "DELETE",
+            method: 'DELETE',
           })
         )
       );
@@ -441,16 +441,16 @@ const RecognizedFacesTable: React.FC = () => {
       );
       setSelectedFaces(null);
     } catch (error) {
-      console.error("Error deleting recognized face data:", error);
+      console.error('Error deleting recognized face data:', error);
     }
   };
 
   const simularityEditor = (options: ColumnEditorOptions) => {
     return (
       <InputNumber
-        inputId="percent"
+        inputId='percent'
         // prefix='%'
-        mode="decimal"
+        mode='decimal'
         minFractionDigits={1}
         maxFractionDigits={2}
         max={1}
@@ -466,7 +466,7 @@ const RecognizedFacesTable: React.FC = () => {
   const ageEditor = (options: ColumnEditorOptions) => {
     return (
       <InputNumber
-        inputId="age"
+        inputId='age'
         max={100}
         min={0}
         step={1}
@@ -481,8 +481,8 @@ const RecognizedFacesTable: React.FC = () => {
   const calendarEditor = (options: ColumnEditorOptions): JSX.Element => {
     return (
       <Calendar
-        placeholder="gg/aa/yy ss:dd"
-        dateFormat={"dd/mm/yy"}
+        placeholder='gg/aa/yy ss:dd'
+        dateFormat={'dd/mm/yy'}
         value={new Date(options.value)}
         onChange={(e) =>
           options.editorCallback && options.editorCallback(e.value?.getTime())
@@ -497,17 +497,17 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          "Angry",
-          "Disgust",
-          "Fear",
-          "Happy",
-          "Sad",
-          "Surprise",
-          "Neutral",
-          "Unknown",
+          'Angry',
+          'Disgust',
+          'Fear',
+          'Happy',
+          'Sad',
+          'Surprise',
+          'Neutral',
+          'Unknown',
         ]}
         onChange={(e: DropdownChangeEvent) => options.editorCallback!(e.value)}
-        placeholder="Select an Emotion"
+        placeholder='Select an Emotion'
       />
     );
   };
@@ -517,12 +517,12 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          { label: "Male", value: 1 },
-          { label: "Female", value: 0 },
+          { label: 'Male', value: 1 },
+          { label: 'Female', value: 0 },
         ]}
         onChange={(e: DropdownChangeEvent) => options.editorCallback!(e.value)}
-        optionLabel="label"
-        placeholder="Select a Gender"
+        optionLabel='label'
+        placeholder='Select a Gender'
       />
     );
   };
@@ -534,18 +534,18 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          "Angry",
-          "Disgust",
-          "Fear",
-          "Happy",
-          "Sad",
-          "Surprise",
-          "Neutral",
-          "Unknown",
+          'Angry',
+          'Disgust',
+          'Fear',
+          'Happy',
+          'Sad',
+          'Surprise',
+          'Neutral',
+          'Unknown',
         ]}
         onChange={(e) => options.filterCallback(e.value, options.index)}
-        placeholder="Select an Emotion"
-        className="p-column-filter h-8 [&_.p-inputtext]:pt-1"
+        placeholder='Select an Emotion'
+        className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
         showClear
       />
     );
@@ -558,13 +558,13 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          { label: "Male", value: 1 },
-          { label: "Female", value: 0 },
+          { label: 'Male', value: 1 },
+          { label: 'Female', value: 0 },
         ]}
         onChange={(e) => options.filterCallback(e.value, options.index)}
-        optionLabel="label"
-        placeholder="Select a Gender"
-        className="p-column-filter h-8 [&_.p-inputtext]:pt-1"
+        optionLabel='label'
+        placeholder='Select a Gender'
+        className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
         showClear
       />
     );
@@ -574,25 +574,25 @@ const RecognizedFacesTable: React.FC = () => {
     const [from, to] = options.value ?? [null, null];
 
     return (
-      <div className="flex gap-1">
+      <div className='flex gap-1'>
         <InputNumber
           value={from}
           onChange={(e) => options.filterApplyCallback([e.value, to])}
-          placeholder="from"
+          placeholder='from'
           style={{
-            minWidth: "4rem !important",
-            maxWidth: "4rem !important",
-            height: "2rem",
+            minWidth: '4rem !important',
+            maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
         <InputNumber
           value={to}
           onChange={(e) => options.filterApplyCallback([from, e.value])}
-          placeholder="to"
+          placeholder='to'
           style={{
-            minWidth: "4rem !important",
-            maxWidth: "4rem !important",
-            height: "2rem",
+            minWidth: '4rem !important',
+            maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
       </div>
@@ -602,37 +602,37 @@ const RecognizedFacesTable: React.FC = () => {
     const [from, to] = options.value ?? [null, null];
 
     return (
-      <div className="flex gap-1">
+      <div className='flex gap-1'>
         <InputNumber
           value={from}
           onChange={(e) => options.filterApplyCallback([e.value, to])}
-          mode="decimal"
+          mode='decimal'
           minFractionDigits={1}
           maxFractionDigits={2}
           max={1}
           min={0}
           step={0.01}
-          placeholder="from"
+          placeholder='from'
           style={{
-            minWidth: "4rem !important",
-            maxWidth: "4rem !important",
-            height: "2rem",
+            minWidth: '4rem !important',
+            maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
         <InputNumber
           value={to}
           onChange={(e) => options.filterApplyCallback([from, e.value])}
-          mode="decimal"
+          mode='decimal'
           minFractionDigits={1}
           maxFractionDigits={2}
           max={1}
           min={0}
           step={0.01}
-          placeholder="to"
+          placeholder='to'
           style={{
-            minWidth: "4rem !important",
-            maxWidth: "4rem !important",
-            height: "2rem",
+            minWidth: '4rem !important',
+            maxWidth: '4rem !important',
+            height: '2rem',
           }}
         />
       </div>
@@ -643,8 +643,8 @@ const RecognizedFacesTable: React.FC = () => {
     // setSelectedDate(options.value);
     return (
       <CalendarComponent
-        className="h-8"
-        minDate={new Date("2024-08-01")}
+        className='h-8'
+        minDate={new Date('2024-08-01')}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
       />
@@ -653,9 +653,9 @@ const RecognizedFacesTable: React.FC = () => {
 
   const personBodyTemplate = (rowData: RecognizedFace) => {
     return (
-      <div className="inline-flex text-center items-center p-0 m-0">
+      <div className='inline-flex text-center items-center p-0 m-0'>
         <div
-          className="flex gap-2 items-center justify-center text-center cursor-pointer p-0 m-0"
+          className='flex gap-2 items-center justify-center text-center cursor-pointer p-0 m-0'
           onClick={() => router.push(`/profiles/?id=${rowData.personnel_id}`)}
           title={`Personel ${rowData.label} Sayfasına Git`}
         >
@@ -663,28 +663,28 @@ const RecognizedFacesTable: React.FC = () => {
             width={200}
             height={200}
             src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${rowData.personnel_id}`}
-            alt=""
-            className="w-[20px] h-[20px] rounded-full shadow-lg"
+            alt=''
+            className='min-w-[20px] w-[20px] min-h-[20px] h-[20px] rounded-full shadow-lg'
             onError={(e) => {
-              e.currentTarget.src = "/inner_circle.png";
+              e.currentTarget.src = '/inner_circle.png';
             }}
           />
-          <span className="font-bold text-md">{rowData.label}</span>
+          <span className='font-bold text-md'>{rowData.label}</span>
         </div>
       </div>
     );
   };
   const personItemTemplate = (option: string) => {
-    console.log("option:", option);
+    console.log('option:', option);
     return (
-      <div className="flex items-center gap-2">
+      <div className='flex items-center gap-2'>
         <Image
           alt={option}
-          src={process.env.NEXT_PUBLIC_FLASK_URL + "/faces/" + option}
+          src={process.env.NEXT_PUBLIC_FLASK_URL + '/faces/' + option}
           width={32}
           height={32}
           onError={(e) => {
-            e.currentTarget.src = "/inner_circle.png";
+            e.currentTarget.src = '/inner_circle.png';
           }}
         />
         <span>{option}</span>
@@ -703,10 +703,10 @@ const RecognizedFacesTable: React.FC = () => {
           options.filterApplyCallback(e.value)
         }
         // optionLabel='name'
-        placeholder="Any"
-        className="p-column-filter"
+        placeholder='Any'
+        className='p-column-filter'
         maxSelectedLabels={1}
-        style={{ minWidth: "14rem" }}
+        style={{ minWidth: '14rem' }}
       />
     );
   };
@@ -714,73 +714,74 @@ const RecognizedFacesTable: React.FC = () => {
   const header = renderHeader();
 
   return (
-    <div className="flex items-center justify-center my-10 mx-20 rounded-lg shadow-lg ">
+    <div className='flex items-center justify-center my-10 mx-20 rounded-lg shadow-lg '>
       <Toast ref={toast} />
       <ConfirmPopup />
       {
         // @ts-ignore
         <DataTable
           ref={dt}
-          className="custom-datatable w-full nunito-400 [&_tr]:p-0 [&_tr]:m-0 [&_tr_td]:p-0 [&_tr_td]:m-0 [&_.p-datatable-header]:p-0 [&_.p-datatable-header]:m-0"
+          className='w-full nunito-400 [&_.p-datatable-wrapper]:rounded-t-xl [&_.p-paginator-bottom]:rounded-b-xl'
           value={recognizedFaces}
-          size="small"
+          size='small'
           paginator
           rows={100}
           rowsPerPageOptions={[50, 100, 500]}
-          dataKey="_id.$oid"
+          dataKey='_id.$oid'
           filters={filters}
-          filterDisplay="row"
+          filterDisplay='row'
           // loading={loading}
           dragSelection
           // header={header}
-          emptyMessage="No recognized faces found."
+          emptyMessage='No recognized faces found.'
           scrollable
           removableSort
-          sortMode="single"
+          sortMode='single'
           sortOrder={1}
-          editMode="row"
+          editMode='row'
           onRowEditComplete={onRowEditComplete}
-          selectionMode={"checkbox"}
+          selectionMode={'checkbox'}
           selection={selectedFaces!}
           onSelectionChange={(
             e: DataTableSelectionCellChangeEvent<RecognizedFace[]>
           ) => setSelectedFaces(e.value as unknown as RecognizedFace[])}
         >
           <Column
-            selectionMode="multiple"
-            headerStyle={{ width: "3rem" }}
+            selectionMode='multiple'
+            headerStyle={{ width: '3rem' }}
           ></Column>
           <Column
-            field="timestamp"
-            header="Tanıma Tarihi"
+            field='timestamp'
+            header='Tanıma Tarihi'
             body={(rowData) => formatTimestamp(rowData.timestamp)}
             sortable
-            filterPlaceholder="Search by date"
+            filterPlaceholder='Search by date'
             filter
             filterElement={dateFilterTemplate}
             showFilterMenu={false}
             editor={(options) => calendarEditor(options)}
+            className='[&_.p-column-filter>.p-column-filter-clear-button]:hidden'
           />
           <Column
-            field="label"
-            header="İsim"
-            filterMenuStyle={{ width: "14rem" }}
-            style={{ maxWidth: "14rem" }}
+            field='label'
+            header='İsim'
+            filterMenuStyle={{ width: '14rem' }}
+            style={{ maxWidth: '14rem' }}
             sortable
-            filterPlaceholder="Search by name"
+            filterPlaceholder='Search by name'
             // filterElement={personRowFilterTemplate}
             body={personBodyTemplate}
             filter
             showFilterMenu={false}
-            className="[&_input]:h-8"
+            className='[&_input]:h-8'
 
             // editor={(options) => textEditor(options)}
           />
           <Column
-            field="similarity"
-            header="Benzerlik Oranı"
-            filterMenuStyle={{ width: "14rem" }}
-            style={{ maxWidth: "14rem" }}
+            field='similarity'
+            header='Benzerlik Oranı'
+            filterMenuStyle={{ width: '14rem' }}
+            style={{ maxWidth: '14rem' }}
             sortable
             filter
             showFilterMenu={false}
@@ -788,35 +789,37 @@ const RecognizedFacesTable: React.FC = () => {
             editor={(options) => simularityEditor(options)}
           />
           <Column
-            field="emotion"
-            header="Duygu Durumu"
-            filterMenuStyle={{ width: "14rem" }}
-            style={{ maxWidth: "14rem" }}
+            field='emotion'
+            header='Duygu Durumu'
+            filterMenuStyle={{ width: '12rem' }}
+            style={{ maxWidth: '12rem' }}
             sortable
             filter
             showFilterMenu={false}
             filterElement={emotionFilterTemplate}
             editor={(options) => emotionEditor(options)}
+            className='[&_.p-column-filter>.p-column-filter-clear-button]:hidden'
           />
           <Column
-            field="gender"
-            header="Cinsiyet Tahmini"
-            filterMenuStyle={{ width: "14rem" }}
-            style={{ maxWidth: "14rem" }}
+            field='gender'
+            header='Cinsiyet Tahmini'
+            filterMenuStyle={{ width: '12rem' }}
+            style={{ maxWidth: '12rem' }}
             body={(rowData) => formatGender(rowData.gender)}
             sortable
             filter
             showFilterMenu={false}
             filterElement={genderFilterTemplate}
             editor={(options) => genderEditor(options)}
+            className='[&_.p-column-filter>.p-column-filter-clear-button]:hidden'
           />
           <Column
-            field="age"
-            header="Yaş Tahmini"
-            filterField="age"
+            field='age'
+            header='Yaş Tahmini'
+            filterField='age'
             showFilterMenu={false}
-            filterMenuStyle={{ width: "14rem" }}
-            style={{ maxWidth: "14rem" }}
+            filterMenuStyle={{ width: '14rem' }}
+            style={{ maxWidth: '14rem' }}
             sortable
             filter
             filterElement={ageRowFilterTemplate}
@@ -824,24 +827,24 @@ const RecognizedFacesTable: React.FC = () => {
           />
 
           <Column
-            field="image_path"
-            header="Fotoğraf"
+            field='image_path'
+            header='Fotoğraf'
             body={(rowData) => (
               <div>
                 <Image
-                  className="cursor-pointer hover:opacity-80 transition-opacity duration-300"
+                  className='cursor-pointer hover:opacity-80 transition-opacity duration-300'
                   width={64}
                   height={32}
-                  objectFit="cover"
+                  objectFit='cover'
                   src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
                   onClick={() => setEnlargedImage(rowData.image_path)}
-                  alt={""}
+                  alt={''}
                 />
                 {enlargedImage === rowData.image_path && (
                   <EnlargedImage
                     src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${rowData.image_path}`}
                     onClose={() => setEnlargedImage(false)}
-                    alt={""}
+                    alt={''}
                   />
                 )}
               </div>
@@ -849,17 +852,17 @@ const RecognizedFacesTable: React.FC = () => {
           />
 
           <Column
-            field=""
-            header="Eylemler"
+            field=''
+            header='Eylemler'
             rowEditor
             filter
             showFilterMenu={false}
             filterElement={renderRowDeleteAndExportButtons}
-            filterMenuStyle={{ width: "14rem" }}
-            style={{ maxWidth: "14rem", width: "14rem" }}
-            bodyStyle={{ textAlign: "center" }}
+            filterMenuStyle={{ width: '14rem' }}
+            style={{ maxWidth: '14rem', width: '14rem' }}
+            bodyStyle={{ textAlign: 'center' }}
             filterClear={() => null}
-            className="[&_.p-column-filter>.p-column-filter-clear-button]:hidden"
+            className='[&_.p-column-filter>.p-column-filter-clear-button]:hidden'
             // filterClear={false}
             // filterHeaderStyle={{ display: 'flex', width: '100%' }}
           ></Column>

@@ -16,7 +16,7 @@ const RecogDetailsModal: React.FC<RecogDetailsModalProps> = ({
 }) => {
   return (
     <>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size='4xl'>
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size='5xl'>
         <ModalContent>
           <ModalBody className='p-0 m-0'>
             {selectedFace && <RecogDetails selectedFace={selectedFace} />}

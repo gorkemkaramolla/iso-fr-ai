@@ -43,9 +43,9 @@ const SecurityDashboard: React.FC = () => {
   const [recogList, setRecogList] = useState<RecogFace[]>([]);
 
   const periodOptions: PeriodOption[] = [
-    { label: 'Last 24 Hours', value: 'lastDay' },
-    { label: 'Last Week', value: 'lastWeek' },
-    { label: 'Last Month', value: 'lastMonth' },
+    { label: 'Son 24 Saat', value: 'lastDay' },
+    { label: 'Son Hafta', value: 'lastWeek' },
+    { label: 'Son Ay', value: 'lastMonth' },
   ];
 
   useEffect(() => {
@@ -104,7 +104,7 @@ const SecurityDashboard: React.FC = () => {
       ],
     });
     const formatDate = (timestamp: number) => {
-      return new Date(timestamp).toLocaleString("tr-TR");
+      return new Date(timestamp).toLocaleString('tr-TR');
     };
 
     const topDetections = Object.values(
@@ -161,7 +161,7 @@ const SecurityDashboard: React.FC = () => {
   return (
     <div className='min-h-screen bg-gradient-to-br from-gray-100 to-blue-100 p-8'>
       <h1 className='text-4xl font-bold mb-12 text-center text-gray-800'>
-        Security Camera Analytics
+        Güvenlik Kamera İstatistikleri
       </h1>
       <div className='flex justify-center mb-12 space-x-4'>
         <Dropdown
@@ -183,23 +183,29 @@ const SecurityDashboard: React.FC = () => {
       </div>
 
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-        <Card title='Face Detection Overview' className='shadow-xl rounded-lg'>
+        <Card
+          title='Yüz Tanıma İstatistikleri'
+          className='shadow-xl rounded-lg'
+        >
           <div className='h-64'>
             <Chart type='pie' data={detectionData} options={chartOptions} />
           </div>
         </Card>
 
-        <Card title='Detections Over Time' className='shadow-xl rounded-lg'>
+        <Card
+          title='Zaman Serisi İstatistikleri'
+          className='shadow-xl rounded-lg'
+        >
           <div className='h-64'>
             <Chart type='line' data={timeSeriesData} options={chartOptions} />
           </div>
         </Card>
 
-        <Card title='Top Detected Individuals' className='shadow-xl rounded-lg'>
+        <Card title='En Çok Tanınan Kişiler' className='shadow-xl rounded-lg'>
           <DataTable value={topDetections} className='p-datatable-sm'>
-            <Column field='name' header='Name' />
-            <Column field='count' header='Count' />
-            <Column field='lastSeen' header='Last Seen' />
+            <Column field='name' header='Kişi' />
+            <Column field='count' header='Sayı' />
+            <Column field='lastSeen' header='Son Görülme Tarihi' />
           </DataTable>
         </Card>
       </div>

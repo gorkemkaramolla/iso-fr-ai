@@ -103,26 +103,29 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
     if (editorRef.current) {
       const editor = editorRef.current;
       const model = editor.getModel();
-      const matches = model.findMatches(
-        searchText,
-        true,
-        false,
-        false,
-        null,
-        true
-      );
 
-      if (matches.length > 0) {
-        editor.setSelections(
-          matches.map((match: any) => ({
-            selectionStartLineNumber: match.range.startLineNumber,
-            selectionStartColumn: match.range.startColumn,
-            positionLineNumber: match.range.endLineNumber,
-            positionColumn: match.range.endColumn,
-          }))
+      if (model) {
+        const matches = model.findMatches(
+          searchText,
+          true,
+          false,
+          false,
+          null,
+          true
         );
 
-        editor.revealRange(matches[0].range);
+        if (matches.length > 0) {
+          editor.setSelections(
+            matches.map((match: any) => ({
+              selectionStartLineNumber: match.range.startLineNumber,
+              selectionStartColumn: match.range.startColumn,
+              positionLineNumber: match.range.endLineNumber,
+              positionColumn: match.range.endColumn,
+            }))
+          );
+
+          editor.revealRange(matches[0].range);
+        }
       }
     }
   };

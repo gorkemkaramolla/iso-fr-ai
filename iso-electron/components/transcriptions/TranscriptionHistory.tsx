@@ -1,29 +1,27 @@
-'use client';
-
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import createApi from '@/utils/axios_instance';
-import { formatDate } from '@/utils/formatDate';
-import ChatSideMenuSkeleton from '@/components/ui/transcription-history-skeleton';
-import CalendarComponent from '@/components/ui/calendar-component';
 import { Nullable } from 'primereact/ts-helpers';
 import { Transcript } from '@/types';
 import ExportButtons from './export-buttons';
-import { deleteTranscription } from '@/utils/transcription/transcription';
 import { useRouter } from 'next/navigation';
+import useStore from '@/library/store';
+import createApi from '@/utils/axios_instance';
+import ChatSideMenuSkeleton from '../ui/transcription-history-skeleton';
+import CalendarComponent from '../camera/Calendar';
+import { deleteTranscription } from '@/utils/transcription/transcription';
+import { formatDate } from '@/utils/formatDate';
 
-type TranscriptionHistoryProps = {
+interface TranscriptionHistoryProps {
   activePageId?: string;
   activeTranscriptionName?: string; // Made optional
   setTranscriptionName?: (name: string) => void; // Made optional
-};
+}
 
 const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
   activePageId,
   activeTranscriptionName,
   setTranscriptionName,
 }) => {
-  const [transcriptions, setTranscriptions] = useState<Transcript[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [itemsPerPage, setItemsPerPage] = useState<number>(8);
@@ -31,42 +29,27 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
-  const pRef = useRef<HTMLParagraphElement | null>(null);
-  const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+  const transcriptions = useStore((state) => state.transcriptions);
+  const setTranscriptions = useStore((state) => state.setTranscriptions); // Get the setter from Zustand store
   const router = useRouter();
-
-  const getTranscriptions = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/transcriptions/');
-      const data: Transcript[] = await response.json(); // Changed to response.data for Axios
-      const sortedData = data.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setTranscriptions(sortedData);
-
-      if (sortedData.length > 0) {
-        setSelectedDate(new Date(sortedData[0].created_at));
-      }
-    } catch (error) {
-      console.error('Failed to fetch transcriptions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEditName = async (new_name: string, transcription_id: string) => {
-    try {
-      await api.put(`transcriptions/${transcription_id}`, { name: new_name });
-    } catch (error) {
-      console.error('Failed to rename transcription:', error);
-    }
-  };
+  const pRef = useRef<HTMLParagraphElement | null>(null);
 
   useEffect(() => {
-    getTranscriptions();
-  }, []);
+    const fetchTranscriptions = async () => {
+      try {
+        const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+        const response = await api.get('/transcriptions/');
+        const data: Transcript[] = await response.json();
+        setTranscriptions(data); // Update Zustand store with the latest transcriptions
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch transcriptions:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchTranscriptions();
+  }, [setTranscriptions]); // Re-fetch transcriptions every time the component loads
 
   useEffect(() => {
     const calculateItemsPerPage = () => {
@@ -113,6 +96,7 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
       transcriptions.map((transcription) => new Date(transcription.created_at))
     )
   ).sort((a, b) => a.getTime() - b.getTime());
+  const minDate = availableDates.length > 0 ? availableDates[0] : new Date();
 
   const filteredTranscriptions = selectedDate
     ? transcriptions.filter(
@@ -137,21 +121,20 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
     setIsRenameOpen(false);
     setRenamingId(null);
 
-    // Update the specific transcription in state
-    setTranscriptions((prevTranscriptions) =>
-      prevTranscriptions.map((transcription) =>
-        transcription._id === transcriptionId
-          ? { ...transcription, name: newName }
-          : transcription
-      )
-    );
-
-    // Update the name of the active transcription if applicable and setTranscriptionName is provided
     if (activePageId === transcriptionId && setTranscriptionName) {
       setTranscriptionName(newName);
     }
 
     handleEditName(newName, transcriptionId || '');
+  };
+
+  const handleEditName = async (new_name: string, transcription_id: string) => {
+    try {
+      const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
+      await api.put(`transcriptions/${transcription_id}`, { name: new_name });
+    } catch (error) {
+      console.error('Failed to rename transcription:', error);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLParagraphElement>) => {
@@ -175,8 +158,7 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
               History
             </h2>
             <CalendarComponent
-              localStorageSaveName='transcriptionFilter'
-              availableDates={availableDates}
+              minDate={minDate}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
             />
@@ -207,7 +189,7 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
                             isRenameOpen &&
                             renamingId === transcription._id
                           ) {
-                            e.preventDefault(); // Prevent link navigation when editing
+                            e.preventDefault();
                           }
                         }}
                       >

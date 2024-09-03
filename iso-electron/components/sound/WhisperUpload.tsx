@@ -1,8 +1,5 @@
-'use client';
-
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import io from 'socket.io-client';
-import useStore from '@/library/store';
 import createApi from '@/utils/axios_instance';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUploadCloud, FiX, FiMusic } from 'react-icons/fi';
@@ -10,42 +7,74 @@ import WaveAudio from '@/components/sound/wave-audio';
 import Link from 'next/link';
 import Card from '../ui/card';
 import Header from '../ui/header';
+import InfoTooltip from '@/components/ui/info-button-tooltip';
+import Progress from '../ui/progress';
+import { ApiResponse, Segment, Transcript } from '@/types';
+import useStore from '@/library/store'; // Import Zustand store
 
-interface Segment {
-  id: number;
-  start: number;
-  end: number;
-  text: string;
-  speaker: string;
-}
-
-interface Transcript {
-  text: string;
-  segments: Segment[];
-  language: string;
-}
-
-interface ApiResponse {
-  id: string;
-  created_at: string;
-  transcription: Transcript;
-}
-interface WhisperUploadProps {
-  isProcessing: boolean;
-}
-const WhisperUpload: React.FC<WhisperUploadProps> = ({
+const WhisperUpload: React.FC<{ isProcessing: boolean }> = ({
   isProcessing,
-}: WhisperUploadProps) => {
+}) => {
   const [file, setFile] = useState<File | null>(null);
-  const [response, setResponse] = useState<ApiResponse | null>(null);
+  const [response, setResponse] = useState<Transcript | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
+  const [transcriptId, setTranscriptId] = useState<string | null>(null);
+  const setTranscriptions = useStore((state) => state.setTranscriptions); // Get the setter from Zustand store
+
+  useEffect(() => {
+    // Retrieve progress and transcriptId from localStorage on initial render
+    if (typeof window !== 'undefined') {
+      const savedProgress = localStorage.getItem('processAudioProgress');
+      const savedTranscriptId = localStorage.getItem('transcriptId');
+
+      if (savedProgress) {
+        const progressValue = parseInt(savedProgress, 10);
+        if (progressValue === 100) {
+          // Reset progress if it was 100%
+          setProgress(0);
+          localStorage.setItem('processAudioProgress', '0');
+        } else {
+          setProgress(progressValue);
+        }
+      }
+
+      if (savedTranscriptId) setTranscriptId(savedTranscriptId);
+
+      // Check the progress status on the server if a transcriptId is available
+      if (savedTranscriptId) {
+        checkProgressStatus(savedTranscriptId);
+      }
+    }
+  }, []);
+
+  const checkProgressStatus = async (id: string) => {
+    try {
+      const api = createApi(`${process.env.NEXT_PUBLIC_DIARIZE_URL}`);
+      const response = await api.get(`/process-status/${id}`);
+      const data = await response.json();
+
+      if (data.status === 'completed') {
+        setProgress(100);
+        localStorage.setItem('processAudioProgress', '100');
+        // Handle completed status (e.g., fetch final transcription)
+      } else if (data.status === 'in progress') {
+        setProgress(data.progress);
+      } else {
+        setProgress(0);
+        localStorage.removeItem('processAudioProgress');
+        localStorage.removeItem('transcriptId');
+      }
+    } catch (error) {
+      console.error('Failed to check progress status:', error);
+    }
+  };
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files ? event.target.files[0] : null;
     if (selectedFile && selectedFile.size > 500 * 1024 * 1024) {
-      setError('File size should be less than 5000MB');
+      setError('File size should be less than 500MB');
       return;
     }
     setFile(selectedFile);
@@ -63,6 +92,16 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    // Save progress and transcriptId to localStorage whenever they change
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('processAudioProgress', progress.toString());
+      if (transcriptId) {
+        localStorage.setItem('transcriptId', transcriptId);
+      }
+    }
+  }, [progress, transcriptId]);
+
   const onFileUpload = async () => {
     if (!file) {
       setError('Please select a file first!');
@@ -78,23 +117,21 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
 
     try {
       const api = createApi(process.env.NEXT_PUBLIC_DIARIZE_URL);
-      const response = await api.post('/process-audio/', formData, {
-        headers: {
-          'X-Client-ID':
-            typeof window !== 'undefined'
-              ? localStorage.getItem('client_id') || '123456'
-              : '123456',
-        },
-      });
+      const response = await api.post('/process-audio/', formData);
 
-      // Check if response is okay
       if (!response.ok) {
         throw new Error(`Failed to upload file: ${response.statusText}`);
       }
 
-      const data: ApiResponse = await response.json();
+      const data: Transcript = await response.json();
       setResponse(data);
-      setProgress(100);
+      setProgress(0);
+
+      // Set the transcript ID for further use
+      setTranscriptId(data._id);
+
+      // Re-fetch the transcriptions after adding a new one
+      fetchTranscriptionsAndUpdateStore();
 
       // Store the response in localStorage
       if (typeof window !== 'undefined') {
@@ -119,6 +156,17 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
     }
   };
 
+  const fetchTranscriptionsAndUpdateStore = async () => {
+    try {
+      const api = createApi(`${process.env.NEXT_PUBLIC_DIARIZE_URL}`);
+      const response = await api.get('/transcriptions/');
+      const data: Transcript[] = await response.json();
+      setTranscriptions(data);
+    } catch (error) {
+      console.error('Failed to fetch transcriptions:', error);
+    }
+  };
+
   const cancelSelection = () => {
     setFile(null);
     setError('');
@@ -126,9 +174,26 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
 
   return (
     <div className='w-full min-h-screen p-8'>
+      <div className='w-full absolute bottom-0 left-0'>
+        <Progress current={progress} />
+      </div>
       <div className='max-w-3xl mx-auto'>
-        <Header title='Konuşma Sentezleyici' />
-
+        <div className='flex items-center '>
+          <Header title='Konuşma Sentezi' />
+          <InfoTooltip
+            content={
+              <div>
+                <p>
+                  Konuşma Sentezi, ses dosyalarını metne dönüştürmek için
+                  kullanılan bir araçtır.
+                </p>
+                <p>Desteklenen dosya formatları: MP3, WAV, M4A, FLAC</p>
+                <p>Maksimum dosya boyutu: 25MB</p>
+              </div>
+            }
+            placement='right'
+          />
+        </div>
         <motion.div
           className=''
           initial={{ opacity: 0, y: 20 }}
@@ -259,21 +324,17 @@ const WhisperUpload: React.FC<WhisperUploadProps> = ({
               transition={{ duration: 0.5 }}
             >
               <div className='px-6 py-4 bg-indigo-600 text-white'>
-                <h2 className='text-xl  font-semibold'>Konuşma Sentezi</h2>
-                <p className='text-sm opacity-80'>
-                  Bu tarihte işlendi:{' '}
-                  {new Date(response.created_at).toLocaleString()} | Algılanılan
-                  Dil: {response.transcription.language}
-                </p>
-                <Link href={`/transcription/${response.id}`}>
+                <h2 className='text-xl font-semibold'>Konuşma Sentezi</h2>
+
+                <Link href={`/transcription/${response._id}`}>
                   Düzenlemek için tıkla
                 </Link>
               </div>
               <ul className='divide-y overflow-y-scroll divide-gray-200'>
-                {response.transcription.segments.map((segment, index) => (
+                {response.segments.map((segment: Segment, index: number) => (
                   <li
                     key={index}
-                    className='px-6 py-4  hover:bg-indigo-50 transition duration-150'
+                    className='px-6 py-4 hover:bg-indigo-50 transition duration-150'
                   >
                     <div className='flex items-center space-x-3 text-sm'>
                       <span className='font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded'>

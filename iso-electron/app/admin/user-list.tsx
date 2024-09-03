@@ -29,7 +29,7 @@ import { ExternalLink, Trash2, Edit } from 'lucide-react';
 import AddUserDialog from './add-user';
 import EditUserDialog from './edit-user-dialog';
 import createApi from '@/utils/axios_instance';
-
+import Tooltip from '@/components/ui/tool-tip';
 const INITIAL_VISIBLE_COLUMNS = ['username', 'email', 'role', 'actions'];
 
 export default function ShowUsers() {
@@ -225,6 +225,7 @@ export default function ShowUsers() {
               Sütunları Göster
             </Button>
           </DropdownTrigger>
+
           <DropdownMenu
             disallowEmptySelection
             aria-label='Table Columns'
@@ -240,20 +241,24 @@ export default function ShowUsers() {
             ))}
           </DropdownMenu>
         </Dropdown>
-        <Button
-          onClick={() => {
-            setIsModalOpen(true);
-          }}
-          color='primary'
-          endContent={<PlusIcon />}
-        >
-          Yeni Kullanıcı Ekle
-        </Button>
-        {selectedKeys !== 'all' && selectedKeys?.size > 0 && (
-          <Button color='danger' onPress={confirmDelete}>
-            Seçilenleri Sil
-            <Trash2 className='w-5' />
+        <Tooltip content='Yeni bir kullanıcı eklemek için tıklayın'>
+          <Button
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
+            color='primary'
+            endContent={<PlusIcon />}
+          >
+            Yeni Kullanıcı Ekle
           </Button>
+        </Tooltip>
+        {selectedKeys !== 'all' && selectedKeys?.size > 0 && (
+          <Tooltip content='Seçili kullanıcıları silmek için tıklayın'>
+            <Button color='danger' onPress={confirmDelete}>
+              Seçilenleri Sil
+              <Trash2 className='w-5' />
+            </Button>
+          </Tooltip>
         )}
       </div>
     </div>

@@ -7,7 +7,7 @@ import { BsFiletypeCsv, BsFiletypeJson } from 'react-icons/bs';
 import { FaFileWord } from 'react-icons/fa';
 import { Ellipsis, Trash2 } from 'lucide-react';
 import ConfirmationDialog from '../ui/confirmation-dialog';
-
+import Tooltip from '../ui/tool-tip';
 interface ExportButtonsProps {
   data: any;
   isActivePage?: boolean;
@@ -133,40 +133,60 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
                 <summary>Dışarıya Aktar</summary>
                 <ul className='p-2'>
                   <li>
-                    <button
-                      onClick={handleExportExcel}
-                      className='w-full flex justify-between'
+                    <Tooltip
+                      content='Excel formatında dışa aktar'
+                      placement='right'
                     >
-                      Excel
-                      <RiFileExcel2Line size={18} />
-                    </button>
+                      <button
+                        onClick={handleExportExcel}
+                        className='w-full flex justify-between'
+                      >
+                        Excel
+                        <RiFileExcel2Line size={18} />
+                      </button>
+                    </Tooltip>
                   </li>
                   <li>
-                    <button
-                      onClick={handleExportCSV}
-                      className='w-full flex justify-between'
+                    <Tooltip
+                      content='CSV formatında dışa aktar'
+                      placement='right'
                     >
-                      CSV
-                      <BsFiletypeCsv size={18} />
-                    </button>
+                      <button
+                        onClick={handleExportCSV}
+                        className='w-full flex justify-between'
+                      >
+                        CSV
+                        <BsFiletypeCsv size={18} />
+                      </button>
+                    </Tooltip>
                   </li>
                   <li>
-                    <button
-                      onClick={handleExportJSON}
-                      className='w-full flex justify-between'
+                    <Tooltip
+                      content='JSON formatında dışa aktar'
+                      placement='right'
                     >
-                      JSON
-                      <BsFiletypeJson size={18} />
-                    </button>
+                      <button
+                        onClick={handleExportJSON}
+                        className='w-full flex justify-between'
+                      >
+                        JSON
+                        <BsFiletypeJson size={18} />
+                      </button>
+                    </Tooltip>
                   </li>
                   <li>
-                    <button
-                      onClick={handleExportWord}
-                      className='w-full flex justify-between'
+                    <Tooltip
+                      content='Word formatında dışa aktar'
+                      placement='right'
                     >
-                      Word
-                      <FaFileWord size={18} />
-                    </button>
+                      <button
+                        onClick={handleExportWord}
+                        className='w-full flex justify-between'
+                      >
+                        Word
+                        <FaFileWord size={18} />
+                      </button>
+                    </Tooltip>
                   </li>
                 </ul>
               </details>

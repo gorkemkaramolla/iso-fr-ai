@@ -35,6 +35,7 @@ import { debounce } from '@/utils/debounce';
 import SingleRenameDialog from './dialog-single';
 import CustomDialog from './dialog-single';
 import ChangeAllNamesDialog from './dialog-multiple';
+import Tooltip from '../ui/tool-tip';
 
 const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
 
@@ -567,45 +568,58 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
         <div className='flex md:flex-row self-center flex-row-reverse space-x-2'>
           <div className='dropdown dropdown-end'>
-            <label tabIndex={0} className='btn btn-primary btn-sm flex gap-2'>
-              <span>Konuşmacılar</span>
-            </label>
+            <Tooltip
+              placement='top-end'
+              content='Konuşmacıları görüntüle, vurgu renklerini ayarla veya tüm segmentlerde konuşmacı adlarını değiştir'
+            >
+              <button
+                tabIndex={0}
+                className='btn btn-primary btn-sm flex gap-2'
+              >
+                <span>Konuşmacılar</span>
+              </button>
+            </Tooltip>
             <ul
               tabIndex={0}
               className='dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52'
             >
               {uniqueSpeakers.map((speaker) => (
                 <li key={speaker}>
-                  <button
-                    onClick={(e) => {
-                      if (
-                        (e.target as HTMLElement).tagName.toLowerCase() !==
-                        'input'
-                      ) {
-                        handleSpeakerClick(speaker);
-                      }
-                    }}
-                    className='flex items-center justify-between'
+                  <Tooltip
+                    placement='left'
+                    content={`${speaker} adlı konuşmacıyı değiştirmek için tıklayın veya vurgu rengini ayarlayın`}
                   >
-                    <div className='flex items-center'>
-                      <User size={16} />
-                      <span className={`ml-2`}>{speaker}</span>
-                    </div>
-                    <input
-                      type='color'
-                      value={
-                        JSON.parse(
-                          localStorage.getItem('speakerColors') || '{}'
-                        )[speaker] ||
-                        speakerColors[speaker] ||
-                        '#000000'
-                      }
-                      onChange={(e) =>
-                        handleColorChange?.(speaker, e.target.value)
-                      }
-                      className='w-6 h-6 border-none cursor-pointer'
-                    />
-                  </button>
+                    <button
+                      onClick={(e) => {
+                        if (
+                          (e.target as HTMLElement).tagName.toLowerCase() !==
+                          'input'
+                        ) {
+                          handleSpeakerClick(speaker);
+                        }
+                      }}
+                      className='flex items-center justify-between'
+                    >
+                      <div className='flex items-center'>
+                        <User size={16} />
+                        <span className={`ml-2`}>{speaker}</span>
+                      </div>
+                      <input
+                        type='color'
+                        value={
+                          JSON.parse(
+                            localStorage.getItem('speakerColors') || '{}'
+                          )[speaker] ||
+                          speakerColors[speaker] ||
+                          '#000000'
+                        }
+                        onChange={(e) =>
+                          handleColorChange?.(speaker, e.target.value)
+                        }
+                        className='w-6 h-6 border-none cursor-pointer'
+                      />
+                    </button>
+                  </Tooltip>
                 </li>
               ))}
             </ul>
@@ -664,7 +678,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                     menuState.segmentId === segment.id
                       ? 'bg-primary text-white'
                       : 'hover:bg-primary hover:text-white'
-                  } transition-all duration-200 ease-in-out badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded`}
+                  } transition-all duration-200 ease-in-out badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-1 rounded`}
                   onClick={(e) => showSegmentMenu(e, segment.id)}
                   onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
                   onMouseLeave={handleBadgeMouseLeave}
@@ -678,7 +692,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                     activeSegment === segment.id
                       ? 'bg-primary text-white'
                       : 'hover:bg-primary hover:text-white'
-                  } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600 bg-indigo-100 px-2 py-2 rounded`}
+                  } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-2 rounded`}
                   onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
                   onMouseLeave={handleBadgeMouseLeave}
                   onClick={() => {
@@ -695,7 +709,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                       activeSegment === segment.id
                         ? 'bg-primary text-white'
                         : 'hover:bg-primary hover:text-white'
-                    } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600 bg-indigo-100 px-2 py-2 rounded`}
+                    } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-2 rounded`}
                     onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
                     onMouseLeave={handleBadgeMouseLeave}
                     onClick={() => {

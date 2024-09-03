@@ -58,30 +58,42 @@ const ProfilePage: React.FC = () => {
     fetchData();
   }, [id]);
 
-  const getEmotionColor = (emotion: string) => {
+  const emotionMap: { [key: number]: string } = {
+    0: 'neutral',
+    1: 'happy',
+    2: 'sad',
+    3: 'surprised',
+    4: 'fear',
+    5: 'disgust',
+    6: 'angry',
+  };
+  
+  const getEmotionColor = (emotion: string | number) => {
+    const emotionStr = typeof emotion === 'number' ? emotionMap[emotion] : emotion.toLowerCase();
     const colors: { [key: string]: string } = {
+      neutral: 'bg-gray-100 text-gray-800',
       happy: 'bg-green-100 text-green-800',
       sad: 'bg-blue-100 text-blue-800',
-      angry: 'bg-red-100 text-red-800',
-      neutral: 'bg-gray-100 text-gray-800',
       surprised: 'bg-yellow-100 text-yellow-800',
       fear: 'bg-purple-100 text-purple-800',
+      disgust: 'bg-pink-100 text-pink-800',
+      angry: 'bg-red-100 text-red-800',
     };
-    return colors[emotion.toLowerCase()] || 'bg-gray-100 text-gray-800';
+    return colors[emotionStr] || 'bg-gray-100 text-gray-800';
   };
-
-  const getEmotionIcon = (emotion: string) => {
+  
+  const getEmotionIcon = (emotion: string | number) => {
+    const emotionStr = typeof emotion === 'number' ? emotionMap[emotion] : emotion.toLowerCase();
     const icons: { [key: string]: JSX.Element } = {
-      surprised: <TbMoodSuprised className='w-5 h-5' />,
-      sad: <FaRegSadTear className='w-5 h-5' />,
-      happy: <HiOutlineEmojiHappy className='w-5 h-5' />,
-      angry: <FaRegAngry className='w-5 h-5' />,
       neutral: <TbMoodNeutral className='w-5 h-5' />,
+      happy: <HiOutlineEmojiHappy className='w-5 h-5' />,
+      sad: <FaRegSadTear className='w-5 h-5' />,
+      surprised: <TbMoodSuprised className='w-5 h-5' />,
       fear: <IoMdSad className='w-5 h-5' />,
+      disgust: <img src="disgust_face.svg" className='w-5 h-5' />,
+      angry: <FaRegAngry className='w-5 h-5' />,
     };
-    return (
-      icons[emotion.toLowerCase()] || <TbMoodNeutral className='w-5 h-5' />
-    );
+    return icons[emotionStr] || <TbMoodNeutral className='w-5 h-5' />;
   };
 
   return (

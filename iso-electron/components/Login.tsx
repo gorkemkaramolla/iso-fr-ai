@@ -13,7 +13,6 @@ import createApi from '@/utils/axios_instance';
 
 export default function LoginForm() {
   const router = useRouter();
-  const { setAccessToken } = useStore();
   const toastRef = useRef<Toast>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -61,7 +60,6 @@ export default function LoginForm() {
       const data = await response.json();
       console.log(response);
       if (response.status === 200) {
-        setAccessToken(data.access_token);
         toastRef.current?.show({
           severity: 'success',
           summary: 'Success',

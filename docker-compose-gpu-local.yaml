@@ -96,37 +96,37 @@ services:
       - solr
       - fluentbit
 
-  speaker_diarization_service:
-    build:
-      context: ./iso-diarize
-      dockerfile: Dockerfile-gpu
-    ports:
-      - '5003:5003'
-    env_file:
-      - .env
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    volumes:
-      - ./iso-diarize:/app # Bind mount for development
-      - ./config.xml:/app/config.xml
-      - large_v3_data:/app/services/large-v3 # Add this volume for large-v3 data
-      - ./config.py:/app/config.py
-    networks:
-      - isoai-network
-    logging:
-      driver: 'fluentd'
-      options:
-        fluentd-address: localhost:24224
-        tag: speaker_diarization_service
-    depends_on:
-      - mongo
-      - solr
-      - fluentbit
+  # speaker_diarization_service:
+  #   build:
+  #     context: ./iso-diarize
+  #     dockerfile: Dockerfile-gpu
+  #   ports:
+  #     - '5003:5003'
+  #   env_file:
+  #     - .env
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   volumes:
+  #     - ./iso-diarize:/app # Bind mount for development
+  #     - ./config.xml:/app/config.xml
+  #     - large_v3_data:/app/services/large-v3 # Add this volume for large-v3 data
+  #     - ./config.py:/app/config.py
+  #   networks:
+  #     - isoai-network
+  #   logging:
+  #     driver: 'fluentd'
+  #     options:
+  #       fluentd-address: localhost:24224
+  #       tag: speaker_diarization_service
+  #   depends_on:
+  #     - mongo
+  #     - solr
+  #     - fluentbit
 
   utils_service:
     build:

@@ -25,7 +25,7 @@
 }
 @layer base {
   body {
-    @apply bg-slate-50;
+    @apply bg-gray-50;
     @apply h-screen;
     h1 {
       @apply text-2xl cursor-text min-w-52 font-bold break-words whitespace-pre-wrap;

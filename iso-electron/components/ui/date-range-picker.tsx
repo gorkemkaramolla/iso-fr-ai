@@ -1,8 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { DatePicker, DateRangePicker, RangeValue } from '@nextui-org/react';
 import { parseZonedDateTime, ZonedDateTime } from '@internationalized/date';
-import { now, getLocalTimeZone } from '@internationalized/date';
+import {
+  now,
+  getLocalTimeZone,
+  parseAbsoluteToLocal,
+} from '@internationalized/date';
 
+import { I18nProvider } from '@react-aria/i18n';
 interface NextDateRangePickerProps {
   onDateRangeChange: (dateRange: { start: number; end: number }) => void;
   onDateChange?: (date: string) => void;
@@ -86,31 +91,33 @@ const NextDateRangePicker: React.FC<NextDateRangePickerProps> = ({
   }
 
   return (
-    <div className='w-full max-w-xl flex flex-col-reverse gap-4'>
-      {!isRange ? (
-        <DatePicker
-          label='Tarih seç'
-          hideTimeZone
-          hourCycle={24}
-          showMonthAndYearPickers
-          granularity='day' // This restricts the picker to only allow date selection
-          defaultValue={now(getLocalTimeZone())}
-          value={selectedDate}
-          onChange={handleSingleDateChange}
-        />
-      ) : (
-        <DateRangePicker
-          label='Belirli bir tarih aralığında arayın'
-          hideTimeZone
-          hourCycle={24}
-          visibleMonths={2}
-          value={dateRange}
-          onChange={handleDateRangeChange}
-        />
-      )}
+    <div className='w-full max-w-xl  flex flex-col-reverse gap-1'>
+      <I18nProvider locale='tr-TR'>
+        {!isRange ? (
+          <DatePicker
+            size='sm'
+            hideTimeZone
+            hourCycle={24}
+            showMonthAndYearPickers
+            granularity='day' // This restricts the picker to only allow date selection
+            defaultValue={now(getLocalTimeZone())}
+            value={selectedDate}
+            onChange={handleSingleDateChange}
+          />
+        ) : (
+          <DateRangePicker
+            size='sm'
+            hideTimeZone
+            hourCycle={24}
+            visibleMonths={2}
+            value={dateRange}
+            onChange={handleDateRangeChange}
+          />
+        )}
+      </I18nProvider>
       <span
         onClick={() => setIsRange(!isRange)}
-        className='text-[11px] hover:underline cursor-pointer w-1/4'
+        className='text-[11px] hover:underline cursor-pointer '
       >
         {isRange ? 'Tarih Seçin' : 'Tarih Aralığı Seçin'}
       </span>

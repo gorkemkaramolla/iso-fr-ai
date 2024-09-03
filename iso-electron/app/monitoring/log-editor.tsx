@@ -1,12 +1,15 @@
-import qs from 'qs';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { debounce } from 'lodash';
+import qs from 'qs';
 import Editor from '@monaco-editor/react';
-import { Check, Copy, Expand } from 'lucide-react';
+import { Check, Copy, Expand, Download } from 'lucide-react';
 import FilterChip from '@/components/ui/chip';
 import NextDateRangePicker from '@/components/ui/date-range-picker';
 import createApi from '@/utils/axios_instance';
-
+import { Input } from '@nextui-org/react';
+import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import { debounce } from 'lodash';
+import { motion } from 'framer-motion';
+import Tooltip from '@/components/ui/tool-tip';
 type LogField =
   | 'date'
   | 'log'
@@ -40,6 +43,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
   }>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     setEditorContent(JSON.stringify(systemInfo.logs_data, null, 2));
@@ -51,6 +55,17 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
       return () => clearTimeout(timer);
     }
   }, [logCopied]);
+
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    };
+  }, []);
 
   const handleEditorDidMount = (editor: any) => {
     editor.updateOptions({ readOnly: true });
@@ -66,9 +81,21 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
   };
 
   const handleLogCopy = () => {
-    if (systemInfo.logs_data) {
-      navigator.clipboard.writeText(JSON.stringify(systemInfo.logs_data));
+    if (editorContent) {
+      navigator.clipboard.writeText(editorContent);
       setLogCopied(true);
+    }
+  };
+
+  const handleLogExport = () => {
+    if (editorContent) {
+      const blob = new Blob([editorContent], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'logs.json';
+      link.click();
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -76,26 +103,29 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
     if (editorRef.current) {
       const editor = editorRef.current;
       const model = editor.getModel();
-      const matches = model.findMatches(
-        searchText,
-        true,
-        false,
-        false,
-        null,
-        true
-      );
 
-      if (matches.length > 0) {
-        editor.setSelections(
-          matches.map((match: any) => ({
-            selectionStartLineNumber: match.range.startLineNumber,
-            selectionStartColumn: match.range.startColumn,
-            positionLineNumber: match.range.endLineNumber,
-            positionColumn: match.range.endColumn,
-          }))
+      if (model) {
+        const matches = model.findMatches(
+          searchText,
+          true,
+          false,
+          false,
+          null,
+          true
         );
 
-        editor.revealRange(matches[0].range);
+        if (matches.length > 0) {
+          editor.setSelections(
+            matches.map((match: any) => ({
+              selectionStartLineNumber: match.range.startLineNumber,
+              selectionStartColumn: match.range.startColumn,
+              positionLineNumber: match.range.endLineNumber,
+              positionColumn: match.range.endColumn,
+            }))
+          );
+
+          editor.revealRange(matches[0].range);
+        }
       }
     }
   };
@@ -176,58 +206,86 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
   };
 
   return (
-    <div className='bg-gray-900 shadow-lg rounded-lg overflow-hidden'>
+    <div className='bg-white shadow-md rounded-lg overflow-hidden'>
       <div ref={containerRef} className='flex flex-col h-full'>
-        <div className='text-white p-4 flex justify-between items-center'>
-          <h2 className='text-xl font-semibold'>Sistem Logları</h2>
-
-          <NextDateRangePicker
-            onDateChange={handleDateChange}
-            onDateRangeChange={handleDateRangeChange}
-          />
-
-          <div className='flex items-center space-x-2'>
-            <input
+        <div className='text-gray-900 p-4 flex justify-between items-center'>
+          <h2 className='text-xl font-semibold'>Sistem Günlükleri</h2>
+          <div className='flex w-6/12 justify-center items-center flex-col space-y-2'>
+            <NextDateRangePicker
+              onDateChange={handleDateChange}
+              onDateRangeChange={handleDateRangeChange}
+            />
+            <Input
+              size='sm'
               type='search'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder='Logları Ara'
-              className='px-2 py-1 rounded text-black w-64'
+              className='py-1 rounded max-w-xl text-gray-900 w-full'
             />
-            <button
-              onClick={handleLogCopy}
-              className='p-2 rounded hover:bg-gray-700 transition-colors'
-              title={logCopied ? 'Copied!' : 'Copy logs'}
-            >
-              {logCopied ? <Check size={20} /> : <Copy size={20} />}
-            </button>
-            <button
-              onClick={toggleFullScreen}
-              className='p-2 rounded hover:bg-gray-700 transition-colors'
-              title='Fullscreen'
-            >
-              <Expand size={20} />
-            </button>
+          </div>
+          <div className='flex items-center space-x-2'>
+            <Tooltip content='Kopyala'>
+              <motion.button
+                onClick={handleLogCopy}
+                className='p-2 rounded hover:bg-gray-200 transition-colors'
+                title={logCopied ? 'Copied!' : 'Copy logs'}
+                whileTap={{ scale: 0.95 }}
+                animate={logCopied ? { rotate: [0, 360] } : { rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                {logCopied ? <Check size={20} /> : <Copy size={20} />}
+              </motion.button>
+            </Tooltip>
+
+            <Tooltip content='JSON olarak dışa aktar'>
+              <motion.button
+                onClick={handleLogExport}
+                className='p-2 rounded hover:bg-gray-200 transition-colors'
+                whileTap={{ scale: 0.95 }}
+              >
+                <Download size={20} />
+              </motion.button>
+            </Tooltip>
+
+            <Tooltip content='Tam Ekran'>
+              <motion.button
+                onClick={toggleFullScreen}
+                className='p-2 rounded hover:bg-gray-200 transition-colors'
+                whileTap={{ scale: 0.95 }}
+              >
+                <Expand size={20} />
+              </motion.button>
+            </Tooltip>
           </div>
         </div>
-        <div className='flex h-[75vh]'>
-          <div className='flex-grow'>
-            <Editor
-              height='100%'
-              defaultLanguage='json'
-              value={editorContent}
-              options={{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                fontSize: 14,
-                readOnly: true,
-              }}
-              onMount={handleEditorDidMount}
-            />
-          </div>
-          <div className='w-80 bg-gray-800 p-4 overflow-y-auto'>
-            <FilterChip onFilterChange={handleFilterChange} />
-          </div>
+        <div className={isFullScreen ? 'h-[100vh]' : 'h-[75vh]'}>
+          <PanelGroup
+            direction='horizontal'
+            className={isFullScreen ? 'h-[100vh]' : 'h-[75vh]'}
+          >
+            <Panel defaultSize={75} minSize={50}>
+              <Editor
+                height='100%'
+                defaultLanguage='json'
+                value={editorContent}
+                options={{
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                  readOnly: true,
+                  theme: 'vs-light',
+                }}
+                onMount={handleEditorDidMount}
+              />
+            </Panel>
+            <PanelResizeHandle className='w-1 bg-gray-300 hover:bg-gray-400 transition-colors' />
+            <Panel defaultSize={25} maxSize={40} minSize={0}>
+              <div className='h-full bg-gray-100 p-4 overflow-y-auto'>
+                <FilterChip onFilterChange={handleFilterChange} />
+              </div>
+            </Panel>
+          </PanelGroup>
         </div>
       </div>
     </div>

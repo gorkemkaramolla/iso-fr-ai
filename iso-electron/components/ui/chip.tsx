@@ -72,11 +72,13 @@ export default function FilterChip({ onFilterChange }: FilterChipProps) {
   };
 
   return (
-    <div className='bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg'>
-      <h3 className='text-gray-200 text-sm font-semibold mb-2'>Log Filters</h3>
+    <div className='bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-lg'>
+      <h3 className='text-gray-900 text-sm font-semibold mb-2'>
+        Log Filtreleri
+      </h3>
 
       {activeFields.length === 0 && (
-        <p className='text-blue-500 text-xs mb-2'>
+        <p className='text-blue-600 text-xs mb-2'>
           Bilgilendirme: Herhangi bir filtre seçilmedi. Arama tüm alanlarda
           yapılacak.
         </p>
@@ -86,7 +88,7 @@ export default function FilterChip({ onFilterChange }: FilterChipProps) {
         {activeFields.map((field, index) => (
           <button
             key={index}
-            className='bg-gray-700/60 text-gray-200 px-2 py-1 rounded-full text-xs flex items-center hover:bg-gray-600/60 transition-colors'
+            className='bg-gray-200 text-gray-800 px-2 py-1 rounded-full text-xs flex items-center hover:bg-gray-300 transition-colors'
             onClick={() => handleDeactivate(field)}
           >
             <span className='mr-1'>{field}</span>
@@ -100,7 +102,7 @@ export default function FilterChip({ onFilterChange }: FilterChipProps) {
           {inactiveFields.map((field, index) => (
             <button
               key={index}
-              className='bg-gray-600/40 text-gray-400 px-2 py-1 rounded-full text-xs flex items-center hover:bg-gray-500/40 transition-colors'
+              className='bg-gray-300 text-gray-600 px-2 py-1 rounded-full text-xs flex items-center hover:bg-gray-400 transition-colors'
               onClick={() => handleActivate(field)}
             >
               <span className='mr-1'>{field}</span>
@@ -113,14 +115,14 @@ export default function FilterChip({ onFilterChange }: FilterChipProps) {
       {inactiveFields.length > 0 && (
         <button
           onClick={resetFilters}
-          className='text-gray-400 text-xs hover:text-gray-200 transition-colors'
+          className='text-gray-600 text-xs hover:text-gray-800 transition-colors'
         >
           Filtreleri Sıfırla
         </button>
       )}
 
       {activeFields.length === initialLogFields.length && (
-        <p className='text-green-400 text-xs mt-2'>Tüm alanlar aktif.</p>
+        <p className='text-green-600 text-xs mt-2'>Tüm alanlar aktif.</p>
       )}
     </div>
   );

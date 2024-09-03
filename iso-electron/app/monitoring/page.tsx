@@ -72,7 +72,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className='min-h-screen bg-gray-100'>
+    <div className='min-h-screen text-sm  bg-gray-100'>
       <header className='bg-white shadow-md'>
         <nav className='container mx-auto px-4'>
           <ul className='flex justify-center items-center h-16'>

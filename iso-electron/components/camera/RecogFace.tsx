@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
-import { useRouter } from 'next/navigation';
-import { Toast } from 'primereact/toast';
-import { Nullable } from 'primereact/ts-helpers';
-import RecogFaceExpandedListItem from './Recog/RecogFaceExpandedListItem';
-import RecogFaceCollapsedItem from './Recog/RecogFaceCollapsedItem';
-import { getRecogFaces, updateRecogName } from '@/services/camera/service';
-import RecogFaceHeaderBar from './Recog/RecogFaceHeaderBar';
-import { GroupedRecogFaces, RecogFace } from '@/types';
-import RecogFacesAvatarGroup from './Recog/AvatarGroup';
+import React, { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import { useRouter } from "next/navigation";
+import { Toast } from "primereact/toast";
+import { Nullable } from "primereact/ts-helpers";
+import RecogFaceExpandedListItem from "./Recog/RecogFaceExpandedListItem";
+import RecogFaceCollapsedItem from "./Recog/RecogFaceCollapsedItem";
+import { getRecogFaces, updateRecogName } from "@/services/camera/service";
+import RecogFaceHeaderBar from "./Recog/RecogFaceHeaderBar";
+import { GroupedRecogFaces, RecogFace } from "@/types";
+import RecogFacesAvatarGroup from "./Recog/AvatarGroup";
 
 const socket = io(process.env.NEXT_PUBLIC_FLASK_URL!);
 interface IRecogFace {
@@ -23,9 +23,9 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
   >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [editingName, setEditingName] = useState<string | null>(null);
-  const [newName, setNewName] = useState<string>('');
+  const [newName, setNewName] = useState<string>("");
   const [selectedFace, setSelectedFace] = useState<RecogFace | null>(null);
   const [filteredGroups, setFilteredGroups] = useState(groupedRecogFaces);
 
@@ -134,7 +134,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
 
         setGroupedRecogFaces(sortedGrouped);
       } catch (err) {
-        setError('Failed to fetch recognized faces.');
+        setError("Failed to fetch recognized faces.");
       } finally {
         setLoading(false);
       }
@@ -142,7 +142,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
 
     fetchRecogFaces();
 
-    socket.on('new_face', (newFace) => {
+    socket.on("new_face", (newFace) => {
       setGroupedRecogFaces((prevGroups) => {
         const groupIndex = prevGroups.findIndex(
           (g) => g.personnel_id === newFace.personnel_id
@@ -176,7 +176,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
     });
 
     return () => {
-      socket.off('new_face');
+      socket.off("new_face");
     };
   }, [editingName, selectedDate]);
 
@@ -198,23 +198,23 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
   if (error) return <div>{error}</div>;
 
   return (
-    <div className='backdrop-blur-lg p-4 rounded-xl'>
-      <div className='block xl:hidden'>
+    <div className="backdrop-blur-lg p-4 rounded-xl">
+      <div className="block xl:hidden w-full">
         <RecogFacesAvatarGroup
           groups={filteredGroups}
           handleImageClick={handleImageClick}
         />
       </div>
-      <div className='hidden xl:block'>
+      <div className="hidden xl:block">
         <RecogFaceHeaderBar
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
         />
-        <div className='max-h-[60svh] overflow-scroll w-full p-1 pr-3'>
+        <div className="max-h-[60svh] overflow-scroll w-full p-1 pr-3">
           {filteredGroups.map((group) => (
-            <div key={group.name} className='mb-2 flex flex-col gap-2 w-full'>
+            <div key={group.name} className="mb-2 flex flex-col gap-2 w-full">
               <RecogFaceCollapsedItem
                 key={group.name}
                 group={group}
@@ -228,8 +228,8 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
               />
               {!group.isCollapsed && (
                 <div
-                  className='flex flex-wrap gap-2 items-start justify-center p-2 pt-4 border
-              border-gray-200 rounded-xl shadow-md max-w-[21.5rem]'
+                  className="flex flex-wrap gap-2 items-start justify-center p-2 pt-4 border
+              border-gray-200 rounded-xl shadow-md max-w-[22rem]"
                 >
                   {group.faces
                     .sort(
@@ -249,7 +249,7 @@ const RecogFaces: React.FC<IRecogFace> = ({ toast }) => {
                     ))}
 
                   {group.faces.length > 4 && (
-                    <div className='text-xs text-balance font-light text-gray-700'>
+                    <div className="text-xs text-balance font-light text-gray-700">
                       +{group.faces.length - 4} daha fazla yüz tanımlandı...
                       {/* <button
                       className='btn btn-sm btn-primary text-white'

@@ -326,7 +326,7 @@ const VideoStream: React.FC = () => {
             </div>
           </div>
           <aside
-            className={`xl:min-w-[400px] xl:max-w-[440px] ml-auto`}
+            className={`xl:min-w-[400px] xl:max-w-[440px] xl:ml-auto max-w-96 sm:max-w-full`}
             style={{ position: 'sticky' }}
           >
         <div className='flex items-center justify-between mx-2 mb-2'>

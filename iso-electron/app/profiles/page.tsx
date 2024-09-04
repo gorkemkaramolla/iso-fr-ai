@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
-import dynamic from 'next/dynamic';
-import createApi from '@/utils/axios_instance';
-import { Personel } from '@/types';
-import RecogList from '@/components/personnel/RecogList';
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import dynamic from "next/dynamic";
+import createApi from "@/utils/axios_instance";
+import { Personel } from "@/types";
+import RecogList from "@/components/personnel/RecogList";
 
-const ClientProfile = dynamic(() => import('./profile'), {
+const ClientProfile = dynamic(() => import("./profile"), {
   ssr: false,
 });
 
@@ -16,7 +16,7 @@ function ProfileContent() {
   const [profileData, setProfileData] = useState<Personel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const id = searchParams.get('id');
+  const id = searchParams.get("id");
 
   useEffect(() => {
     async function fetchProfileData(profileId: string) {
@@ -28,8 +28,8 @@ function ProfileContent() {
         const data: Personel = await response.json();
         setProfileData(data);
       } catch (error) {
-        setError('Failed to fetch profile data');
-        console.error('Error fetching profile:', error);
+        setError("Failed to fetch profile data");
+        console.error("Error fetching profile:", error);
       } finally {
         setIsLoading(false);
       }
@@ -39,7 +39,7 @@ function ProfileContent() {
       fetchProfileData(id);
     } else {
       setIsLoading(false);
-      setError('No profile ID provided');
+      setError("No profile ID provided");
     }
   }, [id]);
 
@@ -53,14 +53,14 @@ function ProfileContent() {
 export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className='flex w-full items-start justify-center flex-col lg:flex-row'>
+      <div className="flex w-full items-start justify-center flex-col lg:flex-row">
         <ProfileContent />
-        <div className=' h-[90vh] overflow-scroll pr-10' >
-        <h1 className="text-3xl font-bold text-center my-6 text-gray-800 leading-10">
-          Son Tanınmalar
-          <hr />
-        </h1>
-        <RecogList/>
+        <div className=" h-[90vh] overflow-scroll pr-10">
+          <h1 className="text-3xl font-bold text-center my-4 text-gray-800 ">
+            Son Tanınmalar
+          </h1>
+          <hr className="mb-4 w-5/6 mx-auto" />
+          <RecogList />
         </div>
       </div>
     </Suspense>

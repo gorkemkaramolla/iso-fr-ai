@@ -72,27 +72,26 @@ camera_bp = Blueprint("camera_bp", __name__)
 
 # Video Records
 VIDEO_FOLDER = xml_config.VIDEO_FOLDER if xml_config.VIDEO_FOLDER else 'records'
-
 @camera_bp.route('/videos/<filename>')
 def get_video(filename):
     file_path = os.path.join(VIDEO_FOLDER, filename)
-    
-    if os.path.exists(file_path):
-        if "_converted" in file_path:
-            print(file_path)
-            return send_file(file_path, as_attachment=False)
-        else:
-            repaired_file_path = stream_instance.repair_last_record(file_path)
-            print(repaired_file_path)
-
-            return send_file(repaired_file_path, as_attachment=False)
-    else:
-        abort(404, description="Resource not found")
+    return send_file(file_path, as_attachment=False)
 
 @camera_bp.route('/videos')
 def list_videos():
     files = os.listdir(VIDEO_FOLDER)
-    videos = [{'filename': file, 'title': file} for file in files if file.endswith('.mp4')]
+    videos = []
+
+    for file in files:
+        if file.endswith('.mp4'):
+            file_path = os.path.join(VIDEO_FOLDER, file)
+            if "converted" in file:
+                videos.append({'filename': file, 'title': file})
+            else:
+                repaired_file_path = stream_instance.repair_last_record(file_path)
+                repaired_filename = os.path.basename(repaired_file_path)
+                videos.append({'filename': repaired_filename, 'title': repaired_filename})
+
     return jsonify(videos)
 
 @camera_bp.route('/videos/<filename>', methods=['DELETE'])

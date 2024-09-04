@@ -210,200 +210,17 @@ class Stream:
     def _start_background_saver(self):
         def background_saver():
             while True:
-                # print(database)
                 now = datetime.datetime.now().timestamp() * 1000
                 for personnel_id in list(self.recognition_data.keys()):
-                    first_timestamp = self.recognition_data[personnel_id]["timestamps"][0]
-                    if now - first_timestamp >= 60000:
-                        self._save_aggregated_data(personnel_id)
+                    if self.recognition_data[personnel_id]["timestamps"]:
+                        first_timestamp = self.recognition_data[personnel_id]["timestamps"][0]
+                        if now - first_timestamp >= 60000:
+                            self._save_aggregated_data(personnel_id)
                 time.sleep(5)  # Check every 5 seconds
 
         saver_thread = threading.Thread(target=background_saver, daemon=True)
         saver_thread.start()
-    
-    # def _save_and_log_face(self, face_image, label, similarity, emotion, gender, age, is_known, camera_name, personnel_id):
-    #     if face_image is None:
-    #         print("Error: The face image is empty and cannot be saved.")
-    #         return "Error: Empty face image"
-        
-    #     if personnel_id is None:
-    #         print("Error: Personnel ID is None and cannot be saved.")
-    #         return "Error: Personnel ID is None"
-    
-    #     now = datetime.datetime.now()
-    #     timestamp = int(now.timestamp() * 1000)
-    
-    #     # Store the first face image
-    #     if self.recognition_data[personnel_id]["image_path"] is None:
-    #         # Generate filename and directory path
-    #         filename_timestamp = now.strftime("%Y%m%d-%H%M%S")
-    #         filename = f"{label}-{filename_timestamp}.jpg"
-    #         base_dir = self.known_faces_dir if is_known else self.unknown_faces_dir
-    #         person_dir = os.path.join(base_dir, label)
-    #         os.makedirs(person_dir, exist_ok=True)
-    #         file_path = os.path.join(person_dir, filename)
-    
-    #         print(f"Saving face image to: {file_path}")
-    
-    #         try:
-    #             success = cv2.imwrite(file_path, face_image)
-    #             if not success:
-    #                 print("Error: Failed to save the image.")
-    #                 return "Error: Failed to save image"
-    #         except cv2.error as e:
-    #             print(f"OpenCV error: {e}")
-    #             return f"Error: OpenCV error - {e}"
-    #         except PermissionError as e:
-    #             print(f"Permission error: {e}")
-    #             return f"Error: Permission error - {e}"
-    #         except FileNotFoundError as e:
-    #             print(f"File not found error: {e}")
-    #             return f"Error: File not found error - {e}"
-    #         except Exception as e:
-    #             print(f"Unexpected error: {e}")
-    #             return f"Error: Unexpected error - {e}"
-    
-    #         self.recognition_data[personnel_id]["image_path"] = file_path
-    
-    #     # Store recognition data
-    #     self.recognition_data[personnel_id]["personnel_id"] = personnel_id
-    #     self.recognition_data[personnel_id]["label"] = self.database[personnel_id]["label"] 
-    #     self.recognition_data[personnel_id]["genders"].append(gender)
-    #     self.recognition_data[personnel_id]["timestamps"].append(timestamp)
-    #     self.recognition_data[personnel_id]["similarities"].append(float(similarity))  # Convert to native Python float
-    #     self.recognition_data[personnel_id]["emotions"].append(emotion)
-    #     self.recognition_data[personnel_id]["ages"].append(age)
-    #     self.recognition_data[personnel_id]["camera_name"] = camera_name
-    
-    #     # Write recognition data to JSON
-    #     json_file_path = './recognition_data.json'
-    
-    #     def convert_numpy_types(obj):
-    #         if isinstance(obj, np.ndarray):
-    #             return obj.tolist()
-    #         if isinstance(obj, (np.float32, np.float64)):
-    #             return float(obj)
-    #         if isinstance(obj, (np.int32, np.int64)):
-    #             return int(obj)
-    #         return obj
-    
-    #     try:
-    #         with open(json_file_path, mode='w') as json_file:
-    #             json.dump(self.recognition_data, json_file, indent=4, default=convert_numpy_types)
-    #     except IOError as e:
-    #         print(f"I/O error: {e}")
-    #         return f"Error: I/O error - {e}"
-    
-    #     return self.recognition_data[personnel_id]["image_path"]
-    # def _save_and_log_face(self, face_image, label, similarity, emotion, gender, age, is_known, camera_name, personnel_id):
-    #     if face_image is None:
-    #         print("Error: The face image is empty and cannot be saved.")
-    #         return "Error: Empty face image"
-        
-    #     if personnel_id is None:
-    #         print("Error: Personnel ID is None and cannot be saved.")
-    #         return "Error: Personnel ID is None"
-        
-    #     # Ensure face_image is a NumPy array
-    #     if isinstance(face_image, Image.Image):
-    #         face_image = np.array(face_image)
-        
-    #     # Check if face_image is a valid NumPy array
-    #     if not isinstance(face_image, np.ndarray):
-    #         print("Error: The face image is not a valid NumPy array.")
-    #         return "Error: Invalid face image"
-        
-            
-    #     now = datetime.datetime.now()
-    #     timestamp = int(now.timestamp() * 1000)
-        
-    #     # Store the first face image
-    #     if self.recognition_data[personnel_id]["image_path"] is None:
-    #         # Generate filename and directory path
-    #         filename_timestamp = now.strftime("%Y%m%d-%H%M%S")
-    #         filename = f"{label}-{filename_timestamp}.jpg"
-    #         base_dir = self.known_faces_dir if is_known else self.unknown_faces_dir
-    #         person_dir = os.path.join(base_dir, label)
-    #         os.makedirs(person_dir, exist_ok=True)
-    #         file_path = os.path.join(person_dir, filename)
-        
-    #         print(f"Saving face image to: {file_path}")
-        
-    #         try:
-    #             success = cv2.imwrite(file_path, face_image)
-    #             if not success:
-    #                 print("Error: Failed to save the image.")
-    #                 return "Error: Failed to save image"
-    #         except cv2.error as e:
-    #             print(f"OpenCV error: {e}")
-    #             return f"Error: OpenCV error - {e}"
-    #         except PermissionError as e:
-    #             print(f"Permission error: {e}")
-    #             return f"Error: Permission error - {e}"
-    #         except FileNotFoundError as e:
-    #             print(f"File not found error: {e}")
-    #             return f"Error: File not found error - {e}"
-    #         except Exception as e:
-    #             print(f"Unexpected error: {e}")
-    #             return f"Error: Unexpected error - {e}"
-        
-    #         self.recognition_data[personnel_id]["image_path"] = file_path
-        
-    #     # Store recognition data
-    #     self.recognition_data[personnel_id]["personnel_id"] = personnel_id
-    #     self.recognition_data[personnel_id]["label"] = label
-    #     self.recognition_data[personnel_id]["genders"].append(gender)
-    #     self.recognition_data[personnel_id]["timestamps"].append(timestamp)
-    #     self.recognition_data[personnel_id]["similarities"].append(float(similarity))  # Convert to native Python float
-    #     self.recognition_data[personnel_id]["emotions"].append(emotion)
-    #     self.recognition_data[personnel_id]["ages"].append(age)
-    #     self.recognition_data[personnel_id]["camera_name"] = camera_name
-        
-    #     # Write recognition data to JSON
-    #     json_file_path = './recognition_data.json'
-        
-    #     def convert_numpy_types(obj):
-    #         if isinstance(obj, np.ndarray):
-    #             return obj.tolist()
-    #         if isinstance(obj, (np.float32, np.float64)):
-    #             return float(obj)
-    #         if isinstance(obj, (np.int32, np.int64)):
-    #             return int(obj)
-    #         return obj
-        
-    #     try:
-    #         with open(json_file_path, mode='w') as json_file:
-    #             json.dump(self.recognition_data, json_file, indent=4, default=convert_numpy_types)
-    #     except IOError as e:
-    #         print(f"I/O error: {e}")
-    #         return f"Error: I/O error - {e}"
-        
-    #     return self.recognition_data[personnel_id]["image_path"]
-    # def _save_aggregated_data(self, personnel_id):
-    #     data = self.recognition_data[personnel_id]
-    #     avg_similarity = np.mean(data["similarities"])
-    #     avg_emotion = max(set(data["emotions"]), key=data["emotions"].count)  # Most frequent emotion
-    #     avg_gender = 0 if data["genders"].count(0) / len(data["genders"]) > 0.2 else max(set(data["genders"]), key=data["genders"].count)
-    #     avg_age = np.min(data["ages"])
 
-    #     log_record = {
-    #         "timestamp": data["timestamps"][0],
-    #         "label": data["label"],
-    #         "similarity": round(float(avg_similarity), 2),
-    #         "emotion": avg_emotion,
-    #         "gender": avg_gender,
-    #         "age": int(avg_age),
-    #         "camera": data["camera_name"],
-    #         "personnel_id": personnel_id,
-    #         "image_path": data["image_path"]  # Save only the first image path
-    #     }
-    #     # print(log_record)
-    #     notify_new_face(log_record)
-    #     self.recognition_logs_collection.insert_one(log_record)
-    #     print(f"Aggregated data saved for personnel_id: {personnel_id}")
-
-    #     # Clear the stored data for this personnel_id
-    #     del self.recognition_data[personnel_id]
     def _save_and_log_face(self, face_image, label, similarity, emotion_scores, gender, age, is_known, camera_name, personnel_id):
         if face_image is None:
             print("Error: The face image is empty and cannot be saved.")
@@ -466,9 +283,6 @@ class Stream:
         self.recognition_data[personnel_id]["ages"].append(age)
         self.recognition_data[personnel_id]["camera_name"] = camera_name
         
-        # Store emotion scores
-        # if "emotion_scores" not in self.recognition_data[personnel_id]:
-        #     self.recognition_data[personnel_id]["emotion_scores"] = defaultdict(list)
         
         for emotion_id, score in emotion_scores.items():
             self.recognition_data[personnel_id]["emotion_scores"][emotion_id].append(score)
@@ -483,7 +297,6 @@ class Stream:
         avg_emotion_scores = {emotion_id: np.mean(scores) for emotion_id, scores in data["emotion_scores"].items()}
         
         # Determine the most frequent emotion
-        total_emotions = sum((len(scores) for scores in data["emotion_scores"].values()), 0)
         most_frequent_emotion = max(avg_emotion_scores, key=avg_emotion_scores.get)
         
         avg_gender = 0 if data["genders"].count(0) / len(data["genders"]) > 0.2 else max(set(data["genders"]), key=data["genders"].count)
@@ -611,84 +424,6 @@ class Stream:
                 self._save_and_log_face(frame_copy, label, sim, emotion_scores, gender, age, is_known, camera_name, best_match)
 
         return bboxes, labels, sims, emotions, genders, ages
-    # def _get_attributes(
-    #     self, frame: np.ndarray, camera_name: str = None, spoofing: bool = False
-    # ) -> Tuple[
-    #     List[np.ndarray], List[str], List[float], List[str], List[str], List[int]
-    # ]:
-    #     if frame is None or len(frame.shape) < 2:
-    #         return [], [], [], [], [], []
-
-    #     # Detect faces using SCRFD
-    #     bboxes, kpss = self.face_detector.detect(frame, input_size=(640, 640), max_num=49, thresh=0.7)
-    #     if len(bboxes) == 0:
-    #         return [], [], [], [], [], []
-
-    #     labels, sims, emotions, ages, genders = [], [], [], [], []
-
-    #     for idx, kps in enumerate(kpss):
-    #         bbox = bboxes[idx]
-    #         x1, y1, x2, y2 = map(int, bbox[:4])
-
-    #         # Perform anti-spoofing check
-    #         if self.anti_spoof:
-    #             processed_frame, spoofing_label, spoofing_score, _ = self._perform_anti_spoofing_check(frame, bbox)
-
-    #             # If the face is detected as fake, continue to the next detected face
-    #             if spoofing_label != 1 or spoofing_score < 0.5:
-    #                 # print(f"Fake face detected with score: {spoofing_score:.2f}, skipping further processing.")
-    #                 # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)  # Draw red box
-    #                 frame = processed_frame
-    #                 continue
-
-    #         # Perform face recognition
-    #         embedding = self.face_recognizer.get(frame, kps)
-    #         min_dist = float("inf")
-    #         best_match = None
-    #         label = "Unknown"
-    #         is_known = False   
-
-    #         # Match the face embedding with the database
-    #         for personnel_id in self.database.keys():
-    #             db_embedding = self.database[personnel_id]['embedding']
-    #             dist = np.linalg.norm(db_embedding - embedding)
-    #             if dist < min_dist:
-    #                 min_dist = dist
-    #                 best_match = personnel_id
-
-    #         sim = self.face_recognizer.compute_sim(embedding, self.database[best_match]['embedding'] if best_match else np.zeros_like(embedding))
-    #         if sim >= self.similarity_threshold:
-    #             label = self.database[best_match]['label']
-    #             is_known = True
-    #         elif sim < self.similarity_threshold and sim > 0.2:
-    #             # It is likely that the face is known but the similarity is below the threshold
-    #             pass
-    #         else:
-    #             label = "Unknown"
-    #             is_known = False
-    #             best_match = None    
-    #         # Append the results to the lists
-    #         labels.append(label)
-    #         sims.append(sim)
-
-    #         # Get gender and age
-    #         gender, age = self.gender_age_detector.get(frame, face=bbox)
-    #         ages.append(age)
-    #         genders.append("M" if gender == 1 else "F")
-
-    #         # Detect emotion
-    #         # face_image = frame[y1:y2, x1:x2]
-    #         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Green color with thickness 2
-    #         # cv2.putText(frame, f"{label} ({sim:.2f})", (x1, y1 - 5), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0))
-    #         face_image = frame
-
-    #         emotion = self.emotion_detector.detect_emotion_from_array(face_image)
-    #         emotions.append(emotion)
-
-    #         # Save and log the recognized face
-    #         self._save_and_log_face(face_image, label, sim, emotion, gender, age, is_known, camera_name, personnel_id=best_match)
-
-    #     return bboxes, labels, sims, emotions, genders, ages
 
     def _perform_anti_spoofing_check(self, frame, bbox):
         # Extract coordinates from the bounding box
@@ -907,5 +642,8 @@ class Stream:
 
         # Run the command
         subprocess.run(command, capture_output=True, text=True)
+          # Delete the original file after conversion
+        if os.path.exists(output_file):
+            os.remove(filename)
 
         return output_file

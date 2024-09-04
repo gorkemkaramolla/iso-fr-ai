@@ -33,7 +33,16 @@ const VideoStream: React.FC = () => {
       const savedStreams = localStorage.getItem('cameraStreams');
       if (savedStreams) {
         const parsedStreams = JSON.parse(savedStreams);
-        setCameraStreams(parsedStreams);
+        const updatedStreams = parsedStreams.map((stream: CameraStream) => ({
+          ...stream,
+          isRecording: false,
+          isPlaying: true,
+          isLoading: true,
+        }));
+      
+        // Set the updated streams
+        setCameraStreams(updatedStreams);
+      
 
         // Update availableIds to remove ids that are already used
         setAvailableIds((prevAvailableIds) => {

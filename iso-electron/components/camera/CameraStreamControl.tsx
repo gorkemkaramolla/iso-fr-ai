@@ -81,7 +81,7 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isLoading: false,
               isPlaying: true,
               isRecording: false,
-              streamSrc: "",
+              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
             }
           : camera
       )

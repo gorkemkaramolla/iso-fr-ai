@@ -137,10 +137,6 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
                 let speakerColor = 'rgba(0,0,0,0.1)';
                 const hexColor = parsedSpeakerColors[segment.speaker];
 
-                // Debugging logs
-                console.log('Speaker:', segment.speaker);
-                console.log('Hex Color:', hexColor);
-
                 if (typeof hexColor === 'string' && hexColor.startsWith('#')) {
                   const r = parseInt(hexColor.slice(1, 3), 16);
                   const g = parseInt(hexColor.slice(3, 5), 16);
@@ -209,6 +205,12 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
           };
         } catch (error) {
           console.error('Failed to load audio:', error);
+          if (error instanceof DOMException && error.name === 'EncodingError') {
+            // Handle the specific EncodingError
+            alert(
+              'Failed to decode audio data. The file might be corrupted or unsupported.'
+            );
+          }
         }
       }
     };

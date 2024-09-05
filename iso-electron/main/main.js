@@ -32,15 +32,28 @@ const createWindow = () => {
   if (app.isPackaged) {
     appServe(win)
       .then(() => {
-        win.loadURL('app://-'); // Load from the bundled files
+        win
+          .loadURL('app://-')
+          .then(() => {
+            win.webContents.openDevTools();
+          })
+          .catch((err) => {
+            console.error('Failed to load URL in packaged mode:', err);
+          });
+      })
+      .catch((err) => {
+        console.error('Failed to serve files:', err);
+      });
+  } else {
+    win
+      .loadURL('http://localhost:3000')
+      .then(() => {
         win.webContents.openDevTools();
       })
       .catch((err) => {
-        console.error('Failed to load URL:', err);
+        console.error('Failed to load URL in development mode:', err);
       });
-  } else {
-    win.loadURL('http://localhost:3000'); // Load from the development server
-    win.webContents.openDevTools();
+
     win.webContents.on('did-fail-load', () => {
       win.webContents.reloadIgnoringCache();
     });

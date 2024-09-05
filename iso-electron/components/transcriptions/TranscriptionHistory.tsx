@@ -29,8 +29,13 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
-  const transcriptions = useStore((state) => state.transcriptions);
-  const setTranscriptions = useStore((state) => state.setTranscriptions); // Get the setter from Zustand store
+  const transcriptions = useStore(
+    (state: { transcriptions: Transcript[] }) => state.transcriptions
+  );
+  const setTranscriptions = useStore(
+    (state: { setTranscriptions: (data: Transcript[]) => void }) =>
+      state.setTranscriptions
+  ); // Get the setter from Zustand store
   const router = useRouter();
   const pRef = useRef<HTMLParagraphElement | null>(null);
 
@@ -78,20 +83,6 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
     };
   }, []);
 
-  // useEffect(() => {
-  //   const storedActiveId = localStorage.getItem('activeTranscriptionId');
-  //   if (storedActiveId && transcriptions.length > 0) {
-  //     const activeIndex = transcriptions.findIndex(
-  //       (transcription) => transcription._id === storedActiveId
-  //     );
-
-  //     if (activeIndex !== -1) {
-  //       const calculatedPage = Math.ceil((activeIndex + 1) / itemsPerPage);
-  //       setCurrentPage(calculatedPage);
-  //     }
-  //   }
-  // }, [transcriptions, itemsPerPage]);
-
   useEffect(() => {
     if (activePageId) {
       localStorage.setItem('activeTranscriptionId', activePageId);
@@ -100,14 +91,19 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
 
   const availableDates = Array.from(
     new Set(
-      transcriptions.map((transcription) => new Date(transcription.created_at))
+      transcriptions.map(
+        (transcription: Transcript) => new Date(transcription.created_at)
+      )
     )
-  ).sort((a, b) => a.getTime() - b.getTime());
+  ) as Date[]; // Explicitly cast to Date[]
+
+  availableDates.sort((a: Date, b: Date) => a.getTime() - b.getTime());
+
   const minDate = availableDates.length > 0 ? availableDates[0] : new Date();
 
   const filteredTranscriptions = selectedDate
     ? transcriptions.filter(
-        (transcription) =>
+        (transcription: Transcript) =>
           new Date(transcription.created_at).toDateString() ===
           selectedDate.toDateString()
       )
@@ -166,7 +162,7 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
             </h2>
             <CalendarComponent
               localStorageSaveName='transcriptionFilter'
-              availableDates={availableDates}
+              availableDates={availableDates as Date[]}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
             />
@@ -177,7 +173,7 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
                 No records found.
               </p>
             ) : (
-              currentItems.map((transcription) => (
+              currentItems.map((transcription: Transcript) => (
                 <li key={transcription._id}>
                   <div
                     className={`p-3 flex hover:bg-gray-200 hover:cursor-pointer cursor-pointer justify-between items-center rounded-lg transition-all duration-300 ${

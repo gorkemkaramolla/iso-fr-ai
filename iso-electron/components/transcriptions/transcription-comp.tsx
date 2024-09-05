@@ -20,6 +20,7 @@ import { useResize } from '@/hooks/useResize';
 import { useRouter } from 'next/navigation';
 import { deleteTranscription } from '@/utils/transcription/transcription';
 import PanelResizeHandler from './panel-resize-handler';
+import SaveStateMessage from './save-state-message';
 
 interface Props {
   transcription: Transcript;
@@ -240,6 +241,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
   }, [width, height]);
   return (
     <div className='relative'>
+      <SaveStateMessage saveState={saveState} />
       <Toast ref={toast} />
       <div className='fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full  md:w-2/4 z-50'>
         <WaveAudio
@@ -300,7 +302,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
           {rightScreen && (
             <Panel
               defaultSize={25}
-              minSize={1.5}
+              minSize={0.2}
               className='z-0 md:block hidden '
             >
               <div className='flex w-full justify-between'></div>

@@ -308,6 +308,16 @@ class SpeakerDiarizationProcessor:
             self.emit_progress(transcript_id, 0)  # Reset progress on failure
             return {"error": str(e)}
 
+    def emit_progress(self, transcript_id, progress):
+        try:
+            # Emit progress to the client based on transcript_id
+            socketio.emit('progress', {'transcript_id': transcript_id, 'progress': progress})
+            self.logger.info(f"Progress for {transcript_id} updated to {progress}%")
+        except Exception as e:
+            self.logger.error(f"Failed to emit progress for {transcript_id}: {str(e)}")
+
+
+
     def rename_transcription(self, transcription_id, new_name):
         try:
             # Access the transcripts collection from the MongoDB database

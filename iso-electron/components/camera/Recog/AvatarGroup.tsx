@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Avatar, AvatarGroup, AvatarIcon, Badge } from "@nextui-org/react";
 import { GroupedRecogFaces } from "@/types";
-import Link from "next/link";
 
 interface RecogFaceCollapsedItemProps {
   groups: GroupedRecogFaces[];
@@ -17,7 +16,6 @@ const emotions = [
   "🤢",
   "😠",
   // [neutral, happy, sad, surprised, scared, disgusted, angry
-];
 ];
 
 const RecogFacesAvatarGroup: React.FC<RecogFaceCollapsedItemProps> = ({

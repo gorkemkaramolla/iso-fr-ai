@@ -24,7 +24,7 @@ const useSystemInfo = () => {
   const [gpuUsageData, setGpuUsageData] = useState<UsageData[]>([]);
 
   useEffect(() => {
-    const socket: Socket = io('http://localhost:5004');
+    const socket: Socket = io(process.env.NEXT_PUBLIC_UTILS_URL as string);
 
     socket.on('connect', () => {
       console.log('Connected to WebSocket server');

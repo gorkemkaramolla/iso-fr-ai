@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Avatar, AvatarGroup, AvatarIcon, Badge } from '@nextui-org/react';
-import { GroupedRecogFaces } from '@/types';
-import { HiOutlineEmojiHappy } from 'react-icons/hi';
+import React, { useEffect, useState } from "react";
+import { Avatar, AvatarGroup, AvatarIcon, Badge } from "@nextui-org/react";
+import { GroupedRecogFaces } from "@/types";
+import Link from "next/link";
 
 interface RecogFaceCollapsedItemProps {
   groups: GroupedRecogFaces[];
@@ -9,10 +9,15 @@ interface RecogFaceCollapsedItemProps {
 }
 
 const emotions = [
-   "😐", "😄", "😢", "😲", "😨", "🤢", "😠"
+  "😐",
+  "😄",
+  "😢",
+  "😲",
+  "😨",
+  "🤢",
+  "😠",
   // [neutral, happy, sad, surprised, scared, disgusted, angry
-]
-
+];
 
 const RecogFacesAvatarGroup: React.FC<RecogFaceCollapsedItemProps> = ({
   groups,
@@ -37,44 +42,54 @@ const RecogFacesAvatarGroup: React.FC<RecogFaceCollapsedItemProps> = ({
     handleResize();
 
     // Add event listener
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     // Cleanup event listener on component unmount
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
   return (
-    <AvatarGroup isBordered  max={maxAvatars} classNames={{base: "flex gap-6 pointer-events-none"}}>
+    <AvatarGroup
+      isBordered
+      isGrid
+      max={maxAvatars}
+      classNames={{
+        base: "flex gap-4",
+      }}
+    >
       {groups.map((group, index) => (
-              <Badge
-              isOneChar
-              content={emotions[Number(group!.faces?.at(0)!.emotion!)]}
-              // content={<HiOutlineEmojiHappy className='w-10 h-10 p-0 m-0'/>}
-              // color="success"
-              placement="bottom-right"
-            >
-              <Badge 
-              content={group!.faces?.length}
-              color="primary"
-              placement="top-right" classNames={{badge: "bg-opacity-75"}}>
-        <Avatar
+        <Badge
           key={index}
-          src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${group.personnel_id}`}
-          classNames={{
-            base: 'bg-gradient-to-br from-[#FFB457] to-[#FF705B]',
-            icon: 'text-black/80',
-            fallback: 'w-10 h-10',
-          }}
-          style={{ fontSize: '1.5rem' }}
-          onClick={() => handleImageClick(group.personnel_id)}
-          title={`${group.name}`}
-          
-          showFallback
-          fallback={<AvatarIcon />}
-        />
-        </Badge>
+          isOneChar
+          content={emotions[Number(group!.faces?.at(0)!.emotion!)]}
+          placement="bottom-right"
+        >
+          <Badge
+            key={index}
+            content={group!.faces?.length}
+            color="primary"
+            placement="top-right"
+            classNames={{ badge: "bg-opacity-75" }}
+          >
+            <Avatar
+              key={index}
+              src={`${process.env.NEXT_PUBLIC_UTILS_URL}/personel/image/?id=${group.personnel_id}`}
+              classNames={{
+                base: "bg-gradient-to-br from-[#FFB457] to-[#FF705B]",
+                icon: "text-black/80",
+                fallback: "w-10 h-10",
+              }}
+              style={{ fontSize: "1.5rem" }}
+              onClick={() => handleImageClick(group.personnel_id)}
+              title={`${group.name}`}
+              showFallback
+              fallback={<AvatarIcon />}
+              isBordered
+              color={group?.faces?.at(0)?.gender === 0 ? "danger" : "secondary"}
+            />
+          </Badge>
         </Badge>
       ))}
     </AvatarGroup>

@@ -1,12 +1,12 @@
-'use client';
-import React from 'react';
-import QualityDropdown from './QualityDropdown';
-import CameraControls from './CameraControls';
-import CameraStream from './CameraStream';
-import { Quality } from '@/utils/enums';
-import { Toast } from 'primereact/toast';
-import { Camera } from '@/types';
-import { CameraStream as CameraStreamType } from '@/types';
+"use client";
+import React from "react";
+import QualityDropdown from "./QualityDropdown";
+import CameraControls from "./CameraControls";
+import CameraStream from "./CameraStream";
+import { Quality } from "@/utils/enums";
+import { Toast } from "primereact/toast";
+import { Camera } from "@/types";
+import { CameraStream as CameraStreamType } from "@/types";
 
 interface CameraStreamProps {
   id: number;
@@ -58,8 +58,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isLoading: false,
               isPlaying: true,
               isRecording: true,
-              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(true)}`
-
+              streamSrc: `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(
+                selectedCamera?.url || ""
+              )}&cameraName=${encodeURIComponent(
+                camera.selectedCamera.label
+              )}&streamProfile=${encodeURIComponent(
+                camera.selectedQuality
+              )}&is_recording=${encodeURIComponent(true)}`,
             }
           : camera
       )
@@ -68,9 +73,12 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
 
   const stopRecording = async () => {
     if (isLocalCamera) {
-      const response = await fetch(`${BASE_URL}/local_stream/stop_recording`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${BASE_URL}/local_stream/stop_recording/${id}`,
+        {
+          method: "POST",
+        }
+      );
     }
 
     setCameraStreams(
@@ -81,7 +89,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isLoading: false,
               isPlaying: true,
               isRecording: false,
-              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
+              streamSrc: `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(
+                selectedCamera?.url || ""
+              )}&cameraName=${encodeURIComponent(
+                camera.selectedCamera.label
+              )}&streamProfile=${encodeURIComponent(
+                camera.selectedQuality
+              )}&is_recording=${encodeURIComponent(false)}`,
             }
           : camera
       )
@@ -89,15 +103,15 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   };
 
   const stopStream = async () => {
-    // const response = await fetch(`${BASE_URL}/stream/stop/${id}`, {
-    //   method: "POST",
-    // });
+    const response = await fetch(`${BASE_URL}/stream/stop/${id}`, {
+      method: "POST",
+    });
     setCameraStreams(
       cameraStreams.map((camera) =>
         camera.id === id
           ? {
               ...camera,
-              streamSrc: '',
+              streamSrc: "",
               isLoading: false,
               isPlaying: false,
               isRecording: false,
@@ -109,9 +123,9 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   };
 
   const startStream = async () => {
-    // const response = await fetch(`${BASE_URL}/stream/start/${id}`, {
-    //   method: "POST",
-    // });
+    const response = await fetch(`${BASE_URL}/stream/start/${id}`, {
+      method: "POST",
+    });
     setCameraStreams(
       cameraStreams.map((camera) =>
         camera.id === id
@@ -121,7 +135,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
               isPlaying: true,
               isRecording: false,
               isClose: false,
-               streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
+              streamSrc: `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(
+                selectedCamera?.url || ""
+              )}&cameraName=${encodeURIComponent(
+                camera.selectedCamera.label
+              )}&streamProfile=${encodeURIComponent(
+                camera.selectedQuality
+              )}&is_recording=${encodeURIComponent(false)}`,
             }
           : camera
       )
@@ -130,15 +150,15 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   const removeStream = async () => {
     // stopStream();
     const response = await fetch(`${BASE_URL}/stream/stop/${id}`, {
-      method: 'POST',
+      method: "POST",
     });
 
     if (response.ok && !isLocalCamera) {
-      console.log('Stream Stopped');
+      console.log("Stream Stopped");
 
       toast.current?.show({
-        severity: 'warn',
-        summary: 'Kamera Yayını Durduruldu',
+        severity: "info",
+        summary: "Kamera Yayını Durduruldu",
         detail: `Kamera yayını durduruldu.`,
         life: 3000,
       });
@@ -151,9 +171,9 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
     setCameraStreams((prevStreams) => {
       const updatedStreams = prevStreams.filter((camera) => camera.id !== id);
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         // Save the updated list to localStorage
-        localStorage.setItem('cameraStreams', JSON.stringify(updatedStreams));
+        localStorage.setItem("cameraStreams", JSON.stringify(updatedStreams));
       }
 
       return updatedStreams;
@@ -166,8 +186,13 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
           ? {
               ...camera,
               selectedQuality: selectedQuality,
-              streamSrc : `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(selectedCamera?.url || "")}&cameraName=${encodeURIComponent(camera.selectedCamera.label)}&streamProfile=${encodeURIComponent(camera.selectedQuality)}&is_recording=${encodeURIComponent(false)}`
-
+              streamSrc: `${BASE_URL}/stream/${id}?camera=${encodeURIComponent(
+                selectedCamera?.url || ""
+              )}&cameraName=${encodeURIComponent(
+                camera.selectedCamera.label
+              )}&streamProfile=${encodeURIComponent(
+                camera.selectedQuality
+              )}&is_recording=${encodeURIComponent(false)}`,
             }
           : camera
       )
@@ -177,18 +202,18 @@ const CameraStreamControl: React.FC<CameraStreamProps> = ({
   return (
     <div className={`rounded-lg min-h-[350px] max-h-fit w-full`}>
       <div
-        className='text-sm text-center font-bold  bg-slate-50 
+        className="text-sm text-center font-bold  bg-slate-50 
       border-none rounded-md py-1 m-0 border border-black drag-handle
-      cursor-move'
+      cursor-move"
       >
-        <div className='flex flex-row space-x-4 gap-4 items-center justify-between  px-20'>
-          <div className=''>
-            Yayın {id} -{' '}
-            <span className='text-red-500'>{selectedCamera?.label}</span>
+        <div className="flex flex-row space-x-4 gap-4 items-center justify-between  px-20">
+          <div className="">
+            Yayın {id} -{" "}
+            <span className="text-red-500">{selectedCamera?.label}</span>
           </div>
-          <div className='flex flex-row gap-4 items-center'>
+          <div className="flex flex-row gap-4 items-center">
             {/* {isNaN(parseFloat(selectedCamera?.url ?? '')) ? ( */}
-              {/* <QualityDropdown
+            {/* <QualityDropdown
                 id={id}
                 selectedQuality={selectedQuality}
                 handleQualityChange={handleQualityChange}

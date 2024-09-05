@@ -5,9 +5,11 @@ import * as XLSX from 'xlsx';
 import { RiFileExcel2Line } from 'react-icons/ri';
 import { BsFiletypeCsv, BsFiletypeJson } from 'react-icons/bs';
 import { FaFileWord } from 'react-icons/fa';
-import { Ellipsis, Trash2 } from 'lucide-react';
+import { ClipboardCheck, Clipboard, Ellipsis, Trash2 } from 'lucide-react';
 import ConfirmationDialog from '../ui/confirmation-dialog';
 import Tooltip from '../ui/tool-tip';
+import { motion } from 'framer-motion';
+
 interface ExportButtonsProps {
   data: any;
   isActivePage?: boolean;
@@ -18,6 +20,7 @@ interface ExportButtonsProps {
   showDelete?: boolean;
   showRename?: boolean;
   showExport?: boolean;
+  handleCopy: () => void; // Accept handleCopy as a prop
 }
 
 const ExportButtons: React.FC<ExportButtonsProps> = ({
@@ -27,12 +30,13 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
   isTranscriptionNameEditing,
   setTranscriptionNameEditing,
   handleDeleteTranscription,
-
+  handleCopy,
   showDelete = false,
   showRename = false,
   showExport = false,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showCopyAnimation, setShowCopyAnimation] = useState(false);
 
   const flattenData = (data: any) => {
     const { segments, ...rest } = data;
@@ -94,6 +98,12 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
     setIsDialogOpen(false);
   };
 
+  const handleCopyClick = () => {
+    handleCopy();
+    setShowCopyAnimation(true);
+    setTimeout(() => setShowCopyAnimation(false), 2000); // Hide animation after 2 seconds
+  };
+
   return (
     <div className={isActivePage ? '' : 'text-gray-700'}>
       <div className='dropdown dropdown-end'>
@@ -132,6 +142,28 @@ const ExportButtons: React.FC<ExportButtonsProps> = ({
               <details>
                 <summary>Dışarıya Aktar</summary>
                 <ul className='p-2'>
+                  <li>
+                    <button
+                      onClick={handleCopyClick}
+                      className='w-full flex justify-between'
+                    >
+                      <div
+                        className={`flex justify-between w-full ${
+                          showCopyAnimation ? 'text-green-600' : ''
+                        }`}
+                      >
+                        <span>
+                          {showCopyAnimation ? 'Kopyalandı' : 'Kopyala'}
+                        </span>
+                        {showCopyAnimation ? (
+                          <ClipboardCheck size={18} />
+                        ) : (
+                          <Clipboard size={18} />
+                        )}
+                      </div>
+                    </button>
+                  </li>
+
                   <li>
                     <Tooltip
                       content='Excel formatında dışa aktar'

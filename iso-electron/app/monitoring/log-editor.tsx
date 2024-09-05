@@ -225,7 +225,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
             />
           </div>
           <div className='flex items-center space-x-2'>
-            <Tooltip content='Kopyala'>
+            <Tooltip placement='top' content='Kopyala'>
               <motion.button
                 onClick={handleLogCopy}
                 className='p-2 rounded hover:bg-gray-200 transition-colors'
@@ -238,7 +238,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
               </motion.button>
             </Tooltip>
 
-            <Tooltip content='JSON olarak dışa aktar'>
+            <Tooltip placement='top' content='JSON olarak dışa aktar'>
               <motion.button
                 onClick={handleLogExport}
                 className='p-2 rounded hover:bg-gray-200 transition-colors'
@@ -248,7 +248,7 @@ const LogEditor: React.FC<LogEditorProps> = ({ systemInfo }) => {
               </motion.button>
             </Tooltip>
 
-            <Tooltip content='Tam Ekran'>
+            <Tooltip placement='top' content='Tam Ekran'>
               <motion.button
                 onClick={toggleFullScreen}
                 className='p-2 rounded hover:bg-gray-200 transition-colors'

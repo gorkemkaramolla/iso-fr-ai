@@ -18,6 +18,7 @@ const emotions = [
   "😠",
   // [neutral, happy, sad, surprised, scared, disgusted, angry
 ];
+];
 
 const RecogFacesAvatarGroup: React.FC<RecogFaceCollapsedItemProps> = ({
   groups,

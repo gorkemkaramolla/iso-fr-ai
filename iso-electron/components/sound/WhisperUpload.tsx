@@ -173,7 +173,7 @@ const WhisperUpload: React.FC<{ isProcessing: boolean }> = ({
   };
 
   return (
-    <div className='w-full min-h-screen p-8'>
+    <div className='w-full '>
       <div className='w-full absolute bottom-0 left-0'>
         <Progress current={progress} />
       </div>
@@ -330,7 +330,7 @@ const WhisperUpload: React.FC<{ isProcessing: boolean }> = ({
                   Düzenlemek için tıkla
                 </Link>
               </div>
-              <ul className='divide-y overflow-y-scroll divide-gray-200'>
+              <ul className='divide-y  divide-gray-200'>
                 {response.segments.map((segment: Segment, index: number) => (
                   <li
                     key={index}

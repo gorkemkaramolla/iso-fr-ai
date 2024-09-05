@@ -19,6 +19,7 @@ import { FaGripVertical } from 'react-icons/fa6';
 import { useResize } from '@/hooks/useResize';
 import { useRouter } from 'next/navigation';
 import { deleteTranscription } from '@/utils/transcription/transcription';
+import PanelResizeHandler from './panel-resize-handler';
 
 interface Props {
   transcription: Transcript;
@@ -295,11 +296,7 @@ const Transcription: React.FC<Props> = ({ transcription }) => {
               />
             </div>
           </Panel>
-          <PanelResizeHandle className='cursor-col-resize w-[2px] max-h-[90vh] bg-gray-200 relative md:flex hidden'>
-            <div className='absolute top-1/2 bg-primary text-white py-[6px] px-[3px] rounded-xl left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
-              <FaGripVertical style={{ zIndex: 100 }} className='text-[12px]' />
-            </div>
-          </PanelResizeHandle>
+          <PanelResizeHandler />
           {rightScreen && (
             <Panel
               defaultSize={25}

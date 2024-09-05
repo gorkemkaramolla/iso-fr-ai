@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import useStore from '@/library/store';
 import createApi from '@/utils/axios_instance';
 import ChatSideMenuSkeleton from '../ui/transcription-history-skeleton';
-import CalendarComponent from '../camera/Calendar';
+import CalendarComponent from '@/components/ui/calendar-component';
 import { deleteTranscription } from '@/utils/transcription/transcription';
 import { formatDate } from '@/utils/formatDate';
 
@@ -53,14 +53,21 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
 
   useEffect(() => {
     const calculateItemsPerPage = () => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth;
-        const newItemsPerPage = Math.max(
-          1,
-          Math.floor(containerWidth / 100) * 2
-        );
-        setItemsPerPage(newItemsPerPage);
+      const screenHeight = window.innerHeight;
+      let newItemsPerPage = 8; // default for smaller screens
+
+      if (screenHeight > 950) {
+        newItemsPerPage = 7;
+      } else if (screenHeight >= 800 && screenHeight <= 950) {
+        newItemsPerPage = 6;
+      } else {
+        if (containerRef.current) {
+          const containerHeight = containerRef.current.offsetHeight;
+          newItemsPerPage = Math.max(1, Math.floor(containerHeight / 100) * 2);
+        }
       }
+
+      setItemsPerPage(newItemsPerPage);
     };
 
     calculateItemsPerPage();
@@ -71,19 +78,19 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    const storedActiveId = localStorage.getItem('activeTranscriptionId');
-    if (storedActiveId && transcriptions.length > 0) {
-      const activeIndex = transcriptions.findIndex(
-        (transcription) => transcription._id === storedActiveId
-      );
+  // useEffect(() => {
+  //   const storedActiveId = localStorage.getItem('activeTranscriptionId');
+  //   if (storedActiveId && transcriptions.length > 0) {
+  //     const activeIndex = transcriptions.findIndex(
+  //       (transcription) => transcription._id === storedActiveId
+  //     );
 
-      if (activeIndex !== -1) {
-        const calculatedPage = Math.ceil((activeIndex + 1) / itemsPerPage);
-        setCurrentPage(calculatedPage);
-      }
-    }
-  }, [transcriptions, itemsPerPage]);
+  //     if (activeIndex !== -1) {
+  //       const calculatedPage = Math.ceil((activeIndex + 1) / itemsPerPage);
+  //       setCurrentPage(calculatedPage);
+  //     }
+  //   }
+  // }, [transcriptions, itemsPerPage]);
 
   useEffect(() => {
     if (activePageId) {
@@ -154,11 +161,12 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
       ) : (
         <div className='py-4 px-4'>
           <div className='w-full'>
-            <h2 className='text-lg font-semibold mb-4 text-gray-700'>
-              History
+            <h2 className='text-lg  font-semibold mb-4 text-gray-700'>
+              Geçmiş Sentezler
             </h2>
             <CalendarComponent
-              minDate={minDate}
+              localStorageSaveName='transcriptionFilter'
+              availableDates={availableDates}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
             />
@@ -172,10 +180,10 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
               currentItems.map((transcription) => (
                 <li key={transcription._id}>
                   <div
-                    className={`p-3 flex justify-between items-center rounded-lg transition-all duration-300 ${
+                    className={`p-3 flex hover:bg-gray-200 hover:cursor-pointer cursor-pointer justify-between items-center rounded-lg transition-all duration-300 ${
                       transcription._id === activePageId
-                        ? 'bg-gradient-to-br from-primary via-primary to-purple-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                        ? 'bg-gradient-to-br  from-primary via-primary to-purple-600 text-white shadow-lg ring-2 ring-indigo-400 ring-offset-2'
+                        : 'bg-gray-100 hover:cursor-pointer cursor-pointer hover:bg-gray-200 text-gray-800'
                     }`}
                   >
                     <Link
@@ -273,13 +281,13 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
             )}
           </ul>
           {totalPages > 1 && (
-            <div className='mt-4 flex justify-between text-sm text-gray-600'>
+            <div className='mt-4 flex justify-between text-sm text-gray-600 px-2'>
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
                 className='disabled:text-gray-400'
               >
-                Previous
+                Önceki
               </button>
               <span>
                 {currentPage} / {totalPages}
@@ -291,7 +299,7 @@ const TranscriptionHistory: React.FC<TranscriptionHistoryProps> = ({
                 disabled={currentPage === totalPages}
                 className='disabled:text-gray-400'
               >
-                Next
+                Sonraki
               </button>
             </div>
           )}

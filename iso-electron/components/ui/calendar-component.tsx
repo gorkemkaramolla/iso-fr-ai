@@ -54,16 +54,16 @@ export default function CalendarComponent({
   };
 
   return (
-    <div className='flex items-center justify-content-center p-0'>
+    <div className='flex items-center justify-content-center '>
       <Button
-        className='text-sm bg-primary disabled:bg-primary-900 rounded-r-none'
+        className='text-sm bg-primary disabled:bg-primary-900 p-3 rounded-r-none'
         onClick={handleShowAll}
         disabled={!selectedDate}
         icon={'pi pi-calendar-times'}
       />
       <Calendar
         variant='filled'
-        className='  [&_.p-datepicker-trigger]:bg-primary w-full   p-0 m-0 rounded-none!'
+        className='  [&_.p-datepicker-trigger]:bg-primary w-full !   p-0 m-0 !outline-none'
         value={selectedDate}
         onChange={handleDateChange}
         minDate={availableDates[0]}

@@ -23,22 +23,6 @@ const useSystemInfo = () => {
   const [cpuUsageData, setCpuUsageData] = useState<UsageData[]>([]);
   const [gpuUsageData, setGpuUsageData] = useState<UsageData[]>([]);
 
-  // useEffect(() => {
-  //   const fetchLogsData = async () => {
-  //     try {
-  //       const res = await axios.get(
-  //         `${process.env.NEXT_PUBLIC_UTILS_URL}/search_logs?query=`
-  //       );
-  //       console.log(res.data);
-  //       setSystemInfo((prev) => ({ ...prev, logs_data: res.data }));
-  //     } catch (err) {
-  //       console.error('Error fetching logs data:', err);
-  //     }
-  //   };
-
-  //   fetchLogsData();
-  // }, []);
-
   useEffect(() => {
     const socket: Socket = io('http://localhost:5004');
 

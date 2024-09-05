@@ -21,6 +21,12 @@ import {
   XCircle,
   ChevronUp,
   ChevronDown,
+  AlignLeft,
+  AlignJustify,
+  Copy,
+  ClipboardCopy,
+  Clipboard,
+  ClipboardCheck,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Card from '@/components/ui/card';
@@ -176,6 +182,8 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
     null
   );
+  const [copiedSegmentId, setCopiedSegmentId] = useState<string | null>(null);
+  const [copiedFullText, setCopiedFullText] = useState<boolean>(false);
 
   const segmentRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   useEffect(() => {
@@ -484,10 +492,23 @@ const TextEditor: React.FC<TextEditorProps> = ({
     closeMenu();
   }, [menuState.segmentId, segments, closeMenu]);
 
+  const handleCopy = useCallback(() => {
+    if (transcription) {
+      const textToCopy = showFullText
+        ? transcription.text
+        : JSON.stringify(transcription);
+      navigator.clipboard.writeText(textToCopy);
+      setCopiedFullText(true);
+      setTimeout(() => setCopiedFullText(false), 1000);
+    }
+  }, [showFullText, transcription]);
   const handleCopySegment = useCallback(() => {
     const segment = segments.find((s) => s.id === menuState.segmentId);
     if (segment && typeof navigator !== 'undefined') {
       navigator.clipboard.writeText(segment.text);
+
+      setCopiedSegmentId(menuState.segmentId);
+      setTimeout(() => setCopiedSegmentId(null), 1000); // Reset after animation
     }
     closeMenu();
   }, [menuState.segmentId, segments, closeMenu]);
@@ -502,60 +523,6 @@ const TextEditor: React.FC<TextEditorProps> = ({
 
   return (
     <Card>
-      <div className='fixed bottom-4 left-4 z-50'>
-        <AnimatePresence>
-          {saveState === 'saved' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className='flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full shadow-lg'
-            >
-              <CheckCircle size={18} />
-              <span className='font-medium'>Değişiklikler Kaydedildi</span>
-            </motion.div>
-          )}
-          {saveState === 'no changes made' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className='flex items-center space-x-2 bg-gray-100 text-gray-800 px-4 py-2 rounded-full shadow-lg'
-            >
-              <Info size={18} />
-              <span className='font-medium'>Değişiklik Yok</span>
-            </motion.div>
-          )}
-          {saveState === 'needs saving' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className='flex items-center space-x-2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full shadow-lg'
-            >
-              <AlertCircle size={18} />
-              <span className='font-medium'>
-                Kaydetmek için{' '}
-                <kbd className='px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg'>
-                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} + S
-                </kbd>{' '}
-                tuşuna basınız
-              </span>
-            </motion.div>
-          )}
-          {saveState === 'save failed' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className='flex items-center space-x-2 bg-red-100 text-red-800 px-4 py-2 rounded-full shadow-lg'
-            >
-              <XCircle size={18} />
-              <span className='font-medium'>Save Failed</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
       <div className='flex justify-between'>
         <Link href='/speech' passHref>
           <Button
@@ -565,27 +532,45 @@ const TextEditor: React.FC<TextEditorProps> = ({
           />
         </Link>
 
-        <div className='flex-col-reverse flex md:flex-row items-start md:items-center md:justify-between mb-4'>
+        <div className='flex-col-reverse gap-3 flex md:flex-row items-start md:items-center md:justify-between mb-4'>
+          <motion.button
+            onClick={() => setShowFullText((prev) => !prev)}
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05 }}
+          >
+            <motion.div
+              initial={false}
+              animate={{ rotate: showFullText ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {showFullText ? (
+                <AlignLeft size={18} />
+              ) : (
+                <AlignJustify size={18} />
+              )}
+            </motion.div>
+          </motion.button>
           <ExportButtons
             handleDeleteTranscription={handleDeleteTranscription}
-            isTranscriptionNameEditing={isTranscriptionNameEditing}
-            setTranscriptionNameEditing={setIsTranscriptionNameEditing}
+            isTranscriptionNameEditing={false}
             data={transcription}
+            setTranscriptionNameEditing={setIsTranscriptionNameEditing}
             showDelete={true}
             showExport={true}
             showRename={true}
             fileName='output'
+            handleCopy={handleCopy} // Pass handleCopy function
           />
         </div>
       </div>
 
       <div className='flex md:items-center space-x-4 w-full px-4'>
-        <div className='relative w-full  group'>
+        <div className='relative w-full  flex justify-between group'>
           {isTranscriptionNameEditing ? (
             <textarea
               ref={editingRef}
-              className='text-2xl w-full  min-w-52 my-2 font-bold p-2 rounded border focus:outline-none break-words whitespace-pre-wrap'
-              rows={2}
+              className='text-2xl w-full  min-w-52  font-bold  rounded border focus:outline-none break-words whitespace-pre-wrap'
+              rows={1}
               value={transcriptionName}
               onChange={(e) => {
                 setSaveState('needs saving');
@@ -612,24 +597,20 @@ const TextEditor: React.FC<TextEditorProps> = ({
         </div>
 
         <div className='flex md:flex-row self-center flex-row-reverse space-x-2'>
-          <button
-            className='btn btn-primary btn-sm flex gap-2'
-            onClick={() => setShowFullText((prev) => !prev)}
-          >
-            {showFullText ? 'Tüm Metin' : 'Segmentler'}
-          </button>
           <div className='dropdown dropdown-end'>
-            <Tooltip
-              placement='top-end'
-              content='Konuşmacıları görüntüle, vurgu renklerini ayarla veya tüm segmentlerde konuşmacı adlarını değiştir'
-            >
-              <button
-                tabIndex={0}
-                className='btn btn-primary btn-sm flex gap-2'
+            {!showFullText && (
+              <Tooltip
+                placement='bottom-end'
+                content='Konuşmacıları görüntüle, vurgu renklerini ayarla veya tüm segmentlerde konuşmacı adlarını değiştir'
               >
-                <span>Konuşmacılar</span>
-              </button>
-            </Tooltip>
+                <button
+                  tabIndex={0}
+                  className='btn btn-primary btn-sm flex gap-2'
+                >
+                  <span>Konuşmacılar</span>
+                </button>
+              </Tooltip>
+            )}
 
             <ul
               tabIndex={0}
@@ -670,33 +651,34 @@ const TextEditor: React.FC<TextEditorProps> = ({
               ))}
             </ul>
           </div>
-
-          <button
-            className='btn btn-ghost btn-sm'
-            onClick={() =>
-              setViewMode(viewMode === 'inline' ? 'list' : 'inline')
-            }
-          >
-            <motion.div
-              animate={{
-                rotate: viewMode === 'inline' ? 0 : 90,
-                rotateY: viewMode === 'inline' ? 0 : 360,
-              }}
-              transition={{ duration: 0.3 }}
+          {!showFullText && (
+            <button
+              className='btn btn-ghost btn-sm'
+              onClick={() =>
+                setViewMode(viewMode === 'inline' ? 'list' : 'inline')
+              }
             >
-              {viewMode === 'inline' ? (
-                <AlignStartHorizontal className='' size={20} />
-              ) : (
-                <AlignStartHorizontal size={20} />
-              )}
-            </motion.div>
-          </button>
+              <motion.div
+                animate={{
+                  rotate: viewMode === 'inline' ? 0 : 90,
+                  rotateY: viewMode === 'inline' ? 0 : 360,
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                {viewMode === 'inline' ? (
+                  <AlignStartHorizontal className='' size={20} />
+                ) : (
+                  <AlignStartHorizontal size={20} />
+                )}
+              </motion.div>
+            </button>
+          )}
         </div>
       </div>
 
       <div className='text-editor'>
         {showFullText ? (
-          <div className='full-text p-4'>{transcription?.text}</div>
+          <div className='full-text h-[600px] p-4'>{transcription?.text}</div>
         ) : (
           <div
             ref={transcriptionRef}

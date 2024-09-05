@@ -1,5 +1,6 @@
 import React from 'react';
 import { BsInfoLg } from 'react-icons/bs';
+import { Info } from 'lucide-react';
 import Tooltip from './tool-tip';
 
 interface InfoTooltipProps {
@@ -14,7 +15,7 @@ const InfoTooltip: React.FC<InfoTooltipProps> = ({
   return (
     <Tooltip placement={placement} content={content}>
       <button className='focus:outline-none'>
-        <BsInfoLg className='mb-4 cursor-pointer' size={24} />
+        <Info className='mb-4 cursor-pointer' size={24} />
       </button>
     </Tooltip>
   );

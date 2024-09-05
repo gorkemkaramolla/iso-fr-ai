@@ -554,47 +554,6 @@ class Stream:
         if writer:
             writer.release()
         logging.info("Finished generate function")
-    # def recog_face_local_cam(self, stream_id, frame: np.ndarray, camera_name: str, is_recording: bool = False) -> str:
-    #     if stream_id not in self.stop_flags:
-    #         logging.error(f"No stop flag found for stream ID {stream_id}")
-    #         return ""
-
-    #     stop_flag = self.stop_flags[stream_id]
-    #     stop_flag.clear()
-    #     logging.info("Processing frame")
-
-    #     if is_recording and stream_id not in self.video_writers:
-    #         now = datetime.datetime.now()
-    #         directory = "./records/"
-    #         os.makedirs(directory, exist_ok=True)
-    #         filename = directory + now.strftime("%H:%M:%S_%d/%m/%Y_yerel_kamera") + ".mp4"
-    #         frame_height, frame_width = frame.shape[:2]
-    #         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    #         self.video_writers[stream_id] = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
-    #         if not self.video_writers[stream_id].isOpened():
-    #             logging.error("Error initializing video writer")
-    #             return ""
-
-    #     for bbox, label, sim, emotion, gender, age in zip(*self._get_attributes(frame, camera_name)):
-    #         x1, y1, x2, y2 = map(int, bbox[:4])
-    #         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
-    #         text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"
-    #         cv2.putText(
-    #             frame,
-    #             text_label,
-    #             (x1 + 5, y1 - 10),
-    #             cv2.FONT_HERSHEY_SIMPLEX,
-    #             0.8,
-    #             (0, 255, 0),
-    #             2,
-    #         )
-
-    #     if stream_id in self.video_writers:
-    #         self.video_writers[stream_id].write(frame)
-
-    #     _, buffer = cv2.imencode(".jpg", frame)
-    #     processed_image = base64.b64encode(buffer).decode('utf-8')
-    #     return 'data:image/jpeg;base64,' + processed_image
     
     def recog_face_local_cam(self, stream_id, frame: np.ndarray, camera_name: str, is_recording: bool = False) -> str:
         if stream_id not in self.stop_flags:
@@ -654,8 +613,6 @@ class Stream:
 
         self.stop_flags[stream_id] = threading.Event()
         logging.info(f"Starting stream: {stream_id}")
-        # Add your stream starting logic here
-        # Example: self._start_stream_logic(stream_id, camera, quality, is_recording)
 
     def stop_stream(self, stream_id: int) -> None:
         """
@@ -672,7 +629,6 @@ class Stream:
             del self.video_writers[stream_id]
         del self.stop_flags[stream_id]
         logging.info(f"Stream with ID {stream_id} stopped successfully")
-        # Add your stream stopping logic here
 
 
     def stop_recording(self, stream_id: int) -> bool:
@@ -681,19 +637,3 @@ class Stream:
             del self.video_writers[stream_id]
             return True
         return False
-    
-            # Find the last saved file in the ./records folder
-            # records_folder = './records'
-            # files = [os.path.join(records_folder, f) for f in os.listdir(records_folder) if os.path.isfile(os.path.join(records_folder, f))]
-            # last_saved_file = max(files, key=os.path.getctime)
-    
-            # # Define output file path
-            # output_file = last_saved_file.replace(".mp4", "_converted.mp4")
-    
-            # # Execute ffmpeg command to convert video
-            # command = ["ffmpeg", "-i", last_saved_file, "-vcodec", "h264", "-acodec", "aac", output_file]
-    
-            # # Run the command
-            # subprocess.run(command, capture_output=True, text=True)
-        
-    

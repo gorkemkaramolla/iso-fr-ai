@@ -338,11 +338,30 @@ def update_log(id):
     logs_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
     return jsonify({"message": "Log updated successfully"}), 200
 
+# @camera_bp.route("/recog/<id>", methods=["DELETE"])
+# def delete_log(id):
+#     logs_collection.delete_one({"_id": ObjectId(id)})
+#     return jsonify({"message": "Log deleted successfully"}), 200
 @camera_bp.route("/recog/<id>", methods=["DELETE"])
 def delete_log(id):
-    logs_collection.delete_one({"_id": ObjectId(id)})
-    return jsonify({"message": "Log deleted successfully"}), 200
-
+    # Find the document by ID
+    log = logs_collection.find_one({"_id": ObjectId(id)})
+    
+    if log:
+        # Extract the image path
+        image_path = log.get("image_path")
+        
+        # Delete the image file if it exists
+        if image_path and os.path.exists(image_path):
+            os.remove(image_path)
+        
+        # Delete the document from the collection
+        logs_collection.delete_one({"_id": ObjectId(id)})
+        
+        return jsonify({"message": "Log and associated image deleted successfully"}), 200
+    else:
+        return jsonify({"error": "Log not found"}), 404
+    
 @camera_bp.route("/recog/name/<id>", methods=["PUT"])
 def update_recog_name(id):
     data = request.json

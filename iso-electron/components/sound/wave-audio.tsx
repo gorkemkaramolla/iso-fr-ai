@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from 'react';
 import { motion } from 'framer-motion';
 import WaveSurfer from 'wavesurfer.js';
 import Timeline from 'wavesurfer.js/dist/plugins/timeline.esm.js';
@@ -55,14 +61,14 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
 
   const regionsPlugin = useMemo(() => RegionsPlugin.create(), []);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     if (waveAudioRef.current) {
       // Set the current time before playing
       waveAudioRef.current.setTime(currentTime);
       waveAudioRef.current.playPause();
       setIsPlaying(waveAudioRef.current.isPlaying());
     }
-  };
+  }, [currentTime]);
 
   const handleSkipBackward = () => {
     if (waveAudioRef.current) {
@@ -129,8 +135,13 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
             segments &&
               segments.forEach((segment: Segment) => {
                 let speakerColor = 'rgba(0,0,0,0.1)';
-                if (parsedSpeakerColors[segment.speaker]) {
-                  const hexColor = parsedSpeakerColors[segment.speaker];
+                const hexColor = parsedSpeakerColors[segment.speaker];
+
+                // Debugging logs
+                console.log('Speaker:', segment.speaker);
+                console.log('Hex Color:', hexColor);
+
+                if (typeof hexColor === 'string' && hexColor.startsWith('#')) {
                   const r = parseInt(hexColor.slice(1, 3), 16);
                   const g = parseInt(hexColor.slice(3, 5), 16);
                   const b = parseInt(hexColor.slice(5, 7), 16);
@@ -223,6 +234,28 @@ const WaveAudio: React.FC<WaveAudioProps> = ({
     speakerColors,
     viewMode,
   ]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const activeElement = document.activeElement;
+      const isInputField =
+        activeElement &&
+        (activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.getAttribute('contenteditable') === 'true');
+
+      if (!isInputField && event.code === 'Space') {
+        event.preventDefault();
+        handlePlayPause();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handlePlayPause]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);

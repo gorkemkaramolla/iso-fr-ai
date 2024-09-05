@@ -44,23 +44,13 @@ const Speech: React.FC = () => {
   return (
     <div className='w-screen z-0 flex flex-col h-[90vh] justify-center'>
       <div className='flex h-full justify-between'>
-        <PanelGroup
-          autoSaveId='example'
-          className='w-full h-full flex'
-          direction='horizontal'
-        >
-          <Panel style={{ overflowY: 'scroll' }} defaultSize={75} minSize={30}>
-            <WhisperUpload isProcessing={isProcessing} />
-          </Panel>
-          <PanelResizeHandle className='w-1 z-0 cursor-col-resize border-l-2 border-gray-100 relative md:flex hidden'>
-            <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
-              <GripVertical className='text-gray-400' />
-            </div>
-          </PanelResizeHandle>
-          <Panel defaultSize={25} minSize={20} className='z-0 md:block hidden'>
-            <TranscriptionHistory />
-          </Panel>
-        </PanelGroup>
+        <div className='w-full md:w-3/4 p-4'>
+          <WhisperUpload isProcessing={isProcessing} />
+        </div>
+
+        <div className='z-0 md:block hidden w-1/4'>
+          <TranscriptionHistory />
+        </div>
       </div>
     </div>
   );

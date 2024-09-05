@@ -19,6 +19,8 @@ import {
   Info,
   AlertCircle,
   XCircle,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Card from '@/components/ui/card';
@@ -36,6 +38,7 @@ import SingleRenameDialog from './dialog-single';
 import CustomDialog from './dialog-single';
 import ChangeAllNamesDialog from './dialog-multiple';
 import Tooltip from '../ui/tool-tip';
+import { BsLayoutTextWindow } from 'react-icons/bs';
 
 const SegmentMenu = dynamic(() => import('./segment-menu'), { ssr: false });
 
@@ -123,16 +126,42 @@ const TextEditor: React.FC<TextEditorProps> = ({
   const [uniqueSpeakers, setUniqueSpeakers] = useState<string[]>([]);
   const [speakerColors, setSpeakerColors] = useState<Record<string, string>>(
     () => {
-      // Initialize from localStorage
       const storedColors = localStorage.getItem('speakerColors');
-      return storedColors ? JSON.parse(storedColors) : {};
+      const colorsArray = storedColors ? JSON.parse(storedColors) : [];
+      const transcriptionColors = colorsArray.find(
+        (entry: any) => entry.transcription_id === transcription?._id
+      );
+      return transcriptionColors ? transcriptionColors.colors : {};
     }
   );
-  useEffect(() => {
-    // Save to localStorage whenever speakerColors change
-    localStorage.setItem('speakerColors', JSON.stringify(speakerColors));
-  }, [speakerColors]);
 
+  const handleColorChange = (speaker: string, color: string) => {
+    setSpeakerColors((prevColors) => ({
+      ...prevColors,
+      [speaker]: color,
+    }));
+    setSaveState('needs saving');
+  };
+
+  useEffect(() => {
+    const storedColors = localStorage.getItem('speakerColors');
+    const colorsArray = storedColors ? JSON.parse(storedColors) : [];
+
+    // Filter out any existing entry for this transcription
+    const updatedColorsArray = colorsArray.filter(
+      (entry: any) => entry.transcription_id !== transcription?._id
+    );
+
+    // Add the updated colors for this transcription
+    updatedColorsArray.push({
+      transcription_id: transcription?._id,
+      colors: speakerColors,
+    });
+
+    // Save back to localStorage
+    localStorage.setItem('speakerColors', JSON.stringify(updatedColorsArray));
+  }, [speakerColors, transcription?._id]);
+  const [showFullText, setShowFullText] = useState<boolean>(false);
   const [showDialog, setShowDialog] = useState(false);
   const [showSingleRenameDialog, setShowSingleRenameDialog] = useState(false);
   const [dialogData, setDialogData] = useState<{
@@ -144,9 +173,14 @@ const TextEditor: React.FC<TextEditorProps> = ({
     oldName: string;
     newName: string;
   }>({ segmentId: '', oldName: '', newName: '' });
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
+    null
+  );
 
   const segmentRefs = useRef<Record<string, HTMLSpanElement | null>>({});
-
+  useEffect(() => {
+    console.log(speakerColors);
+  }, [speakerColors]);
   useEffect(() => {
     setTranscriptionName(transcription?.name || '');
     setSegments(transcription?.segments || []);
@@ -173,13 +207,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
     );
     setUniqueSpeakers(speakers);
   };
-  const handleColorChange = (speaker: string, color: string) => {
-    setSpeakerColors((prevColors) => ({
-      ...prevColors,
-      [speaker]: color,
-    }));
-    setSaveState('needs saving');
-  };
+  // const handleColorChange = (speaker: string, color: string) => {
+  //   setSpeakerColors((prevColors) => ({
+  //     ...prevColors,
+  //     [speaker]: color,
+  //   }));
+  //   setSaveState('needs saving');
+  // };
 
   const handleNameChange = useCallback(
     debounce(() => {
@@ -215,19 +249,30 @@ const TextEditor: React.FC<TextEditorProps> = ({
   };
 
   const handleFocusSegment = useCallback((segmentId: string) => {
+    console.log(`Focusing on segment ID: ${segmentId}`);
+
     const segmentText = segmentRefs.current[segmentId]?.innerText || '';
+
     setChanges((prevChanges: Change[]) => {
       const existingIndex = prevChanges.findIndex(
         (change) => change.segmentId === segmentId
       );
+
       if (existingIndex !== -1) {
+        console.log(`Updating existing change for segment ID: ${segmentId}`);
+
         // Update the existing change only if the current text is different from the initial text
         const updatedChanges = [...prevChanges];
+
         if (updatedChanges[existingIndex].initialText !== segmentText) {
           updatedChanges[existingIndex].currentText = segmentText;
         }
+
         return updatedChanges;
       }
+
+      console.log(`Adding new change for segment ID: ${segmentId}`);
+
       // Add a new change if not found
       return [
         ...prevChanges,
@@ -567,6 +612,12 @@ const TextEditor: React.FC<TextEditorProps> = ({
         </div>
 
         <div className='flex md:flex-row self-center flex-row-reverse space-x-2'>
+          <button
+            className='btn btn-primary btn-sm flex gap-2'
+            onClick={() => setShowFullText((prev) => !prev)}
+          >
+            {showFullText ? 'Tüm Metin' : 'Segmentler'}
+          </button>
           <div className='dropdown dropdown-end'>
             <Tooltip
               placement='top-end'
@@ -579,6 +630,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
                 <span>Konuşmacılar</span>
               </button>
             </Tooltip>
+
             <ul
               tabIndex={0}
               className='dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52'
@@ -606,15 +658,9 @@ const TextEditor: React.FC<TextEditorProps> = ({
                       </div>
                       <input
                         type='color'
-                        value={
-                          JSON.parse(
-                            localStorage.getItem('speakerColors') || '{}'
-                          )[speaker] ||
-                          speakerColors[speaker] ||
-                          '#000000'
-                        }
+                        value={speakerColors[speaker] || '#000000'}
                         onChange={(e) =>
-                          handleColorChange?.(speaker, e.target.value)
+                          handleColorChange(speaker, e.target.value)
                         }
                         className='w-6 h-6 border-none cursor-pointer'
                       />
@@ -648,121 +694,154 @@ const TextEditor: React.FC<TextEditorProps> = ({
         </div>
       </div>
 
-      <div
-        ref={transcriptionRef}
-        className='rounded-box p-4 overflow-y-auto h-[600px]'
-      >
-        <AnimatePresence>
-          {segments.map((segment, index) => {
-            const isHighlighted =
-              currentTime >= segment.start && currentTime <= segment.end;
-            console.log(isHighlighted);
-            // const isHovered = hoveredSegmentId === segment.id;
+      <div className='text-editor'>
+        {showFullText ? (
+          <div className='full-text p-4'>{transcription?.text}</div>
+        ) : (
+          <div
+            ref={transcriptionRef}
+            className='rounded-box p-4 overflow-y-auto h-[600px]'
+          >
+            <AnimatePresence>
+              {segments.map((segment, index) => {
+                const isHighlighted =
+                  currentTime >= segment.start && currentTime <= segment.end;
 
-            return (
-              <motion.div
-                key={segment.id}
-                className={`${
-                  viewMode === 'inline' ? 'inline-block' : 'block mb-2'
-                }`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.1, delay: index * 0.01 }}
-                ref={(el) => {
-                  segmentRefs.current[segment.id] = el;
-                }}
-              >
-                <span
-                  className={`badge ${
-                    menuState.segmentId === segment.id
-                      ? 'bg-primary text-white'
-                      : 'hover:bg-primary hover:text-white'
-                  } transition-all duration-200 ease-in-out badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-1 rounded`}
-                  onClick={(e) => showSegmentMenu(e, segment.id)}
-                  onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
-                  onMouseLeave={handleBadgeMouseLeave}
-                  // style={{ backgroundColor: speakerColors[segment.speaker] }}
-                >
-                  {viewMode === 'list' ? 'Konuşmacı : ' : ''}
-                  {segment.speaker}
-                </span>
-                <span
-                  className={` ${
-                    activeSegment === segment.id
-                      ? 'bg-primary text-white'
-                      : 'hover:bg-primary hover:text-white'
-                  } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-2 rounded`}
-                  onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
-                  onMouseLeave={handleBadgeMouseLeave}
-                  onClick={() => {
-                    setCurrentTime(segment.start);
-                    setActiveSegment(segment.id);
-                  }}
-                >
-                  {viewMode === 'list' ? 'Başlangıç : ' : ''}
-                  {segment.start.toFixed(2)}s
-                </span>
-                {viewMode === 'list' && (
-                  <span
-                    className={` ${
-                      activeSegment === segment.id
-                        ? 'bg-primary text-white'
-                        : 'hover:bg-primary hover:text-white'
-                    } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-2 rounded`}
-                    onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
-                    onMouseLeave={handleBadgeMouseLeave}
-                    onClick={() => {
-                      setCurrentTime(segment.start);
-                      setActiveSegment(segment.id);
+                return (
+                  <motion.div
+                    key={segment.id}
+                    className={`${
+                      viewMode === 'inline' ? 'inline-block' : 'block mb-2'
+                    }`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.1, delay: index * 0.01 }}
+                    ref={(el) => {
+                      segmentRefs.current[segment.id] = el;
                     }}
                   >
-                    {viewMode === 'list' ? 'Bitiş : ' : ''}
-                    {segment.end.toFixed(2)}s
-                  </span>
-                )}
-                <span
-                  ref={(el) => {
-                    segmentRefs.current[segment.id] = el as HTMLSpanElement;
-                  }}
-                  contentEditable
-                  style={{
-                    backgroundColor: isHighlighted
-                      ? `${speakerColors[segment.speaker]}20`
-                      : 'transparent',
-                    transition: 'background-color 0.3s ease',
-                  }}
-                  suppressContentEditableWarning
-                  className={`
-        ${viewMode === 'list' ? 'block mt-1' : 'inline'}
-        focus:outline-none rounded-xl 
-        p-1 transition-colors duration-200
-      `}
-                  onFocus={(e) => {
-                    handleFocusSegment(segment.id);
-                    const range = document.createRange();
-                    range.selectNodeContents(e.target);
-                    const selection = window.getSelection();
-                    selection?.removeAllRanges();
-                    selection?.addRange(range);
-                  }}
-                  onInput={() => handleInputSegment(segment.id)}
-                  onClick={(e) => {
-                    const range = document.createRange();
-                    range.selectNodeContents(e.currentTarget as Node);
-                    const selection = window.getSelection();
-                    selection?.removeAllRanges();
-                    selection?.addRange(range);
-                  }}
-                >
-                  {segment.text}
-                </span>
+                    <span
+                      className={`badge ${
+                        activeSegment === segment.id
+                          ? 'bg-primary text-white'
+                          : 'hover:bg-primary hover:text-white'
+                      } transition-all duration-200 ease-in-out badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-1 rounded`}
+                      onClick={(e) => showSegmentMenu(e, segment.id)}
+                      onMouseEnter={() => handleBadgeMouseEnter(segment.id)}
+                      onMouseLeave={handleBadgeMouseLeave}
+                    >
+                      {viewMode === 'list' ? 'Konuşmacı : ' : ''}
+                      {segment.speaker}
+                    </span>
+                    <span
+                      className={` ${
+                        activeSegment === segment.id
+                          ? 'bg-primary text-white'
+                          : 'hover:bg-primary hover:text-white'
+                      } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-2 rounded`}
+                      onClick={() => {
+                        setCurrentTime(segment.start);
+                        setActiveSegment(segment.id);
+                      }}
+                    >
+                      {viewMode === 'list' ? 'Başlangıç : ' : ''}
+                      {segment.start.toFixed(2)}s
+                    </span>
+                    {viewMode === 'list' && (
+                      <span
+                        className={` ${
+                          activeSegment === segment.id
+                            ? 'bg-primary text-white'
+                            : 'hover:bg-primary hover:text-white'
+                        } badge badge-sm badge-outline cursor-pointer mr-1 font-semibold text-indigo-600  px-2 py-2 rounded`}
+                        onClick={() => {
+                          setCurrentTime(segment.start);
+                          setActiveSegment(segment.id);
+                        }}
+                      >
+                        {viewMode === 'list' ? 'Bitiş : ' : ''}
+                        {segment.end.toFixed(2)}s
+                      </span>
+                    )}
+                    <span
+                      ref={(el) => {
+                        segmentRefs.current[segment.id] = el as HTMLSpanElement;
+                      }}
+                      contentEditable
+                      style={{
+                        backgroundColor: isHighlighted
+                          ? `${speakerColors[segment.speaker]}20`
+                          : 'transparent',
+                        transition: 'background-color 0.3s ease',
+                      }}
+                      suppressContentEditableWarning
+                      className={`
+    ${viewMode === 'list' ? 'block mt-1' : 'inline'}
+    focus:outline-none rounded-xl 
+    p-1 transition-colors duration-200
+  `}
+                      onClick={(e) => {
+                        const selection = window.getSelection();
+                        const range = document.createRange();
 
-                {viewMode === 'list' && <br />}
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                        if (selectedSegmentId === segment.id) {
+                          // If already selected, allow cursor placement at clicked position
+                          if (selection && e.target instanceof Node) {
+                            const { clientX } = e.nativeEvent;
+                            const rect = (
+                              e.target as HTMLElement
+                            ).getBoundingClientRect();
+                            const relativeX = clientX - rect.left;
+
+                            let charIndex = 0;
+                            let totalWidth = 0;
+
+                            const textNode = e.target.firstChild;
+                            if (textNode instanceof Text) {
+                              for (let i = 0; i < textNode.length; i++) {
+                                range.setStart(textNode, i);
+                                range.setEnd(textNode, i + 1);
+                                const rangeRect = range.getBoundingClientRect();
+                                const charWidth = rangeRect.width;
+
+                                if (totalWidth + charWidth > relativeX) {
+                                  charIndex = i;
+                                  break;
+                                }
+                                totalWidth += charWidth;
+                              }
+                              range.setStart(textNode, charIndex);
+                              range.collapse(true);
+                              selection.removeAllRanges();
+                              selection.addRange(range);
+                            }
+                          }
+                          setSelectedSegmentId(null); // Deselect the text for cursor placement
+                        } else {
+                          // Select the entire text initially
+                          setSelectedSegmentId(segment.id);
+                          range.selectNodeContents(e.currentTarget);
+                          selection?.removeAllRanges();
+                          selection?.addRange(range);
+                        }
+                      }}
+                      onInput={() => {
+                        handleInputSegment(segment.id);
+                        setSelectedSegmentId(null); // Deselect to allow text editing
+                      }}
+                      onFocus={() => handleFocusSegment(segment.id)}
+                    >
+                      {segment.text}
+                    </span>
+
+                    {viewMode === 'list' && <br />}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       <SegmentMenu

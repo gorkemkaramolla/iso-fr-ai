@@ -3,7 +3,7 @@ import logging
 import os
 import threading
 import datetime
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict
 import cv2
 import numpy as np
 from pymongo import MongoClient
@@ -16,8 +16,6 @@ from services.camera_processor.emotion_restnet import ResNet, ResNet50, LSTMPyTo
 from socketio_instance import notify_new_face
 import subprocess
 import time
-from urllib.request import urlopen
-from urllib.error import HTTPError
 import requests
 import os
 from services.camera_processor.anti_spoof_predict import AntiSpoofPredict
@@ -93,8 +91,8 @@ class Stream:
         os.makedirs(self.unknown_faces_dir, exist_ok=True)
         
 
-        self.stop_flag = threading.Event()  # Initialize the stop flag
-        self.video_writer = None
+        self.stop_flags = {}  # Dictionary to hold stop flags for each camera
+        self.video_writers = {}
 
         # Store recognition data for each personnel_id to aggregate data over 60 seconds
         self.recognition_data = defaultdict(lambda: {
@@ -489,7 +487,12 @@ class Stream:
         return frame, label, value, test_speed
 
     def recog_face_ip_cam(self, stream_id, camera: str, camera_name: str, is_recording=False):
-        self.stop_flag.clear()
+        if stream_id not in self.stop_flags:
+            logging.error(f"No stop flag found for stream ID {stream_id}")
+            return
+    
+        stop_flag = self.stop_flags[stream_id]
+        stop_flag.clear()
         logging.info(f"Opening stream: {stream_id} / camera: {camera}")
         if camera is None:
             raise ValueError("Camera URL must be provided and cannot be None")
@@ -503,7 +506,8 @@ class Stream:
             if not os.path.exists(directory):
                 os.makedirs(directory)
             filename = directory + now.strftime("%H:%M:%S_%d.%m.%Y") + ".mp4"
-        while not self.stop_flag.is_set():
+    
+        while not stop_flag.is_set():
             ret, frame = cap.read()
             if not ret:
                 logging.error("Error reading frame")
@@ -545,26 +549,78 @@ class Stream:
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
             )
-
+    
         cap.release()
         if writer:
             writer.release()
         logging.info("Finished generate function")
+    # def recog_face_local_cam(self, stream_id, frame: np.ndarray, camera_name: str, is_recording: bool = False) -> str:
+    #     if stream_id not in self.stop_flags:
+    #         logging.error(f"No stop flag found for stream ID {stream_id}")
+    #         return ""
 
-    def recog_face_local_cam(self, frame: np.ndarray, camera_name: str, is_recording: bool = False) -> str:
-        self.stop_flag.clear()
+    #     stop_flag = self.stop_flags[stream_id]
+    #     stop_flag.clear()
+    #     logging.info("Processing frame")
+
+    #     if is_recording and stream_id not in self.video_writers:
+    #         now = datetime.datetime.now()
+    #         directory = "./records/"
+    #         os.makedirs(directory, exist_ok=True)
+    #         filename = directory + now.strftime("%H:%M:%S_%d/%m/%Y_yerel_kamera") + ".mp4"
+    #         frame_height, frame_width = frame.shape[:2]
+    #         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    #         self.video_writers[stream_id] = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+    #         if not self.video_writers[stream_id].isOpened():
+    #             logging.error("Error initializing video writer")
+    #             return ""
+
+    #     for bbox, label, sim, emotion, gender, age in zip(*self._get_attributes(frame, camera_name)):
+    #         x1, y1, x2, y2 = map(int, bbox[:4])
+    #         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
+    #         text_label = f"{label} ({sim * 100:.2f}%): {emotion}, gender: {gender}, age: {age}"
+    #         cv2.putText(
+    #             frame,
+    #             text_label,
+    #             (x1 + 5, y1 - 10),
+    #             cv2.FONT_HERSHEY_SIMPLEX,
+    #             0.8,
+    #             (0, 255, 0),
+    #             2,
+    #         )
+
+    #     if stream_id in self.video_writers:
+    #         self.video_writers[stream_id].write(frame)
+
+    #     _, buffer = cv2.imencode(".jpg", frame)
+    #     processed_image = base64.b64encode(buffer).decode('utf-8')
+    #     return 'data:image/jpeg;base64,' + processed_image
+    
+    def recog_face_local_cam(self, stream_id, frame: np.ndarray, camera_name: str, is_recording: bool = False) -> str:
+        if stream_id not in self.stop_flags:
+            logging.error(f"No stop flag found for stream ID {stream_id}")
+            return ""
+
+        stop_flag = self.stop_flags[stream_id]
+        stop_flag.clear()
         logging.info("Processing frame")
 
-        if is_recording and self.video_writer is None:
+        if frame is None or frame.size == 0:
+            logging.error("Error reading frame: Frame is None or empty")
+            return ""
+
+        if is_recording and stream_id not in self.video_writers:
             now = datetime.datetime.now()
             directory = "./records/"
             os.makedirs(directory, exist_ok=True)
-            filename = directory + now.strftime("%H:%M:%S_%d/%m/%Y_yerel_kamera") + ".mp4"
+            filename = directory + now.strftime("%H:%M:%S_%d.%m.%Y_yerel_kamera") + ".mp4"
             frame_height, frame_width = frame.shape[:2]
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            self.video_writer = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
-            if not self.video_writer.isOpened():
-                logging.error("Error initializing video writer")
+            self.video_writers[stream_id] = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+            if not self.video_writers[stream_id].isOpened():
+                logging.error(f"Error initializing video writer for file {filename}")
+                logging.error(f"Frame dimensions: {frame_width}x{frame_height}")
+                logging.error(f"Codec: mp4v")
                 return ""
 
         for bbox, label, sim, emotion, gender, age in zip(*self._get_attributes(frame, camera_name)):
@@ -581,69 +637,63 @@ class Stream:
                 2,
             )
 
-        if self.video_writer:
-            self.video_writer.write(frame)
+        if stream_id in self.video_writers:
+            self.video_writers[stream_id].write(frame)
 
         _, buffer = cv2.imencode(".jpg", frame)
         processed_image = base64.b64encode(buffer).decode('utf-8')
         return 'data:image/jpeg;base64,' + processed_image
-    
-    def start_stream(self, stream_id, camera, quality="Quality", is_recording=False):
-   
 
-        self.stop_flag.clear()
-        self.stop_flag = threading.Event()  
-        logging.info(f"Starting stream: {stream_id} / camera: {camera}")
-     
 
-     
+
+
+    def start_stream(self, stream_id: int):
+        if stream_id in self.stop_flags:
+            logging.warning(f"Stream with ID {stream_id} is already running")
+            return
+
+        self.stop_flags[stream_id] = threading.Event()
+        logging.info(f"Starting stream: {stream_id}")
+        # Add your stream starting logic here
+        # Example: self._start_stream_logic(stream_id, camera, quality, is_recording)
 
     def stop_stream(self, stream_id: int) -> None:
         """
         Stops the ongoing video stream with the given ID by setting the stop flag.
         Releases video capture and writer resources if they are in use.
         """
-    
-        self.stop_flag.set()
-        
-        logging.info(f"Stream with ID {stream_id} stopped successfully")
+        if stream_id not in self.stop_flags:
+            logging.warning(f"No running stream with ID {stream_id} found")
+            return
 
-    def stop_recording(self):
-        if self.video_writer:
-            self.video_writer.release()
-            self.video_writer = None
+        self.stop_flags[stream_id].set()
+        if stream_id in self.video_writers:
+            self.video_writers[stream_id].release()
+            del self.video_writers[stream_id]
+        del self.stop_flags[stream_id]
+        logging.info(f"Stream with ID {stream_id} stopped successfully")
+        # Add your stream stopping logic here
+
+
+    def stop_recording(self, stream_id: int) -> bool:
+        if stream_id in self.video_writers:
+            self.video_writers[stream_id].release()
+            del self.video_writers[stream_id]
+            return True
+        return False
     
             # Find the last saved file in the ./records folder
-            records_folder = './records'
-            files = [os.path.join(records_folder, f) for f in os.listdir(records_folder) if os.path.isfile(os.path.join(records_folder, f))]
-            last_saved_file = max(files, key=os.path.getctime)
+            # records_folder = './records'
+            # files = [os.path.join(records_folder, f) for f in os.listdir(records_folder) if os.path.isfile(os.path.join(records_folder, f))]
+            # last_saved_file = max(files, key=os.path.getctime)
     
-            # Define output file path
-            output_file = last_saved_file.replace(".mp4", "_converted.mp4")
+            # # Define output file path
+            # output_file = last_saved_file.replace(".mp4", "_converted.mp4")
     
-            # Execute ffmpeg command to convert video
-            command = ["ffmpeg", "-i", last_saved_file, "-vcodec", "h264", "-acodec", "aac", output_file]
+            # # Execute ffmpeg command to convert video
+            # command = ["ffmpeg", "-i", last_saved_file, "-vcodec", "h264", "-acodec", "aac", output_file]
     
-            # Run the command
-            subprocess.run(command, capture_output=True, text=True)
-    
-            return output_file
+            # # Run the command
+            # subprocess.run(command, capture_output=True, text=True)
         
-    def repair_last_record(self, filename: str):
-        # records_folder = './records'
-        # files = [os.path.join(records_folder, f) for f in os.listdir(records_folder) if os.path.isfile(os.path.join(records_folder, f))]
-        # filename = max(files, key=os.path.getctime)
-
-        # Define output file path
-        output_file = filename.replace(".mp4", "_converted.mp4")
-
-        # Execute ffmpeg command to convert video
-        command = ["ffmpeg", "-i", filename, "-vcodec", "h264", "-acodec", "aac", output_file]
-
-        # Run the command
-        subprocess.run(command, capture_output=True, text=True)
-          # Delete the original file after conversion
-        if os.path.exists(output_file):
-            os.remove(filename)
-
-        return output_file
+    

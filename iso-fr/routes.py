@@ -3,6 +3,7 @@
 import base64
 import glob
 import shutil
+import subprocess
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import bson
 import bson.json_util
@@ -75,7 +76,18 @@ VIDEO_FOLDER = xml_config.VIDEO_FOLDER if xml_config.VIDEO_FOLDER else 'records'
 @camera_bp.route('/videos/<filename>')
 def get_video(filename):
     file_path = os.path.join(VIDEO_FOLDER, filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    
+    if "converted" not in filename:
+        repaired_file_path = repair_last_record(file_path)
+        if repaired_file_path is None:
+            return jsonify({'error': 'Failed to process video'}), 500
+        return send_file(repaired_file_path, as_attachment=True)
+
     return send_file(file_path, as_attachment=False)
+
 
 @camera_bp.route('/videos')
 def list_videos():
@@ -83,16 +95,38 @@ def list_videos():
     videos = []
 
     for file in files:
-        if file.endswith('.mp4'):
-            file_path = os.path.join(VIDEO_FOLDER, file)
-            if "converted" in file:
-                videos.append({'filename': file, 'title': file})
-            else:
-                repaired_file_path = stream_instance.repair_last_record(file_path)
-                repaired_filename = os.path.basename(repaired_file_path)
-                videos.append({'filename': repaired_filename, 'title': repaired_filename})
+        # if file.endswith('.mp4'):
+        #     file_path = os.path.join(VIDEO_FOLDER, file)
+        #     if "converted" in file:
+        videos.append({'filename': file, 'title': file})
+            # else:
+            #     repaired_file_path = repair_last_record(file_path)
+            #     repaired_filename = os.path.basename(repaired_file_path)
+            #     videos.append({'filename': repaired_filename, 'title': repaired_filename})
 
     return jsonify(videos)
+
+def repair_last_record(filename: str) -> str:
+    print(f"----------------------------Repairing last record: {filename}")
+    output_file = filename.replace(".mp4", "_converted.mp4")
+    command = ["ffmpeg", "-i", filename, "-vcodec", "h264", "-acodec", "aac", output_file]
+
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        print(f"FFmpeg output: {result.stdout}")
+        print(f"FFmpeg error (if any): {result.stderr}")
+
+        if os.path.exists(output_file):
+            os.remove(filename)
+            return output_file
+        else:
+            raise FileNotFoundError(f"Output file {output_file} was not created.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error during FFmpeg conversion: {e.stderr}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return None
 
 @camera_bp.route('/videos/<filename>', methods=['DELETE'])
 def delete_video(filename):
@@ -190,17 +224,7 @@ def stream(stream_id):
 
 @camera_bp.route("/stream/start/<int:stream_id>", methods=["POST"])
 def start_stream(stream_id):
-    is_recording = request.args.get("is_recording") == "true"
-    camera = request.args.get("camera")
-    quality = request.args.get("streamProfile")
-
-    stream_instance.start_stream(
-        stream_id,
-        camera=camera,
-        quality=quality,
-        is_recording=is_recording
-    )
-
+    stream_instance.start_stream(stream_id)
     return jsonify({"message": "Stream started successfully"}), 200
 
 @camera_bp.route("/stream/stop/<int:stream_id>", methods=["POST"])
@@ -224,6 +248,7 @@ def on_leave(data):
 @socketio.on('video_frames')
 def handle_video_frames(data):
     room = data['room']
+    stream_id = data["streamId"]
     frames_data = data['frames']
     camera_name = data['cameraName']
     is_recording = data['isRecording']
@@ -246,19 +271,21 @@ def handle_video_frames(data):
     for frame_data in frames_data:
         image_data = frame_data.split(',')[1]
         nparr = np.frombuffer(base64.b64decode(image_data), np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        processed_image = stream_instance.recog_face_local_cam(img, camera_name, is_recording)
+        processed_image = stream_instance.recog_face_local_cam(stream_id, frame, camera_name, is_recording)
         processed_frames.append(processed_image)
 
     emit('processed_frames', {'frames': processed_frames}, room=room)
 
-@camera_bp.route("/local_stream/stop_recording", methods=["POST"])
-def stop_recording():
-    return Response(
-        stream_instance.stop_recording(),
-        mimetype="multipart/x-mixed-replace; boundary=frame",
-    )
+@app.route('/local_stream/stop_recording/<int:stream_id>', methods=['POST'])
+def stop_recording(stream_id):
+    success = stream_instance.stop_recording(stream_id)
+    if success:
+        return jsonify({'message': 'Recording stopped successfully'}), 200
+    else:
+        return jsonify({'error': 'Failed to stop recording'}), 500
+
 
 
 @camera_bp.route("/update_database_with_id", methods=["POST"])

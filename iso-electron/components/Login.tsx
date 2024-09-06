@@ -26,7 +26,7 @@ export default function LoginForm() {
       // If already logged in, redirect to the home page
       router.push('/');
     }
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

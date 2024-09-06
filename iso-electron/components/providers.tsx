@@ -36,14 +36,10 @@ const Provider: React.FC<ProviderProps> = ({ children }) => {
 
       let token: string | null = null;
 
-      if (isElectron()) {
-        try {
-          token = localStorage.getItem('access_token');
-        } catch (error) {
-          console.error('Failed to access localStorage in Electron:', error);
-        }
-      } else {
-        token = cookies.client_access_token;
+      try {
+        token = localStorage.getItem('access_token');
+      } catch (error) {
+        console.error('Failed to access localStorage:', error);
       }
 
       setAccessToken(token);
@@ -56,7 +52,7 @@ const Provider: React.FC<ProviderProps> = ({ children }) => {
     };
 
     hydrateAndCheckToken();
-  }, [cookies.client_access_token, pathname, router]);
+  }, [pathname, router]);
 
   // Add the keyboard shortcut functionality
   useEffect(() => {

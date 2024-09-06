@@ -25,34 +25,26 @@ import binascii
 import numpy as np
 import cv2
 
-from config import XMLConfig  # Import the XML configuration
+from config import XMLConfig
 
 
-# Initialize Flask app
 app = Flask(__name__)
 xml_config = XMLConfig(service_name="auth_service")
 xml_mongo_config = XMLConfig(service_name="mongo")
 
 provider.DefaultJSONProvider.sort_keys = False
-
-# Configure CORS
 CORS(
     app,
     origins=xml_config.CORS_ORIGINS,
     supports_credentials=xml_config.SUPPORTS_CREDENTIALS,
 )
 
-# Set Flask app configuration using the parsed XML values
 app.config["JWT_SECRET_KEY"] = xml_config.JWT_SECRET_KEY
 app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 app.config["JWT_ACCESS_COOKIE_PATH"] = xml_config.JWT_ACCESS_COOKIE_PATH
 app.config["JWT_REFRESH_COOKIE_PATH"] = xml_config.JWT_REFRESH_COOKIE_PATH
-app.config["JWT_COOKIE_SECURE"] = (
-    xml_config.JWT_COOKIE_SECURE
-)  # Set to False in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = (
-    xml_config.JWT_COOKIE_CSRF_PROTECT
-)  # Enable CSRF protection in production
+app.config["JWT_COOKIE_SECURE"] = xml_config.JWT_COOKIE_SECURE
+app.config["JWT_COOKIE_CSRF_PROTECT"] = xml_config.JWT_COOKIE_CSRF_PROTECT
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = xml_config.get_jwt_expire_timedelta()
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = xml_config.get_jwt_refresh_expire_timedelta()
 
@@ -124,28 +116,26 @@ def login():
         }
     )
 
-    # Set the HTTP-only access token cookie
-    set_access_cookies(
-        response, tokens["access_token"], max_age=int(xml_config.JWT_EXPIRE_SECONDS)
-    )
+    # Cookies are intentionally not set as per the requirement
+    # The commented out code for setting cookies is kept for future reference
 
-    # Set the HTTP-only refresh token cookie
-    set_refresh_cookies(response, tokens["refresh_token"])
+    # set_access_cookies(
+    #     response, tokens["access_token"], max_age=int(xml_config.JWT_EXPIRE_SECONDS)
+    # )
 
-    # Set an additional non-HTTP-only cookie with the same expiration date
-    response.set_cookie(
-        "client_access_token",  # This can be any name you choose
-        tokens["access_token"],  # The value of the token
-        max_age=int(
-            xml_config.JWT_EXPIRE_SECONDS
-        ),  # Same expiration time as the access token
-        secure=xml_config.JWT_COOKIE_SECURE,  # Secure flag depending on your environment
-        httponly=False,  # This makes the cookie accessible via JavaScript
-        samesite="Lax",  # Adjust based on your needs
-        path=xml_config.JWT_ACCESS_COOKIE_PATH,
-    )
+    # set_refresh_cookies(response, tokens["refresh_token"])
 
-    return response, 200
+    # response.set_cookie(
+    #     "client_access_token",
+    #     tokens["access_token"],
+    #     max_age=int(xml_config.JWT_EXPIRE_SECONDS),
+    #     secure=xml_config.JWT_COOKIE_SECURE,
+    #     httponly=False,
+    #     samesite="None",
+    #     path=xml_config.JWT_ACCESS_COOKIE_PATH,
+    # )
+
+    return response
 
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -222,16 +212,3 @@ def update_user():
 
 
 app.register_blueprint(auth_bp)
-
-# @auth_bp.after_request
-# def refresh_expiring_jwts(response):
-#     try:
-#         exp_timestamp = get_jwt()["exp"]
-#         now = datetime.now(timezone.utc)
-#         target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
-#         if target_timestamp > exp_timestamp:
-#             access_token = create_access_token(identity=get_jwt_identity())
-#             set_access_cookies(response, access_token)
-#         return response
-#     except (RuntimeError, KeyError):
-#         return response

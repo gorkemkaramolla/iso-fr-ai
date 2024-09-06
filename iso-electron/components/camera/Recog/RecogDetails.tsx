@@ -1,8 +1,8 @@
-import React from "react";
-import { TbFaceId, TbCalendarTime } from "react-icons/tb";
-import { User } from "lucide-react";
-import { PiGenderIntersexFill, PiSecurityCameraFill } from "react-icons/pi";
-import { RecogFace } from "@/types";
+import React from 'react';
+import { TbFaceId, TbCalendarTime } from 'react-icons/tb';
+import { User } from 'lucide-react';
+import { PiGenderIntersexFill, PiSecurityCameraFill } from 'react-icons/pi';
+import { RecogFace } from '@/types';
 
 interface RecogDetailsProps {
   selectedFace: RecogFace | null;
@@ -10,108 +10,108 @@ interface RecogDetailsProps {
 
 const emotionMap: { [key: number]: { [key: string]: string } } = {
   0: {
-    label: "Normal",
-    label_en: "Neutral",
-    icon: "😐",
+    label: 'Normal',
+    label_en: 'Neutral',
+    icon: '😐',
   },
   1: {
-    label: "Mutlu",
-    label_en: "Happy",
-    icon: "😄",
+    label: 'Mutlu',
+    label_en: 'Happy',
+    icon: '😄',
   },
   2: {
-    label: "Üzgün",
-    label_en: "Sad",
-    icon: "😢",
+    label: 'Üzgün',
+    label_en: 'Sad',
+    icon: '😢',
   },
   3: {
-    label: "Şaşırmış",
-    label_en: "Surprised",
-    icon: "😲",
+    label: 'Şaşırmış',
+    label_en: 'Surprised',
+    icon: '😲',
   },
   4: {
-    label: "Korkmuş",
-    label_en: "Fear",
-    icon: "😨",
+    label: 'Korkmuş',
+    label_en: 'Fear',
+    icon: '😨',
   },
   5: {
-    label: "İğrenmiş",
-    label_en: "Disgust",
-    icon: "🤢",
+    label: 'İğrenmiş',
+    label_en: 'Disgust',
+    icon: '🤢',
   },
   6: {
-    label: "Kızgın",
-    label_en: "Angry",
-    icon: "😠",
+    label: 'Kızgın',
+    label_en: 'Angry',
+    icon: '😠',
   },
 };
 
 const getEmotionIcon = (emotion: number) => {
-  return emotionMap[emotion]?.icon || "😐";
+  return emotionMap[emotion]?.icon || '😐';
 };
 
 const RecogDetails: React.FC<RecogDetailsProps> = ({ selectedFace }) => {
   if (!selectedFace) return null;
 
   return (
-    <div className="flex flex-col md:flex-row bg-transparent nunito-700">
-      <div className="md:w-3/4">
+    <div className='flex flex-col md:flex-row bg-transparent nunito-700'>
+      <div className='md:w-3/4'>
         <img
           src={`${process.env.NEXT_PUBLIC_FLASK_URL}/images/${selectedFace.image_path}`}
-          alt="Selected Face"
-          className="object-cover w-full h-full rounded-l-lg shadow-md"
+          alt='Selected Face'
+          className='object-cover w-full h-full rounded-l-lg shadow-md'
         />
       </div>
-      <div className="md:w-1/4 p-6 rounded-r-lg bg-white shadow-md">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+      <div className='md:w-1/4 p-6 rounded-r-lg bg-white shadow-md'>
+        <h2 className='text-2xl font-bold mb-4 text-gray-800'>
           {selectedFace.label}
         </h2>
         <hr />
-        <div className="py-2 mb-4 ">
-          <ul className="flex flex-col flex-wrap gap-4 [&_li]:gap-2 ">
-            <li className="flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200">
-              <TbCalendarTime className="w-6 h-6 text-blue-500 " />
-              <span className="text-gray-700">
-                {new Date(selectedFace.timestamp).toLocaleString("tr-TR")}
+        <div className='py-2 mb-4 '>
+          <ul className='flex flex-col flex-wrap gap-4 [&_li]:gap-2 '>
+            <li className='flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200'>
+              <TbCalendarTime className='w-5 h-5 text-blue-500 ' />
+              <span className='text-gray-700'>
+                {new Date(selectedFace.timestamp).toLocaleString('tr-TR')}
               </span>
             </li>
-            <li className="flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200">
-              <PiSecurityCameraFill className="w-6 h-6 text-blue-500 " />
-              <span className="text-gray-700 collapse rounded-none">
+            <li className='flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200'>
+              <PiSecurityCameraFill className='w-6 h-6 text-blue-500 ' />
+              <span className='text-gray-700 collapse rounded-none'>
                 <strong></strong> {selectedFace.camera}
               </span>
             </li>
-            <li className="flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200">
-              <TbFaceId className="w-6 h-6 text-blue-500 " />
-              <span className="text-gray-700">
+            <li className='flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200'>
+              <TbFaceId className='w-6 h-6 text-blue-500 ' />
+              <span className='text-gray-700'>
                 ~ %{(selectedFace.similarity * 100).toFixed(2)}
               </span>
             </li>
-            <li className="flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200">
-              <User className="w-6 h-6 text-blue-500" />
-              <span className="text-gray-700">
-                {" "}
+            <li className='flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200'>
+              <User className='w-6 h-6 text-blue-500' />
+              <span className='text-gray-700'>
+                {' '}
                 ~ {selectedFace.age} yaşında
               </span>
             </li>
-            <li className="flex items-center hover:bg-gray-100 p-[10px] rounded-lg transition-colors duration-200">
-              <span className="text-xl">
+            <li className='flex items-center hover:bg-gray-100 px-[10px] py-2 rounded-lg transition-colors duration-200'>
+              <span className='text-xl'>
                 {getEmotionIcon(selectedFace.emotion)}
               </span>
-              <span className="text-gray-700">
-                {typeof selectedFace.emotion === "number"
+              <span className='text-gray-700'>
+                {typeof selectedFace.emotion === 'number'
                   ? emotionMap[selectedFace.emotion].label
                   : selectedFace.emotion}
               </span>
             </li>
-            <li className="flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200">
+            <li className='flex items-center hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200'>
               <PiGenderIntersexFill
                 className={`w-6 h-6 ${
-                  selectedFace.gender === 1 ? "text-blue-500" : "text-rose-500"
+                  selectedFace.gender === 1 ? 'text-blue-500' : 'text-rose-500'
                 }`}
               />
-              <span className="text-gray-700">
-                {selectedFace.gender === 1 ? "Erkek" : "Kadın"}
+              <span className='text-gray-700'>
+                {selectedFace.gender === 1 ? 'Erkek' : 'Kadın'}
               </span>
             </li>
           </ul>

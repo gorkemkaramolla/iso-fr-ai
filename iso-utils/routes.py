@@ -10,7 +10,8 @@ from flask_jwt_extended import JWTManager, jwt_required
 from bson import ObjectId, json_util
 from werkzeug.utils import secure_filename
 from config import XMLConfig
-
+from datetime import datetime, timedelta
+import pytz
 # Initialize the configuration for the 'utils_service'
 xml_config = XMLConfig(service_name="utils_service")
 xml_mongo_config = XMLConfig(service_name="mongo")
@@ -107,7 +108,78 @@ def get_last_recog(id):
             ),
             500,
         )
+@personel_bp.route("/personel_logs_by_day/<id>", methods=["POST"])
+def get_logs_by_day(id):
+    # Validate personnel_id
+    if not id:
+        return jsonify({"status": "error", "message": "Personnel ID is required"}), 400
 
+    if not ObjectId.is_valid(id):
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "'id' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string",
+                }
+            ),
+            400,
+        )
+
+    try:
+        # Get the date string from the request body
+        data = request.get_json()
+        date_str = data.get("date")
+
+        if not date_str:
+            return jsonify({"status": "error", "message": "Date is required"}), 400
+
+        try:
+            # Convert ISO date string to datetime
+            date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            tz = pytz.timezone('Etc/GMT-3')
+            date = date.astimezone(tz)
+            start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_of_day = start_of_day + timedelta(days=1)
+            start_of_day_ms = int(start_of_day.timestamp() * 1000)
+            end_of_day_ms = int(end_of_day.timestamp() * 1000)
+            
+            # Query MongoDB for logs within the specified day
+            logs = recognition_collection.find(
+                {
+                    "personnel_id": id,
+                    "timestamp": {"$gte": start_of_day_ms, "$lt": end_of_day_ms},
+                }
+            ).sort("timestamp", DESCENDING)
+
+            # Convert cursor to list to access elements
+            logs_data = list(logs)
+
+            # Check if data is found
+            if not logs_data:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "No recognition data found for the given Personnel ID and date",
+                        }
+                    ),
+                    404,
+                )
+
+            return json_util.dumps(logs_data), 200
+
+        except ValueError:
+            return jsonify({"status": "error", "message": "Invalid date format. Use ISO 8601 format."}), 400
+
+    except Exception as e:
+        # Log the error for further investigation
+        print(f"An error occurred: {e}")
+        return (
+            jsonify(
+                {"status": "error", "message": "An internal server error occurred"}
+            ),
+            500,
+        )
 
 @personel_bp.route("/personel", methods=["POST"])
 def add_personel():

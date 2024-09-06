@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   RadarChart,
   PolarGrid,
@@ -8,18 +8,18 @@ import {
   Radar,
   ResponsiveContainer,
   Tooltip,
-} from "recharts";
+} from 'recharts';
 
 const emotions = [
-  "Normal",
-  "Mutlu",
-  "Üzgün",
-  "Şaşırmış",
-  "Korkmuş",
-  "İğrenmiş",
-  "Kızgın",
+  'Normal',
+  'Mutlu',
+  'Üzgün',
+  'Şaşırmış',
+  'Korkmuş',
+  'İğrenmiş',
+  'Kızgın',
 ];
-const emotionEmojis = ["😐", "😄", "😢", "😲", "😨", "🤢", "😠"];
+const emotionEmojis = ['😐', '😄', '😢', '😲', '😨', '🤢', '😠'];
 
 interface RecogData {
   _id: string;
@@ -43,7 +43,7 @@ interface RecogData {
 const EmotionChart: React.FC = () => {
   const [data, setData] = useState<RecogData[]>([]);
   const searchParams = useSearchParams();
-  const id = searchParams.get("id");
+  const id = searchParams.get('id');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,9 +52,9 @@ const EmotionChart: React.FC = () => {
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_UTILS_URL}/personel_last_recog/${id}`,
             {
-              method: "POST",
+              method: 'POST',
               headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
               },
             }
           );
@@ -77,10 +77,10 @@ const EmotionChart: React.FC = () => {
             });
             setData(filteredData);
           } else {
-            console.error("Error fetching data:", response.statusText);
+            console.error('Error fetching data:', response.statusText);
           }
         } catch (error) {
-          console.error("Error fetching data:", error);
+          console.error('Error fetching data:', error);
         }
       }
     };
@@ -119,9 +119,9 @@ const EmotionChart: React.FC = () => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-2 rounded shadow">
-          <p className="text-lg font-semibold">{`${data.emoji} ${data.emotion}`}</p>
-          <p className="text-sm">{`Value: ${data.value.toFixed(2)}`}</p>
+        <div className='bg-white p-2 rounded shadow'>
+          <p className='text-lg font-semibold'>{`${data.emoji} ${data.emotion}`}</p>
+          <p className='text-sm'>{`Value: ${data.value.toFixed(2)}`}</p>
         </div>
       );
     }
@@ -129,26 +129,26 @@ const EmotionChart: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-[300px] p-4">
-      <h3 className="text-2xl font-bold text-center mb-4">
+    <div className='w-full h-[300px] p-4'>
+      <h3 className='nunito-600 text-center text-gray-700 mb-4'>
         Günlük Duygu Analizi
       </h3>
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
-          <PolarGrid stroke="#e0e0e0" />
+      <ResponsiveContainer width='100%' height='100%'>
+        <RadarChart cx='50%' cy='50%' outerRadius='80%' data={chartData}>
+          <PolarGrid stroke='#e0e0e0' />
           <PolarAngleAxis
-            dataKey="emotion"
+            dataKey='emotion'
             tick={({ payload, x, y, cx, cy, ...rest }) => (
               <g>
                 <text
                   {...rest}
                   x={x}
                   y={y}
-                  textAnchor={x > cx ? "start" : "end"}
-                  fill="#333"
+                  textAnchor={x > cx ? 'start' : 'end'}
+                  fill='#333'
                   fontSize={12}
                 >
-                  {payload.value}{" "}
+                  {payload.value}{' '}
                   {emotionEmojis[emotions.indexOf(payload.value)]}
                 </text>
               </g>
@@ -156,10 +156,10 @@ const EmotionChart: React.FC = () => {
           />
           <PolarRadiusAxis angle={90} domain={[0, 1]} />
           <Radar
-            name="Emotions"
-            dataKey="value"
-            stroke="#8884d8"
-            fill="#8884d8"
+            name='Emotions'
+            dataKey='value'
+            stroke='#8884d8'
+            fill='#8884d8'
             fillOpacity={0.6}
           />
           <Tooltip content={<CustomTooltip />} />

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { ChangeEvent } from 'react';
-import { motion } from 'framer-motion';
-import { Input, Link, DatePicker } from '@nextui-org/react';
+import { ChangeEvent } from "react";
+import { motion } from "framer-motion";
+import { Input, Link, DatePicker } from "@nextui-org/react";
 import {
   parseDate,
   CalendarDate,
   parseDateTime,
-} from '@internationalized/date';
+} from "@internationalized/date";
 
 interface InfoItemProps {
   icon: React.ReactNode;
@@ -37,49 +37,49 @@ export default function InfoItem({
 
   return (
     <motion.div
-      className='flex items-center gap-4 rounded-large'
+      className="flex items-center gap-4 rounded-large"
       animate={
         isEditing
           ? {
-              backgroundColor: ['#ffffff', '#eef2ff', '#ffffff'],
+              backgroundColor: ["#ffffff", "#eef2ff", "#ffffff"],
               boxShadow: [
-                '0 0 0 rgba(59, 130, 246, 0)',
-                '0 0 6px rgba(59, 130, 246, 0.3)',
-                '0 0 0 rgba(59, 130, 246, 0)',
+                "0 0 0 rgba(59, 130, 246, 0)",
+                "0 0 6px rgba(59, 130, 246, 0.3)",
+                "0 0 0 rgba(59, 130, 246, 0)",
               ],
             }
           : {}
       }
-      transition={{ duration: 0.7, ease: 'easeInOut' }}
+      transition={{ duration: 0.7, ease: "easeInOut" }}
     >
-      <div className='text-primary'>{icon}</div>
-      <div className='flex-grow'>
-        <p className='text-small font-medium text-foreground'>{label}</p>
+      <div className="text-primary">{icon}</div>
+      <div className="flex-grow">
+        <p className="text-small font-medium text-foreground">{label}</p>
         {isEditing ? (
-          name === 'birth_date' ? (
+          name === "birth_date" ? (
             <DatePicker
               value={value ? parseDate(value) : null} // Convert string to DateValue (CalendarDate)
               onChange={handleDateChange}
-              label='Select date'
-              className='max-w-xs'
-              variant='bordered'
+              label="Select date"
+              className="max-w-xs"
+              variant="bordered"
             />
           ) : (
             <Input
               name={name}
               value={value}
               onChange={onChange}
-              variant='bordered'
-              size='sm'
-              className='max-w-xs'
+              variant="bordered"
+              size="sm"
+              className="min-w-[200px]"
             />
           )
         ) : href ? (
-          <Link href={href} color='primary' underline='hover'>
+          <Link href={href} color="primary" underline="hover">
             {value}
           </Link>
         ) : (
-          <p className='text-default-500'>{value}</p>
+          <p className="text-default-500">{value}</p>
         )}
       </div>
     </motion.div>

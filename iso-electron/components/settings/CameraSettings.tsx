@@ -6,7 +6,7 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import LogoSpinner from '@/components/ui/LogoSpinner';
+import Loading from '@/components/ui/Loading';
 import 'primereact/resources/themes/lara-light-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
@@ -151,7 +151,7 @@ const CameraManager: React.FC = () => {
     <div className='container mx-auto'>
       {loading ? (
         <div className='flex justify-center items-center h-screen'>
-          <LogoSpinner />
+          <Loading />
         </div>
       ) : (
         <>

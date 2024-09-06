@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
-import io, { Socket } from "socket.io-client";
-import { Toast } from "primereact/toast"; // Import PrimeReact Toast
-import { Quality } from "@/utils/enums";
-import { Camera } from "@/types";
-import { CameraStream as CameraStreamType } from "@/types";
-import { stream } from "xlsx";
+import React, { useEffect, useRef, useState } from 'react';
+import io, { Socket } from 'socket.io-client';
+import { Toast } from 'primereact/toast'; // Import PrimeReact Toast
+import { Quality } from '@/utils/enums';
+import { Camera } from '@/types';
+import { CameraStream as CameraStreamType } from '@/types';
+import Loading from '@/components/ui/Loading';
 
 interface CameraStreamProps {
   id: number;
@@ -27,6 +27,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
   streamSrc,
   selectedCamera,
   isPlaying,
+  isLoading,
   setCameraStreams,
   isLocalCamera,
   isRecording,
@@ -40,19 +41,19 @@ const CameraStream: React.FC<CameraStreamProps> = ({
   const processedVideoRef = useRef<HTMLImageElement>(null);
   const socket = useRef<Socket | null>(null);
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null); // Reference for the frame sending interval
-
+  const [imageSrc, setImageSrc] = useState('');
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLocalCamera && !isClose) {
       socket.current = io(process.env.NEXT_PUBLIC_FLASK_URL!);
 
-      socket.current.emit("join", { room: `camera-${id}` });
-      socket.current.on("joined", (data) => {
+      socket.current.emit('join', { room: `camera-${id}` });
+      socket.current.on('joined', (data) => {
         console.log(`Joined room: ${data.room}`);
       });
 
-      socket.current.on("processed_frames", (data: { frames: string[] }) => {
+      socket.current.on('processed_frames', (data: { frames: string[] }) => {
         if (processedVideoRef.current) {
           processedVideoRef.current.src = data.frames[0]; // Handle multiple frames if needed
         }
@@ -62,13 +63,13 @@ const CameraStream: React.FC<CameraStreamProps> = ({
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const videoDevices = devices.filter(
-            (device) => device.kind === "videoinput"
+            (device) => device.kind === 'videoinput'
           );
           console.log(videoDevices); // Debug: Log the available video devices
 
           // Set the deviceId of the external webcam if available
           const externalCamera = videoDevices.find((device) =>
-            device.label.toLowerCase().includes("external")
+            device.label.toLowerCase().includes('external')
           );
           const selectedDeviceId = externalCamera
             ? externalCamera.deviceId
@@ -115,21 +116,21 @@ const CameraStream: React.FC<CameraStreamProps> = ({
           sendVideoFrames();
           // sendVideoFrames(compression);
         } catch (error) {
-          console.error("Error accessing camera:", error);
+          console.error('Error accessing camera:', error);
         }
       };
 
       const sendVideoFrames = (compression?: number) => {
         const canvas = canvasRef.current;
-        const context = canvas?.getContext("2d");
+        const context = canvas?.getContext('2d');
         const video = videoRef.current;
 
         if (!context || !video || !canvas) return;
 
         frameIntervalRef.current = setInterval(() => {
           context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const frame = canvas.toDataURL("image/jpeg", compression);
-          socket.current?.emit("video_frames", {
+          const frame = canvas.toDataURL('image/jpeg', compression);
+          socket.current?.emit('video_frames', {
             room: `camera-${id}`,
             streamId: id,
             frames: [frame],
@@ -145,14 +146,14 @@ const CameraStream: React.FC<CameraStreamProps> = ({
     // Cleanup function when component unmounts or isClose becomes true
     return () => {
       if (isClose && socket.current) {
-        socket.current.emit("leave", { room: `camera-${id}` });
+        socket.current.emit('leave', { room: `camera-${id}` });
         socket.current.disconnect();
         socket.current = null;
         // Show success toast
         toast.current?.show({
-          severity: "warn",
-          summary: "Success",
-          detail: "Camera stream stopped successfully",
+          severity: 'warn',
+          summary: 'Success',
+          detail: 'Camera stream stopped successfully',
           life: 3000,
         });
       }
@@ -173,28 +174,43 @@ const CameraStream: React.FC<CameraStreamProps> = ({
 
       // Disconnect the socket connection
       if (socket.current) {
-        socket.current.emit("leave", { room: `camera-${id}` });
+        socket.current.emit('leave', { room: `camera-${id}` });
         socket.current.disconnect();
         socket.current = null;
 
         // Show success toast
         toast.current?.show({
-          severity: "warn",
-          summary: "Success",
-          detail: "Camera stream stopped successfully",
+          severity: 'warn',
+          summary: 'Success',
+          detail: 'Camera stream stopped successfully',
           life: 3000,
         });
       }
     }
   }, [isClose, isLocalCamera, id, isPlaying]);
-  console.log(streamSrc);
+
+  useEffect(() => {
+    if (isPlaying) {
+      // Force a new image by appending a timestamp
+      setImageSrc(`${streamSrc}?t=${new Date().getTime()}`);
+    }
+  }, [isPlaying, streamSrc]);
+
+  console.log(imageSrc);
   return (
     <div>
-      {isPlaying && (
+      {isLoading && (
+        <div className='inset-0 flex items-center justify-center'>
+          <Loading />
+        </div>
+      )}
+      {isPlaying ? (
         <img
           ref={isLocalCamera ? processedVideoRef : undefined}
-          className="h-fit rounded-b-lg aspect-video"
-          src={streamSrc === "" ? undefined : streamSrc}
+          className={`h-fit rounded-b-lg aspect-video ${
+            isLoading ? 'opacity-0' : 'opacity-100'
+          }`}
+          src={imageSrc}
           alt={`Video Stream ${id}`}
           width={1920}
           height={1080}
@@ -206,7 +222,7 @@ const CameraStream: React.FC<CameraStreamProps> = ({
             );
           }}
           onError={() => {
-            console.log("Error loading stream");
+            console.log('Error loading stream');
             setCameraStreams((prevStreams) =>
               prevStreams.map((stream) =>
                 stream.id === id ? { ...stream, isLoading: true } : stream
@@ -214,21 +230,25 @@ const CameraStream: React.FC<CameraStreamProps> = ({
             );
           }}
         />
+      ) : (
+        <div className='h-fit flex items-center justify-center rounded-b-lg aspect-video '>
+          <span className='text-xl'>Yayın Durdu</span>
+        </div>
       )}
       {isLocalCamera && !isClose && (
         <>
           <video
             ref={videoRef}
-            width="1920"
-            height="1080"
+            width='1920'
+            height='1080'
             autoPlay
-            style={{ display: "none" }}
+            style={{ display: 'none' }}
           />
           <canvas
             ref={canvasRef}
-            width="1920"
-            height="1080"
-            style={{ display: "none" }}
+            width='1920'
+            height='1080'
+            style={{ display: 'none' }}
           />
         </>
       )}

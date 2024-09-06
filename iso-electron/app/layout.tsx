@@ -1,14 +1,13 @@
-import type { Metadata } from 'next';
+'use client';
 import './globals.css';
 import Provider from '@/components/providers';
 import 'primereact/resources/themes/lara-light-indigo/theme.css'; //theme
 import 'primereact/resources/primereact.min.css'; //core css
 import 'primeicons/primeicons.css'; //icons
-
-export const metadata: Metadata = {
-  title: 'ISO-AI',
-  description: 'ISOAI Electron App',
-};
+import { RecogContext } from '@/context/RecogContext';
+import { RecogFace } from '@/types';
+import useSWR from 'swr';
+import { getRecogFaces } from '@/services/camera/service';
 
 export default function RootLayout({
   children,
@@ -16,21 +15,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   // Check authentication status
+  const today = new Date().toISOString().split('T')[0];
 
+  const { data: recogFaces } = useSWR<RecogFace[]>(today, getRecogFaces, {
+    revalidateIfStale: true,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+  console.log('recogFaces', recogFaces);
   return (
     <html lang='tr' data-theme='light' className={'w-screen '}>
-      {/* <head>
-        <style>
-          @import
-          url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
-        </style>
-      </head> */}
-
+      <title>ISO-AI</title>
+      <meta name='description' content='ISOAI Electron App' />
       <body
         className={' w-full max-w-screen overflow-x-hidden flex justify-center'}
       >
         <div className='w-full h-[100dvh]'>
-          <Provider>{children}</Provider>
+          <RecogContext.Provider value={recogFaces}>
+            <Provider>{children}</Provider>
+          </RecogContext.Provider>
         </div>
       </body>
     </html>

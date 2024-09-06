@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import EnlargedImage from '../profiles/enlarged-image';
 import { TrashIcon } from 'lucide-react';
+import { RecogContext } from '@/context/RecogContext';
 
 interface RecognizedFace {
   _id: {
@@ -81,7 +82,7 @@ const RecognizedFacesTable: React.FC = () => {
   const router = useRouter();
   const toast = useRef<Toast>(null);
   const [enlargedImage, setEnlargedImage] = useState(false);
-
+  // const recogFaces = React.useContext(RecogContext);
   const [recognizedFaces, setRecognizedFaces] = useState<RecognizedFace[]>([]);
   const [filters, setFilters] = useState<DataTableFilterMeta>(defaultFilters);
   const [globalFilterValue, setGlobalFilterValue] = useState<string>('');

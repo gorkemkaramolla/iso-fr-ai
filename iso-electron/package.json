@@ -59,6 +59,7 @@
     "recharts": "^2.12.7",
     "socket.io-client": "^4.7.5",
     "swiper": "^11.1.10",
+    "swr": "^2.2.5",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "wavesurfer.js": "^7.8.2",

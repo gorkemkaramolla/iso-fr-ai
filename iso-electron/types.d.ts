@@ -75,6 +75,13 @@ interface RecogFace {
     $oid: string;
   };
   emotion: number;
+  emotion_0?: number;
+  emotion_1?: number;
+  emotion_2?: number;
+  emotion_3?: number;
+  emotion_4?: number;
+  emotion_5?: number;
+  emotion_6?: number;
   gender: number;
   age: number;
   image_path: string;

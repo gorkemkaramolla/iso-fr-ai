@@ -84,7 +84,7 @@ class SystemMonitoring:
                 [nvidia_smi_path, "-q", "-x"], capture_output=True, text=True
             )
             if result.returncode != 0:
-                self.logger.error("nvidia-smi command failed")
+                # self.logger.error("nvidia-smi command failed")
                 return "N/A", "N/A", "N/A"
 
             gpu_info = result.stdout

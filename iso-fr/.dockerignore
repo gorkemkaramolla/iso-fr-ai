@@ -20,3 +20,5 @@ services/camera_processor/enums/__pycache__
 services/camera_processor/test.py
 services/camera_processor/setup.py
 services/camera_processor/local_camera.py
+face-images
+temp

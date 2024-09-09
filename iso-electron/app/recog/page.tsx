@@ -77,6 +77,43 @@ FilterService.register('custom_similarity', (value, filters) => {
   if (from === null && to !== null) return value <= to;
   return from <= value && value <= to;
 });
+const emotionMap: { [key: number]: { [key: string]: string } } = {
+  0: {
+    label: 'Normal',
+    label_en: 'Neutral',
+    icon: '😐',
+  },
+  1: {
+    label: 'Mutlu',
+    label_en: 'Happy',
+    icon: '😄',
+  },
+  2: {
+    label: 'Üzgün',
+    label_en: 'Sad',
+    icon: '😢',
+  },
+  3: {
+    label: 'Şaşırmış',
+    label_en: 'Surprised',
+    icon: '😲',
+  },
+  4: {
+    label: 'Korkmuş',
+    label_en: 'Fear',
+    icon: '😨',
+  },
+  5: {
+    label: 'İğrenmiş',
+    label_en: 'Disgust',
+    icon: '🤢',
+  },
+  6: {
+    label: 'Kızgın',
+    label_en: 'Angry',
+    icon: '😠',
+  },
+};
 
 const RecognizedFacesTable: React.FC = () => {
   const router = useRouter();
@@ -134,17 +171,7 @@ const RecognizedFacesTable: React.FC = () => {
   };
 
   const formatGender = (value: number) => {
-    return value === 1 ? 'Male' : 'Female';
-  };
-
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    let _filters: DataTableFilterMeta = { ...filters };
-    //@ts-ignore
-    _filters['global'].value = value;
-
-    setFilters(_filters);
-    setGlobalFilterValue(value);
+    return value === 1 ? 'Erkek' : 'Kadın';
   };
 
   const exportCSV = (selectionOnly: boolean) => {
@@ -427,6 +454,16 @@ const RecognizedFacesTable: React.FC = () => {
       />
     );
   };
+  const emotionBodyTemplate = (rowData: RecognizedFace) => {
+    const emotion = emotionMap[Number(rowData.emotion)];
+    return emotion ? (
+      <div>
+        <span>{emotion.icon}</span> <span>{emotion.label}</span>
+      </div>
+    ) : (
+      'Unknown'
+    );
+  };
   const handleDeleteSelected = async () => {
     if (!selectedFaces) return;
     try {
@@ -498,14 +535,13 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          'Angry',
-          'Disgust',
-          'Fear',
-          'Happy',
-          'Sad',
-          'Surprise',
-          'Neutral',
-          'Unknown',
+          'Normal',
+          'Mutlu',
+          'Üzgün',
+          'Şaşkın',
+          'Korkmuş',
+          'İğrenmiş',
+          'Kızgın',
         ]}
         onChange={(e: DropdownChangeEvent) => options.editorCallback!(e.value)}
         placeholder='Select an Emotion'
@@ -518,8 +554,8 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          { label: 'Male', value: 1 },
-          { label: 'Female', value: 0 },
+          { label: 'Erkek', value: 1 },
+          { label: 'Kadın', value: 0 },
         ]}
         onChange={(e: DropdownChangeEvent) => options.editorCallback!(e.value)}
         optionLabel='label'
@@ -535,14 +571,13 @@ const RecognizedFacesTable: React.FC = () => {
       <Dropdown
         value={options.value}
         options={[
-          'Angry',
-          'Disgust',
-          'Fear',
-          'Happy',
-          'Sad',
-          'Surprise',
-          'Neutral',
-          'Unknown',
+          'Normal',
+          'Mutlu',
+          'Üzgün',
+          'Şaşkın',
+          'Korkmuş',
+          'İğrenmiş',
+          'Kızgın',
         ]}
         onChange={(e) => options.filterCallback(e.value, options.index)}
         placeholder='Select an Emotion'
@@ -552,24 +587,24 @@ const RecognizedFacesTable: React.FC = () => {
     );
   };
 
-  const genderFilterTemplate = (
-    options: ColumnFilterElementTemplateOptions
-  ) => {
-    return (
-      <Dropdown
-        value={options.value}
-        options={[
-          { label: 'Male', value: 1 },
-          { label: 'Female', value: 0 },
-        ]}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        optionLabel='label'
-        placeholder='Select a Gender'
-        className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
-        showClear
-      />
-    );
-  };
+  // const genderFilterTemplate = (
+  //   options: ColumnFilterElementTemplateOptions
+  // ) => {
+  //   return (
+  //     <Dropdown
+  //       value={options.value}
+  //       options={[
+  //         { label: 'Erkek', value: 1 },
+  //         { label: 'Kadın', value: 0 },
+  //       ]}
+  //       onChange={(e) => options.filterCallback(e.value, options.index)}
+  //       optionLabel='label'
+  //       placeholder='Select a Gender'
+  //       className='p-column-filter h-8 [&_.p-inputtext]:pt-1'
+  //       showClear
+  //     />
+  //   );
+  // };
 
   const ageRowFilterTemplate = (options: any) => {
     const [from, to] = options.value ?? [null, null];
@@ -769,7 +804,7 @@ const RecognizedFacesTable: React.FC = () => {
             filterMenuStyle={{ width: '14rem' }}
             style={{ maxWidth: '14rem' }}
             sortable
-            filterPlaceholder='Search by name'
+            filterPlaceholder='İsim ile ara'
             // filterElement={personRowFilterTemplate}
             body={personBodyTemplate}
             filter
@@ -797,9 +832,12 @@ const RecognizedFacesTable: React.FC = () => {
             sortable
             filter
             showFilterMenu={false}
-            filterElement={emotionFilterTemplate}
+            filterPlaceholder='Duygu Durumu'
+            body={emotionBodyTemplate}
+            // filterElement={emotionFilterTemplate}
             editor={(options) => emotionEditor(options)}
-            className='[&_.p-column-filter>.p-column-filter-clear-button]:hidden'
+            className='[&_input]:h-8'
+            // className='[&_.p-column-filter>.p-column-filter-clear-button]:hidden'
           />
           <Column
             field='gender'
@@ -810,9 +848,10 @@ const RecognizedFacesTable: React.FC = () => {
             sortable
             filter
             showFilterMenu={false}
-            filterElement={genderFilterTemplate}
+            filterPlaceholder='Cinsiyet'
+            // filterElement={genderFilterTemplate}
             editor={(options) => genderEditor(options)}
-            className='[&_.p-column-filter>.p-column-filter-clear-button]:hidden'
+            className='[&_input]:h-8'
           />
           <Column
             field='age'
